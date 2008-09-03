@@ -1,12 +1,14 @@
 import re
 import sys
+import os.path
 import pprint
 import urlparse
 import operator
 from binascii import unhexlify as unhex
-from cssutils.tokenize2 import Tokenizer as cssTokenizer
 
-# recognized properties
+# monkey with sys.path due to some weirdness inside cssutils
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+from cssutils.tokenize2 import Tokenizer as cssTokenizer
 
 def main(file):
     """ Given an input file containing nothing but styles, print out an
@@ -81,6 +83,8 @@ class numbers:
 
     def __str__(self):
         return repr(self)
+
+# recognized properties
 
 properties = {
     #--------------- map
