@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Stylesheet><![CDATA[
+        *
+        {
+            map-bgcolor: #69f;
+        }
+
+        #world-borders
+        {
+            line-width: 1;
+            line-color: #696;
+            polygon-fill: #6f9;
+        }
+
+        #world-borders NAME
+        {
+            text-face-name: "DejaVu Sans Book";
+            text-size: 10;
+            text-fill: #000;
+            text-halo-fill: #9ff;
+            text-halo-radius: 2;
+            text-placement: point;
+            text-wrap-width: 50;
+            text-avoid-edges: true;
+        }
+    ]]></Stylesheet>
+    <Layer id="world-borders" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+        <Datasource>
+            <Parameter name="type">shape</Parameter>
+            <Parameter name="file">world_borders</Parameter>
+        </Datasource>
+    </Layer>
+</Map>

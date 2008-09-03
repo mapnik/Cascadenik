@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+    <Stylesheet><![CDATA[
+        *
+        {
+            map-bgcolor: #69f;
+        }
+
+        .world-borders
+        {
+            line-width: 1;
+            line-color: #696;
+            polygon-fill: #6f9;
+        }
+
+        .world-borders NAME
+        {
+            text-face-name: "DejaVu Sans Book";
+            text-size: 10;
+            text-fill: #000;
+            text-halo-fill: #9ff;
+            text-halo-radius: 2;
+            text-placement: point;
+            text-wrap-width: 50;
+            text-avoid-edges: true;
+
+            point-file: url("purple-point.png");
+            text-dy: 10;
+        }
+    ]]></Stylesheet>
+    <Layer class="world-borders" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+        <Datasource>
+            <Parameter name="type">shape</Parameter>
+            <Parameter name="file">world_borders</Parameter>
+        </Datasource>
+    </Layer>
+</Map>

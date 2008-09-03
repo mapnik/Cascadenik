@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Stylesheet><![CDATA[
+        Map
+        {
+            map-bgcolor: #69f;
+        }
+
+        Layer
+        {
+            line-width: 1;
+            line-color: #696;
+            polygon-fill: #6f9;
+        }
+    ]]></Stylesheet>
+    <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+        <Datasource>
+            <Parameter name="type">shape</Parameter>
+            <Parameter name="file">world_borders</Parameter>
+        </Datasource>
+    </Layer>
+</Map>

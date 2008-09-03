@@ -1,0 +1,429 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title>Cascading Stylesheets For Mapnik</title>
+    <style type="text/css" title="text/css">
+    <!--
+    
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 16px;
+            margin: 2em;
+        }
+        
+        pre {
+            font-size: 11px;
+            line-height: 12px;
+            color: #666;
+            background-color: #eee;
+            border: 1px solid #ccc;
+            padding: 1em;
+        }
+        
+        pre em {
+            color: #333;
+            font-style: normal;
+            background-color: #f8f8f8;
+        }
+        
+        img {
+            border: 1px solid #666;
+        }
+    
+    -->
+    </style>
+</head>
+<body>
+
+<h1>Cascading Stylesheets For Mapnik</h1>
+
+<p>
+    The examples here demonstrate some of the basic usage of Mapnik cascading
+    style sheets. Most of the syntax has been borrowed wholesale from
+    <a href="http://www.w3.org/TR/REC-CSS2/">CSS</a>, so it should be familiar
+    to web designers.
+</p>
+
+<p>
+    The examples show:
+</p>
+
+<ol>
+    <li>Basic fill and stroke styles.</li>
+    <li>Text, ID selectors.</li>
+    <li>Images, class selector, projections.</li>
+    <li>Externally-linked files, expanded class selectors.</li>
+</ol>
+
+<p>
+    The complete library is available from the <a href="http://code.google.com/p/mapnik-utils/">mapnik-utils Google Code project</a>.
+</p>
+
+<h2>Example 1</h2>
+
+<p>
+    We start with a basic set of styles: a background color for the whole map,
+    and an outline and fill for each country in the world borders data set.
+</p>
+
+<h3>Input example1.mml</h3>
+
+<p>
+    There are two blocks in the Stylesheet portion of the file. One will define
+    the map background color, the other will define line and polygon
+    symbolizers for the world borders layer.
+</p>
+
+<pre>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Map srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"&gt;
+<em>    &lt;Stylesheet&gt;&lt;![CDATA[
+        Map
+        {
+            map-bgcolor: #69f;
+        }
+
+        Layer
+        {
+            line-width: 1;
+            line-color: #696;
+            polygon-fill: #6f9;
+        }
+    ]]&gt;&lt;/Stylesheet&gt;</em>
+    &lt;Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"&gt;
+        &lt;Datasource&gt;
+            &lt;Parameter name="type"&gt;shape&lt;/Parameter&gt;
+            &lt;Parameter name="file"&gt;world_borders&lt;/Parameter&gt;
+        &lt;/Datasource&gt;
+    &lt;/Layer&gt;
+&lt;/Map&gt;</pre>
+
+<h3>Output XML</h3>
+
+<p>
+    Converting <i>example1.mml</i> to <i>output.xml</i> looks like this:<br>
+    <code>python compile.py example1.mml > output.xml</code>
+</p>
+
+<pre>&lt;Map <em>bgcolor="#6699ff"</em> srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"&gt;
+<em>    &lt;Style name="poly style 1"&gt;
+        &lt;Rule&gt;&lt;PolygonSymbolizer&gt;&lt;CssParameter name="fill"&gt;#66ff99&lt;/CssParameter&gt;&lt;/PolygonSymbolizer&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;
+    &lt;Style name="line style 2"&gt;
+        &lt;Rule&gt;&lt;LineSymbolizer&gt;&lt;CssParameter name="stroke"&gt;#669966&lt;/CssParameter&gt;&lt;CssParameter name="stroke-width"&gt;1&lt;/CssParameter&gt;&lt;/LineSymbolizer&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;</em>
+    &lt;Layer name="layer 3" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs" status="on"&gt;
+<em>        &lt;StyleName&gt;poly style 1&lt;/StyleName&gt;
+        &lt;StyleName&gt;line style 2&lt;/StyleName&gt;</em>
+        &lt;Datasource&gt;
+            &lt;Parameter name="type"&gt;shape&lt;/Parameter&gt;
+            &lt;Parameter name="file"&gt;world_borders&lt;/Parameter&gt;
+        &lt;/Datasource&gt;
+    &lt;/Layer&gt;
+&lt;/Map&gt;</pre>
+
+<h3>Rendered Image</h3>
+
+<p><img src="example1.png"></p>
+
+<h2>Example 2</h2>
+
+<p>
+    Here we've added a separate block that labels each country. The selector
+    for the block is <i>Layer NAME</i>, where <i>NAME</i> is the field from the
+    data set to use as a label source. Note how it appears as <i>name="NAME"</i>
+    in the output XML below.
+</p>
+
+<p>
+    We've also added an <i>id</i> attribute to the Layer, and used it in place
+    of <em>Layer</em> for two of the selectors. The first block has been changed
+    to a wildcard, <i>*</i>.
+</p>
+
+<h3>Input example2.mml</h3>
+
+<pre>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Map srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"&gt;
+    &lt;Stylesheet&gt;&lt;![CDATA[
+        <em>*</em>
+        {
+            map-bgcolor: #69f;
+        }
+
+        <em>#world-borders</em>
+        {
+            line-width: 1;
+            line-color: #696;
+            polygon-fill: #6f9;
+        }
+
+<em>        #world-borders NAME
+        {
+            text-face-name: "DejaVu Sans Book";
+            text-size: 10;
+            text-fill: #000;
+            text-halo-fill: #9ff;
+            text-halo-radius: 2;
+            text-placement: point;
+            text-wrap-width: 50;
+            text-avoid-edges: true;
+        }</em>
+    ]]&gt;&lt;/Stylesheet&gt;
+    &lt;Layer <em>id="world-borders"</em> srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"&gt;
+        &lt;Datasource&gt;
+            &lt;Parameter name="type"&gt;shape&lt;/Parameter&gt;
+            &lt;Parameter name="file"&gt;world_borders&lt;/Parameter&gt;
+        &lt;/Datasource&gt;
+    &lt;/Layer&gt;
+&lt;/Map&gt;</pre>
+
+<h3>Output XML</h3>
+
+<pre>&lt;Map bgcolor="#6699ff" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"&gt;
+    &lt;Style name="poly style 1"&gt;
+        &lt;Rule&gt;&lt;PolygonSymbolizer&gt;&lt;CssParameter name="fill"&gt;#66ff99&lt;/CssParameter&gt;&lt;/PolygonSymbolizer&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;
+    &lt;Style name="line style 2"&gt;
+        &lt;Rule&gt;&lt;LineSymbolizer&gt;&lt;CssParameter name="stroke"&gt;#669966&lt;/CssParameter&gt;&lt;CssParameter name="stroke-width"&gt;1&lt;/CssParameter&gt;&lt;/LineSymbolizer&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;
+<em>    &lt;Style name="text style 3 (NAME)"&gt;
+        &lt;Rule&gt;&lt;TextSymbolizer avoid_edges="true" face_name="DejaVu Sans Book" fill="#000000" halo_fill="#99ffff" halo_radius="2" name="NAME" placement="point" size="10" wrap_width="50" /&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;</em>
+    &lt;Layer name="layer 4" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs" status="on"&gt;
+        &lt;StyleName&gt;poly style 1&lt;/StyleName&gt;
+        &lt;StyleName&gt;line style 2&lt;/StyleName&gt;
+<em>        &lt;StyleName&gt;text style 3 (NAME)&lt;/StyleName&gt;</em>
+        &lt;Datasource&gt;
+            &lt;Parameter name="type"&gt;shape&lt;/Parameter&gt;
+            &lt;Parameter name="file"&gt;world_borders&lt;/Parameter&gt;
+        &lt;/Datasource&gt;
+    &lt;/Layer&gt;
+&lt;/Map&gt;</pre>
+
+<h3>Rendered Image</h3>
+
+<p><img src="example2.png"></p>
+
+<h2>Example 3</h2>
+
+<p>
+    It's possible to refer to external images for use as point markers, such
+    as this use of <i>purple-point.png</i> to accompany each country label.
+    The point is found relative to <i>example3.mml</i>, and is referred to by
+    an absolute path in the output XML. Although Mapnik can only accept
+    PNG and TIFF images, we use <a href="http://www.pythonware.com/library/">PIL</a>
+    to convert all images to PNG's and save them in a temporary location for
+    Mapnik's use. All the text has been offset by 10 pixels to make room.
+</p>
+
+<p>
+    The ID selectors from above have been replaced by class selectors, referring
+    to the <i>class="world-borders"</i> attribute of the Layer. These work just like
+    you'd expect from CSS. It is expected that a document has just one example of
+    each ID, but potentially many mixed examples of each class.
+</p>
+
+<p>
+    We've also switched to a mercator projection.
+</p>
+
+<h3>Input example3.mml</h3>
+
+<pre>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Map <em>srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null"</em>&gt;
+    &lt;Stylesheet&gt;&lt;![CDATA[
+        *
+        {
+            map-bgcolor: #69f;
+        }
+
+        <em>.world-borders</em>
+        {
+            line-width: 1;
+            line-color: #696;
+            polygon-fill: #6f9;
+        }
+
+        <em>.world-borders NAME</em>
+        {
+            text-face-name: "DejaVu Sans Book";
+            text-size: 10;
+            text-fill: #000;
+            text-halo-fill: #9ff;
+            text-halo-radius: 2;
+            text-placement: point;
+            text-wrap-width: 50;
+            text-avoid-edges: true;
+
+<em>            point-file: url("purple-point.png");
+            text-dy: 10;</em>
+        }
+    ]]&gt;&lt;/Stylesheet&gt;
+    &lt;Layer <em>class="world-borders"</em> srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"&gt;
+        &lt;Datasource&gt;
+            &lt;Parameter name="type"&gt;shape&lt;/Parameter&gt;
+            &lt;Parameter name="file"&gt;world_borders&lt;/Parameter&gt;
+        &lt;/Datasource&gt;
+    &lt;/Layer&gt;
+&lt;/Map&gt;</pre>
+
+<h3>Output XML</h3>
+
+<pre>&lt;Map bgcolor="#6699ff" <em>srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null"</em>&gt;
+    &lt;Style name="poly style 1"&gt;
+        &lt;Rule&gt;&lt;PolygonSymbolizer&gt;&lt;CssParameter name="fill"&gt;#66ff99&lt;/CssParameter&gt;&lt;/PolygonSymbolizer&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;
+    &lt;Style name="line style 2"&gt;
+        &lt;Rule&gt;&lt;LineSymbolizer&gt;&lt;CssParameter name="stroke"&gt;#669966&lt;/CssParameter&gt;&lt;CssParameter name="stroke-width"&gt;1&lt;/CssParameter&gt;&lt;/LineSymbolizer&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;
+    &lt;Style name="text style 3 (NAME)"&gt;
+        &lt;Rule&gt;&lt;TextSymbolizer avoid_edges="true" dy="10" face_name="DejaVu Sans Book" fill="#000000" halo_fill="#99ffff" halo_radius="2" name="NAME" placement="point" size="10" wrap_width="50" /&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;
+<em>    &lt;Style name="point style 4"&gt;
+        &lt;Rule&gt;&lt;PointSymbolizer file="/tmp/cascadenik-point-JqnnpU.png" height="8" type="png" width="8" /&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;</em>
+    &lt;Layer name="layer 5" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs" status="on"&gt;
+        &lt;StyleName&gt;poly style 1&lt;/StyleName&gt;
+        &lt;StyleName&gt;line style 2&lt;/StyleName&gt;
+        &lt;StyleName&gt;text style 3 (NAME)&lt;/StyleName&gt;
+        &lt;StyleName&gt;point style 4&lt;/StyleName&gt;
+        &lt;Datasource&gt;
+            &lt;Parameter name="type"&gt;shape&lt;/Parameter&gt;
+            &lt;Parameter name="file"&gt;world_borders&lt;/Parameter&gt;
+        &lt;/Datasource&gt;
+    &lt;/Layer&gt;
+&lt;/Map&gt;</pre>
+
+<h3>Rendered Image</h3>
+
+<p><img src="example3.png"></p>
+
+<h2>Example 4</h2>
+
+<p>
+    Since the stylesheet has started to grow a little large, we've moved it off
+    to a separate file, <i>example4.mss</i>. We've introduced a pattern background
+    for each country pulled from a remote server by URL.
+</p>
+
+<p>
+    The selector syntax has been extended in two ways.
+</p>
+
+<p>
+    First, note the scale selection attribute selector syntax, e.g. <i>[zoom>10]</i>.
+    The use of the <i>zoom</i> variable as a shorthand for MinScaleDenominator
+    and MaxScaleDenominator is only meaningful when we use this exact projection
+    SRS, which matches that used by OpenStreetMap, Google Maps, Virtual Earth,
+    and others. If we were using some other projection but wanted to use Mapnik's
+    scale support, we'd use something like <i>[scale-denominator>=400000]</i> instead.
+</p>
+
+<p>
+    Second, we see how multiple class names can be give to a single Layer, and how
+    multiple matches can be used in selectors. In these examples there's only a single
+    defined layer, but the <em>.some-other-class</em> line in <i>example4.mss</i>
+    shows how it's possible to use single blocks of rules to affect numerous layers
+    concurrently.
+</p>
+
+<h3>Input example4.mml</h3>
+
+<pre>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null"&gt;
+<em>    &lt;Stylesheet src="example4.mss"/&gt;</em>
+    &lt;Layer <em>class="world-borders countries"</em> srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs"&gt;
+        &lt;Datasource&gt;
+            &lt;Parameter name="type"&gt;shape&lt;/Parameter&gt;
+            &lt;Parameter name="file"&gt;world_borders&lt;/Parameter&gt;
+        &lt;/Datasource&gt;
+    &lt;/Layer&gt;
+&lt;/Map&gt;</pre>
+
+<h3>example4.mss</h3>
+
+<pre>*
+{
+    map-bgcolor: #69f;
+}
+
+<em>.world-borders, .some-other-class</em>
+{
+    line-width: 0.5;
+    line-color: #030;
+    polygon-fill: #6f9;
+
+    point-file: url("purple-point.png");
+<em>    polygon-pattern-file: url("http://www.inkycircus.com/jargon/images/grass_by_conformity.jpg");</em>
+}
+
+<em>.world-borders.countries[zoom>10] NAME</em>
+{
+    text-face-name: "DejaVu Sans Book";
+    text-size: 10;
+    text-fill: #000;
+    text-halo-fill: #9ff;
+    text-halo-radius: 2;
+    text-placement: point;
+    text-wrap-width: 50;
+    text-avoid-edges: true;
+    text-dy: 10;
+}
+
+<em>.world-borders.countries[zoom<=10] FIPS</em>
+{
+    text-face-name: "DejaVu Sans Book";
+    text-size: 10;
+    text-fill: #000;
+    text-halo-fill: #9ff;
+    text-halo-radius: 2;
+    text-placement: point;
+    text-wrap-width: 50;
+    text-avoid-edges: true;
+    text-dy: 10;
+}</pre>
+
+<h3>Output XML</h3>
+
+<pre>&lt;Map bgcolor="#6699ff" srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null"&gt;
+    &lt;Style name="poly style 1"&gt;
+        &lt;Rule&gt;&lt;PolygonSymbolizer&gt;&lt;CssParameter name="fill"&gt;#66ff99&lt;/CssParameter&gt;&lt;/PolygonSymbolizer&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;
+<em>    &lt;Style name="pattern style 2"&gt;
+        &lt;Rule&gt;&lt;PolygonPatternSymbolizer file="/tmp/cascadenik-pattern-8q8uHI.png" height="352" type="png" width="470" /&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;</em>
+    &lt;Style name="line style 3"&gt;
+        &lt;Rule&gt;&lt;LineSymbolizer&gt;&lt;CssParameter name="stroke"&gt;#003300&lt;/CssParameter&gt;&lt;CssParameter name="stroke-width"&gt;0.5&lt;/CssParameter&gt;&lt;/LineSymbolizer&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;
+<em>    &lt;Style name="text style 4 (FIPS)"&gt;
+        &lt;Rule&gt;&lt;MinScaleDenominator&gt;400000&lt;/MinScaleDenominator&gt;&lt;TextSymbolizer avoid_edges="true" dy="10" face_name="DejaVu Sans Book" fill="#000000" halo_fill="#99ffff" halo_radius="2" name="FIPS" placement="point" size="10" wrap_width="50" /&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;
+    &lt;Style name="text style 5 (NAME)"&gt;
+        &lt;Rule&gt;&lt;MaxScaleDenominator&gt;399999&lt;/MaxScaleDenominator&gt;&lt;TextSymbolizer avoid_edges="true" dy="10" face_name="DejaVu Sans Book" fill="#000000" halo_fill="#99ffff" halo_radius="2" name="NAME" placement="point" size="10" wrap_width="50" /&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;</em>
+    &lt;Style name="point style 6"&gt;
+        &lt;Rule&gt;&lt;PointSymbolizer file="/tmp/cascadenik-point-E-iU9U.png" height="8" type="png" width="8" /&gt;&lt;/Rule&gt;
+    &lt;/Style&gt;
+    &lt;Layer name="layer 7" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs" status="on"&gt;
+        &lt;StyleName&gt;poly style 1&lt;/StyleName&gt;
+<em>        &lt;StyleName&gt;pattern style 2&lt;/StyleName&gt;</em>
+        &lt;StyleName&gt;line style 3&lt;/StyleName&gt;
+<em>        &lt;StyleName&gt;text style 4 (FIPS)&lt;/StyleName&gt;
+        &lt;StyleName&gt;text style 5 (NAME)&lt;/StyleName&gt;</em>
+        &lt;StyleName&gt;point style 6&lt;/StyleName&gt;
+        &lt;Datasource&gt;
+            &lt;Parameter name="type"&gt;shape&lt;/Parameter&gt;
+            &lt;Parameter name="file"&gt;world_borders&lt;/Parameter&gt;
+        &lt;/Datasource&gt;
+    &lt;/Layer&gt;
+&lt;/Map&gt;</pre>
+
+<h3>Rendered Image</h3>
+
+<p><img src="example4.png"></p>
+
+</body>
+</html>
