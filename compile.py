@@ -24,6 +24,7 @@ counter = 0
 
 opsort = {lt: 1, le: 2, eq: 3, ge: 4, gt: 5}
 opstr = {lt: '<', le: '<=', eq: '==', ge: '>=', gt: '>'}
+opfilter = {'<': '<', '<=': '<=', '=': '=', '!=': '<>', '>': '>=', '>': '>'}
     
 class Range:
     """ Represents a range for use in min/max scale denominator.
@@ -343,7 +344,7 @@ def make_rule_element(range, filter, *symbolizer_els):
         elif range.rightop is lt:
             maxscale.text = str(range.rightedge - 1)
     
-    filter_text = ' and '.join("[%s] %s '%s'" % (test.arg1, test.op, test.arg2) for test in filter.tests)
+    filter_text = ' and '.join("[%s] %s '%s'" % (test.arg1, opfilter[test.op], test.arg2) for test in filter.tests)
     
     if filter_text:
         filter_el = Element('Filter')
@@ -369,6 +370,7 @@ def insert_layer_style(map_el, layer_el, style_el):
     stylename.text = style_el.get('name')
     stylename.tail = '\n        '
     layer_el.insert(layer_el._children.index(layer_el.find('Datasource')), stylename)
+    layer_el.set('status', 'on')
 
 def is_applicable_selector(selector, range, filter):
     """ Given a Selector, Range, and Filter, return True if the Selector is
@@ -473,16 +475,16 @@ def add_line_style(map_el, layer_el, declarations):
     rule_els = []
     
     for (range, filter, parameter_values) in ranged_filtered_property_declarations(declarations, property_map):
-        if 'in:stroke-width' in parameter_values:
+        if 'in:stroke' in parameter_values and 'in:stroke-width' in parameter_values:
             insymbolizer_el = Element('LineSymbolizer')
         else:
-            # we can do nothing with a weightless line
+            # we can do nothing with a weightless, colorless line
             continue
         
-        if 'out:stroke-width' in parameter_values:
+        if 'out:stroke' in parameter_values and 'out:stroke-width' in parameter_values:
             outsymbolizer_el = Element('LineSymbolizer')
         else:
-            # we can do nothing with a weightless outline
+            # we can do nothing with a weightless, colorless outline
             outsymbolizer_el = False
         
         for (parameter, value) in parameter_values.items():
@@ -550,7 +552,13 @@ def add_text_styles(map_el, layer_el, declarations):
         rule_els = []
         
         for (range, filter, parameter_values) in ranged_filtered_property_declarations(name_declarations, property_map):
-            symbolizer_el = Element('TextSymbolizer')
+            if 'face_name' in parameter_values and 'size' in parameter_values:
+                symbolizer_el = Element('TextSymbolizer')
+            else:
+                # we can do nothing with fontless text
+                continue
+
+            symbolizer_el.set('name', text_name)
             
             for (parameter, value) in parameter_values.items():
                 symbolizer_el.set(parameter, str(value))
@@ -719,6 +727,9 @@ def compile(src, dir=None):
     add_map_style(map, get_applicable_declarations(map, declarations))
 
     for layer in map.findall('Layer'):
+        # the default...
+        layer.set('status', 'off')
+
         layer_declarations = get_applicable_declarations(layer, declarations)
         
         #pprint.PrettyPrinter().pprint(layer_declarations)
@@ -737,11 +748,6 @@ def compile(src, dir=None):
     
         if 'class' in layer.attrib:
             del layer.attrib['class']
-    
-        if layer_declarations:
-            layer.set('status', 'on')
-        else:
-            layer.set('status', 'off')
 
     out = StringIO.StringIO()
     doc.write(out)
