@@ -3,7 +3,7 @@
     <Stylesheet><![CDATA[
         Map
         {
-            map-bgcolor: #69f;
+            map-bgcolor: transparent;
         }
 
         Layer
@@ -16,7 +16,7 @@
     <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
         <Datasource>
             <Parameter name="type">shape</Parameter>
-            <Parameter name="file">world_borders</Parameter>
+            <Parameter name="file">../../sample_data/world_borders</Parameter>
         </Datasource>
     </Layer>
 </Map>
