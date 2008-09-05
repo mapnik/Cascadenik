@@ -236,22 +236,23 @@ properties = {
     'shield-face-name': str,
 
     # 
-    'shield-size': None, # ?
+    'shield-size': int,
 
     # 
     'shield-fill': color,
 
-    # 
+    # Minimum distance between repeated labels such as street names or shield symbols
+    'shield-min-distance': int,
+
+    # path to image file (default none)
     'shield-file': uri,
 
-    # 
-    'shield-type': None, # png, tiff (derived from file)
-
-    # 
+    # px (default 4), generally omit this and let PIL handle it
     'shield-width': int,
+    'shield-height': int,
 
-    # 
-    'shield-height': int
+    # image type: png or tiff, omitted thanks to PIL
+    'shield-type': None
 }
 
 class ParseException(Exception):
@@ -316,15 +317,15 @@ class Selector:
 
                 if test.op == '=':
                     # zoom level equality implies two tests, so we add one and modify one
-                    self.elements[0].addTest(SelectorAttributeTest('scale-denominator', '<=', max(zooms[test.arg2])))
+                    self.elements[0].addTest(SelectorAttributeTest('scale-denominator', '<', max(zooms[test.arg2])))
                     test.op, test.arg2 = '>=', min(zooms[test.arg2])
 
                 elif test.op == '<':
-                    test.op, test.arg2 = '>', max(zooms[test.arg2])
+                    test.op, test.arg2 = '>=', max(zooms[test.arg2])
                 elif test.op == '<=':
                     test.op, test.arg2 = '>=', min(zooms[test.arg2])
                 elif test.op == '>=':
-                    test.op, test.arg2 = '<=', max(zooms[test.arg2])
+                    test.op, test.arg2 = '<', max(zooms[test.arg2])
                 elif test.op == '>':
                     test.op, test.arg2 = '<', min(zooms[test.arg2])
                     

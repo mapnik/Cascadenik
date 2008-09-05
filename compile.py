@@ -1,4 +1,5 @@
 import os, sys
+import re
 import math
 import pprint
 import urllib
@@ -88,7 +89,10 @@ class Range:
             try:
                 return '(... %s%s)' % (opstr[self.rightop], self.rightedge)
             except KeyError:
-                return '(%s%s ...)' % (self.leftedge, opstr[self.leftop])
+                try:
+                    return '(%s%s ...)' % (self.leftedge, opstr[self.leftop])
+                except KeyError:
+                    return '(...)'
 
 class Filter:
     """ Represents a filter of some sort for use in stylesheet rules.
@@ -156,6 +160,8 @@ def selectors_ranges(selectors):
         projection, accept "zoom" attributes in place of "scale-denominator".
         
         This function was hard to write, it should be hard to read.
+        
+        TODO: make this work for <= following by >= in breaks
     """
     repeated_breaks = []
     
@@ -344,7 +350,10 @@ def make_rule_element(range, filter, *symbolizer_els):
         elif range.rightop is lt:
             maxscale.text = str(range.rightedge - 1)
     
-    filter_text = ' and '.join("[%s] %s '%s'" % (test.arg1, opfilter[test.op], test.arg2) for test in filter.tests)
+    # for unquoting numbers
+    unquoter = re.compile(r'^\'(\d+)\'$')
+    
+    filter_text = ' and '.join("[%s] %s %s" % (test.arg1, opfilter[test.op], unquoter.sub(r'\1', ("'%s'" % test.arg2))) for test in filter.tests)
     
     if filter_text:
         filter_el = Element('Filter')
@@ -599,6 +608,62 @@ def postprocess_symbolizer_image_file(symbolizer_el, out, temp_name):
         symbolizer_el.set('width', str(img.size[0]))
         symbolizer_el.set('height', str(img.size[1]))
 
+def add_shield_styles(map_el, layer_el, declarations, out=None):
+    """ Given a Map element, a Layer element, and a list of declarations,
+        create new Style elements with a TextSymbolizer, add them to Map
+        and refer to them in Layer.
+    """
+    property_map = {'shield-face-name': 'face_name', 'shield-size': 'size', 
+                    'shield-fill': 'fill', 'shield-min-distance': 'min_distance',
+                    'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height' }
+
+    # pull out all the names
+    text_names = [dec.selector.elements[1].names[0]
+                  for dec in declarations
+                  if len(dec.selector.elements) is 2 and len(dec.selector.elements[1].names) is 1]
+
+    # a separate style element for each text name
+    for text_name in set(text_names):
+    
+        # just the ones we care about here.
+        # the complicated conditional means: get all declarations that
+        # apply to this text_name specifically, or text in general.
+        name_declarations = [dec for dec in declarations
+                             if dec.property.name in property_map
+                                and (len(dec.selector.elements) == 1
+                                     or (len(dec.selector.elements) == 2
+                                         and dec.selector.elements[1].names[0] in (text_name, '*')))]
+        
+        # a place to put rule elements
+        rule_els = []
+        
+        for (range, filter, parameter_values) in ranged_filtered_property_declarations(name_declarations, property_map):
+            if 'file' in parameter_values and 'face_name' in parameter_values and 'size' in parameter_values:
+                symbolizer_el = Element('ShieldSymbolizer')
+            else:
+                # we can do nothing with fontless text
+                continue
+
+            symbolizer_el.set('name', text_name)
+            
+            for (parameter, value) in parameter_values.items():
+                symbolizer_el.set(parameter, str(value))
+    
+            if symbolizer_el.get('file', False):
+                postprocess_symbolizer_image_file(symbolizer_el, out, 'shield')
+    
+                rule_el = make_rule_element(range, filter, symbolizer_el)
+                rule_els.append(rule_el)
+        
+        if rule_els:
+            style_el = Element('Style', {'name': 'shield style %d (%s)' % (next_counter(), text_name)})
+            style_el.text = '\n        '
+            
+            for rule_el in rule_els:
+                style_el.append(rule_el)
+            
+            insert_layer_style(map_el, layer_el, style_el)
+
 def add_point_style(map_el, layer_el, declarations, out=None):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PointSymbolizer, add it to Map
@@ -738,6 +803,7 @@ def compile(src, dir=None):
         add_polygon_pattern_style(map, layer, layer_declarations, dir)
         add_line_style(map, layer, layer_declarations)
         add_line_pattern_style(map, layer, layer_declarations, dir)
+        add_shield_styles(map, layer, layer_declarations, dir)
         add_text_styles(map, layer, layer_declarations)
         add_point_style(map, layer, layer_declarations, dir)
         
