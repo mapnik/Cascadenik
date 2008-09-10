@@ -600,6 +600,8 @@ def postprocess_symbolizer_image_file(symbolizer_el, out, temp_name):
     os.close(handle)
     
     img.save(path)
+    os.chmod(path, 0644);
+
     symbolizer_el.set('file', path)
     symbolizer_el.set('type', 'png')
     
@@ -814,6 +816,15 @@ def compile(src, dir=None):
     
         if 'class' in layer.attrib:
             del layer.attrib['class']
+
+        for parameter in layer.find('Datasource').findall('Parameter'):
+            if parameter.get('name', None) == 'file':
+                # make shapefiles absolute paths
+                parameter.text = os.path.realpath(urlparse.urljoin(src, parameter.text))
+
+            elif parameter.get('name', None) == 'table':
+                # remove line breaks from possible SQL
+                parameter.text = parameter.text.replace('\r', ' ').replace('\n', ' ')
 
     out = StringIO.StringIO()
     doc.write(out)
