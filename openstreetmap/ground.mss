@@ -1,12 +1,12 @@
 Map
 {
-    map-bgcolor: #81cee7;
+    map-bgcolor: #8cb6d3;
 }
 
 .coast.edge.outer
 {
     line-width: 13;
-    line-color: #89dbf6;
+    line-color: #a1cbea;
     line-join: round;
 }
 
@@ -24,7 +24,7 @@ Map
 {
     line-width: 2;
     line-color: #7eaac1;
-    polygon-fill: #81cee7;
+    polygon-fill: #8cb6d3;
     line-join: round;
 }
 
@@ -45,7 +45,7 @@ Map
 
 .parklike.area
 {
-    polygon-fill: #91da65;
+    polygon-fill: #91b156;
 }
 
 .parklike.area[zoom>=16]
