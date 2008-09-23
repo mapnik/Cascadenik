@@ -7,6 +7,7 @@ import urlparse
 import tempfile
 import StringIO
 import optparse
+import operator
 from operator import lt, le, eq, ge, gt
 import xml.etree.ElementTree
 from xml.etree.ElementTree import Element
@@ -247,6 +248,52 @@ def selectors_ranges(selectors):
         # if all else fails, return a Range that covers everything
         return [Range()]
 
+def test_combinations(tests):
+    """ Given a list of tests, return a list of possible combinations.
+    """
+    filters = []
+    
+    for i in range(int(math.pow(2, len(tests)))):
+        filter = Filter()
+    
+        for (j, test) in enumerate(tests):
+            if bool(i & (0x01 << j)):
+                filter.tests.append(test)
+            else:
+                filter.tests.append(test.inverse())
+
+        if filter.isOpen():
+            filters.append(filter.minusExtras())
+
+    return [filter.tests for filter in filters]
+
+def xindexes(slots):
+    """ Generate list of possible indexes into a list of slots.
+    
+        Best way to think of this is as a number where each digit might have a different radix.
+        E.g.: (10, 10, 10) would return 10 x 10 x 10 = 1000 responses from (0, 0, 0) to (9, 9, 9),
+        (2, 2, 2, 2) would return 2 x 2 x 2 x 2 = 16 responses from (0, 0, 0, 0) to (1, 1, 1, 1).
+    """
+    # the first response...
+    slot = [0] * len(slots)
+    
+    for i in range(reduce(operator.mul, slots)):
+        yield slot
+        
+        carry = 1
+        
+        # iterate from the least to the most significant digit
+        for j in range(len(slots), 0, -1):
+            k = j - 1
+            
+            slot[k] += carry
+            
+            if slot[k] >= slots[k]:
+                carry = 1 + slot[k] - slots[k]
+                slot[k] = 0
+            else:
+                carry = 0
+
 def selectors_filters(selectors):
     """ Given a list of selectors and a map, return a list of Filters that
         fully describes all possible unique equality tests within those selectors.
@@ -261,24 +308,33 @@ def selectors_filters(selectors):
                 tests[str(test)] = test
                 arg1s.add(test.arg1)
 
+    arg1s = sorted(list(arg1s))
     tests = tests.values()
     filters = []
+    arg1tests = {}
     
-    # create something like a truth table
-    for i in range(int(math.pow(2, len(tests)))):
-        filter = Filter()
+    if len(tests):
     
-        for (j, test) in enumerate(tests):
-            if bool(i & (0x01 << j)):
-                filter.tests.append(test)
-            else:
-                filter.tests.append(test.inverse())
-
-        if filter.isOpen():
-            filters.append(filter.minusExtras())
-
-    if len(filters):
-        return filters
+        # divide up the tests by their first argument, e.g. "landuse" vs. "tourism",
+        # into lists of all possible legal combinations of those tests.
+        for arg1 in arg1s:
+            arg1tests[arg1] = test_combinations([test for test in tests if test.arg1 == arg1])
+            
+        # get a list of the number of combinations for each group of tests from above.
+        arg1counts = [len(arg1tests[arg1]) for arg1 in arg1s]
+        
+        # now iterate over each combination - for large numbers of tests, this can get big really, really fast
+        for arg1indexes in xindexes(arg1counts):
+            # list of lists of tests
+            testslist = [arg1tests[arg1s[i]][j] for (i, j) in enumerate(arg1indexes)]
+            
+            # corresponding filter
+            filter = Filter(*reduce(operator.add, testslist))
+            
+            filters.append(filter)
+    
+        if len(filters):
+            return filters
 
     # if no filters have been defined, return a blank one that matches anything
     return [Filter()]
