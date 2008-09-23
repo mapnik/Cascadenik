@@ -3,6 +3,7 @@ import unittest
 from style import ParseException, parse_stylesheet, unroll_rulesets
 from style import Selector, SelectorElement, SelectorAttributeTest
 from style import postprocess_property, postprocess_value, Property
+from compile import selectors_filters
 
 class ParseTests(unittest.TestCase):
     
@@ -386,6 +387,65 @@ class CascadeTests(unittest.TestCase):
         self.assertEqual('*', str(declarations[14].selector))
         self.assertEqual('text-fill', declarations[14].property.name)
         self.assertEqual('#ff9900', str(declarations[14].value))
+
+class FilterCombinationTests(unittest.TestCase):
+
+    def testFilters1(self):
+        s = """
+            Layer[landuse=military]     { polygon-fill: #000; }
+            Layer[landuse=civilian]     { polygon-fill: #001; }
+            Layer[landuse=agriculture]  { polygon-fill: #010; }
+        """
+        rulesets = parse_stylesheet(s)
+        selectors = [dec.selector for dec in unroll_rulesets(rulesets)]
+        filters = selectors_filters(selectors)
+        
+        self.assertEqual(len(filters), 4)
+        self.assertEqual(str(sorted(filters)), '[[landuse!=agriculture][landuse!=civilian][landuse!=military], [landuse=agriculture], [landuse=civilian], [landuse=military]]')
+
+    def testFilters2(self):
+        s = """
+            Layer[landuse=military]     { polygon-fill: #000; }
+            Layer[landuse=civilian]     { polygon-fill: #001; }
+            Layer[landuse=agriculture]  { polygon-fill: #010; }
+            Layer[horse=yes]    { polygon-fill: #011; }
+        """
+        rulesets = parse_stylesheet(s)
+        selectors = [dec.selector for dec in unroll_rulesets(rulesets)]
+        filters = selectors_filters(selectors)
+        
+        self.assertEqual(len(filters), 8)
+        self.assertEqual(str(sorted(filters)), '[[horse!=yes][landuse!=agriculture][landuse!=civilian][landuse!=military], [horse!=yes][landuse=agriculture], [horse!=yes][landuse=civilian], [horse!=yes][landuse=military], [horse=yes][landuse!=agriculture][landuse!=civilian][landuse!=military], [horse=yes][landuse=agriculture], [horse=yes][landuse=civilian], [horse=yes][landuse=military]]')
+
+    def testFilters3(self):
+        s = """
+            Layer[landuse=military]     { polygon-fill: #000; }
+            Layer[landuse=civilian]     { polygon-fill: #001; }
+            Layer[landuse=agriculture]  { polygon-fill: #010; }
+            Layer[horse=yes]    { polygon-fill: #011; }
+            Layer[horse=no]     { polygon-fill: #100; }
+        """
+        rulesets = parse_stylesheet(s)
+        selectors = [dec.selector for dec in unroll_rulesets(rulesets)]
+        filters = selectors_filters(selectors)
+        
+        self.assertEqual(len(filters), 12)
+        self.assertEqual(str(sorted(filters)), '[[horse!=no][horse!=yes][landuse!=agriculture][landuse!=civilian][landuse!=military], [horse!=no][horse!=yes][landuse=agriculture], [horse!=no][horse!=yes][landuse=civilian], [horse!=no][horse!=yes][landuse=military], [horse=no][landuse!=agriculture][landuse!=civilian][landuse!=military], [horse=no][landuse=agriculture], [horse=no][landuse=civilian], [horse=no][landuse=military], [horse=yes][landuse!=agriculture][landuse!=civilian][landuse!=military], [horse=yes][landuse=agriculture], [horse=yes][landuse=civilian], [horse=yes][landuse=military]]')
+
+    def testFilters4(self):
+        s = """
+            Layer[landuse=military]     { polygon-fill: #000; }
+            Layer[landuse=civilian]     { polygon-fill: #001; }
+            Layer[landuse=agriculture]  { polygon-fill: #010; }
+            Layer[horse=yes]    { polygon-fill: #011; }
+            Layer[leisure=park] { polygon-fill: #100; }
+        """
+        rulesets = parse_stylesheet(s)
+        selectors = [dec.selector for dec in unroll_rulesets(rulesets)]
+        filters = selectors_filters(selectors)
+        
+        self.assertEqual(len(filters), 16)
+        self.assertEqual(str(sorted(filters)), '[[horse!=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure!=park], [horse!=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure=park], [horse!=yes][landuse=agriculture][leisure!=park], [horse!=yes][landuse=agriculture][leisure=park], [horse!=yes][landuse=civilian][leisure!=park], [horse!=yes][landuse=civilian][leisure=park], [horse!=yes][landuse=military][leisure!=park], [horse!=yes][landuse=military][leisure=park], [horse=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure!=park], [horse=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure=park], [horse=yes][landuse=agriculture][leisure!=park], [horse=yes][landuse=agriculture][leisure=park], [horse=yes][landuse=civilian][leisure!=park], [horse=yes][landuse=civilian][leisure=park], [horse=yes][landuse=military][leisure!=park], [horse=yes][landuse=military][leisure=park]]')
 
 if __name__ == '__main__':
     unittest.main()

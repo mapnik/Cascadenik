@@ -150,7 +150,12 @@ class Filter:
     def __repr__(self):
         """
         """
-        return ''.join(map(repr, self.tests))
+        return ''.join(map(repr, sorted(self.tests)))
+    
+    def __cmp__(self, other):
+        """
+        """
+        return cmp(repr(self), repr(other))
 
 def selectors_ranges(selectors):
     """ Given a list of selectors and a map, return a list of Ranges that

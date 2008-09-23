@@ -441,6 +441,11 @@ class SelectorAttributeTest:
     def __repr__(self):
         return '[%(arg1)s%(op)s%(arg2)s]' % self.__dict__
 
+    def __cmp__(self, other):
+        """
+        """
+        return cmp(repr(self), repr(other))
+
     def isSimple(self):
         """
         """
