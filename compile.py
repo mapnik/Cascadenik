@@ -855,6 +855,11 @@ def compile(src, dir=None):
     add_map_style(map, get_applicable_declarations(map, declarations))
 
     for layer in map.findall('Layer'):
+    
+        if layer.get('status') == 'off':
+            # don't bother
+            continue
+    
         # the default...
         layer.set('status', 'off')
 
