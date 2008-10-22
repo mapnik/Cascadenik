@@ -1,22 +1,7 @@
-.rail.line[tunnel!=yes][tunnel!=true][zoom>=17]
-{
-    line-pattern-file: url('img/rail-wide.png');
-}
-
-.rail.line[tunnel!=yes][tunnel!=true][zoom=16]
-{
-    line-pattern-file: url('img/rail-normal.png');
-}
-
-.rail.line[tunnel!=yes][tunnel!=true][zoom>=14][zoom<=15]
-{
-    line-pattern-file: url('img/rail-medium.png');
-}
-
-.rail.line[tunnel!=yes][tunnel!=true][zoom>=12][zoom<=13]
-{
-    line-pattern-file: url('img/rail-narrow.png');
-}
+.rail.line[zoom>=17][tunnel!=yes][tunnel!=true] { line-pattern-file: url('img/rail-wide.png'); }
+.rail.line[zoom=16][tunnel!=yes][tunnel!=true]  { line-pattern-file: url('img/rail-normal.png'); }
+.rail.line[zoom>=14][zoom<=15][tunnel!=yes][tunnel!=true] { line-pattern-file: url('img/rail-medium.png'); }
+.rail.line[zoom>=12][zoom<=13][tunnel!=yes][tunnel!=true] { line-pattern-file: url('img/rail-narrow.png'); }
 
 .rail.point[zoom>=15] name
 {

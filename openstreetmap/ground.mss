@@ -37,36 +37,25 @@ Map
     outline-join: round;
 }
 
-.water.line[waterway=river][zoom>=13] { outline-width: 1; }
-.water.line[waterway=stream][zoom>=15] { outline-width: 1; }
+.water.line[zoom>=13][waterway=river] { outline-width: 1; }
+.water.line[zoom>=15][waterway=stream] { outline-width: 1; }
 
-.water.line[waterway=stream][zoom>=11][zoom<=12] { line-width: 1; }
-.water.line[waterway=river][zoom>=11][zoom<=12] { line-width: 2; }
+.water.line[zoom>=11][zoom<=12][waterway=stream] { line-width: 1; }
+.water.line[zoom>=11][zoom<=12][waterway=river] { line-width: 2; }
 
-.water.line[waterway=stream][zoom=13] { line-width: 1; }
-.water.line[waterway=river][zoom=13] { line-width: 3; }
+.water.line[zoom=13][waterway=stream] { line-width: 1; }
+.water.line[zoom=13][waterway=river] { line-width: 3; }
 
-.water.line[waterway=stream][zoom=14] { line-width: 2; }
-.water.line[waterway=river][zoom=14] { line-width: 5; }
+.water.line[zoom=14][waterway=stream] { line-width: 2; }
+.water.line[zoom=14][waterway=river] { line-width: 5; }
 
-.water.line[waterway=stream][zoom=15] { line-width: 4; }
-.water.line[waterway=river][zoom=15] { line-width: 9; }
+.water.line[zoom=15][waterway=stream] { line-width: 4; }
+.water.line[zoom=15][waterway=river] { line-width: 9; }
 
-.water.line[waterway=stream][zoom=16] { line-width: 8; }
-.water.line[waterway=river][zoom=16] { line-width: 11; }
+.water.line[zoom=16][waterway=stream] { line-width: 8; }
+.water.line[zoom=16][waterway=river] { line-width: 11; }
 
 .water.line[zoom>=17] { line-width: 15; }
-
-
-
-
-
-
-
-
-
-
-
 
 .coast.fill
 {
@@ -77,15 +66,9 @@ Map
     */
 }
 
-.citylike.area,
-.parking.area
+.citylike.area
 {
     polygon-fill: #d0d0d0;
-}
-
-.parking.area[zoom>=17] 
-{
-    point-file: url('img/icons/16x16/panel/transport/amenity=parking.png');
 }
 
 .parklike.area
@@ -103,7 +86,7 @@ Map
     polygon-fill: #94b580;
 }
 
-.parklike.area[landuse=cemetery][zoom>=16]
+.parklike.area[zoom>=16][landuse=cemetery]
 {
     polygon-pattern-file: url('img/graveyard-z.png');
 }
@@ -127,7 +110,7 @@ Map
 
 .water.label name,
 .parklike.label name,
-.citylike.label name,
+.citylike.label[amenity!=parking] name,
 .building.label name
 {
     text-face-name: "DejaVu Sans Book";
@@ -138,45 +121,50 @@ Map
 
 .water.label[zoom>=13][zoom<=15][size=large] name,
 .parklike.label[zoom>=13][zoom<=15][size=large] name,
-.citylike.label[zoom>=13][zoom<=15][size=large] name,
+.citylike.label[zoom>=13][zoom<=15][size=large][amenity!=parking] name,
 .building.label[zoom>=13][zoom<=15][size=large] name,
 .water.label[zoom>=15][zoom<=16][size=medium] name,
 .parklike.label[zoom>=15][zoom<=16][size=medium] name,
-.citylike.label[zoom>=15][zoom<=16][size=medium] name,
+.citylike.label[zoom>=15][zoom<=16][size=medium][amenity!=parking] name,
 .building.label[zoom>=15][zoom<=16][size=medium] name,
 .water.label[zoom=16][size=small] name,
 .parklike.label[zoom=16][size=small] name,
-.citylike.label[zoom=16][size=small] name,
+.citylike.label[zoom=16][size=small][amenity!=parking] name,
 .building.label[zoom=16][size=small] name
 {
     text-size: 9;
     text-wrap-width: 50;
 }
 
-.citylike.label[amenity=school][zoom>=17]
+.citylike.label[zoom>=17][amenity=school]
 {
     point-file: url('img/icons/24x24/symbol/landmark/amenity=school.png');
     text-dy: 20;
 }
 
-.citylike.label[amenity=school][zoom>=15][zoom<=16]
+.citylike.label[zoom>=15][zoom<=16][amenity=school]
 {
     point-file: url('img/icons/16x16/symbol/landmark/amenity=school.png');
     text-dy: 18;
 }
 
-.citylike.label[amenity=school][zoom=14]
+.citylike.label[zoom=14][amenity=school]
 {
     point-file: url('img/icons/12x12/symbol/landmark/amenity=school.png');
 }
 
+.citylike.label[zoom>=17][amenity=parking]
+{
+    point-file: url('img/icons/16x16/panel/transport/amenity=parking.png');
+}
+
 .water.label[zoom>=16][size=large] name,
 .parklike.label[zoom>=16][size=large] name,
-.citylike.label[zoom>=16][size=large] name,
+.citylike.label[zoom>=16][size=large][amenity!=parking] name,
 .building.label[zoom>=16][size=large] name,
 .water.label[zoom>=17] name,
 .parklike.label[zoom>=17] name,
-.citylike.label[zoom>=17] name,
+.citylike.label[zoom>=17][amenity!=parking] name,
 .building.label[zoom>=17] name
 {
     text-wrap-width: 100;
@@ -193,7 +181,7 @@ Map
     text-halo-fill: #d1ffb6;
 }
 
-.citylike.label name
+.citylike.label[amenity!=parking] name
 {
     text-halo-fill: #eeeeee;
 }

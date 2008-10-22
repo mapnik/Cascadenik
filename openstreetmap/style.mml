@@ -27,7 +27,7 @@
             <!-- coastline shapefiles can be found at http://hypercube.telascience.org/~kleptog/ -->
         </Datasource>
     </Layer>
-    <Layer class="citylike area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="citylike nonparking area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
             <Parameter name="host">127.0.0.1</Parameter>
@@ -36,7 +36,14 @@
             <Parameter name="password">0sm</Parameter>
             <Parameter name="dbname">osm_bayarea</Parameter>
             <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_polygon WHERE building IS NULL AND (amenity IN ('school', 'college', 'university', 'library', 'hospital') OR landuse IN ('industrial', 'commercial') OR aeroway IN ('apron')) ORDER BY z_order ASC, way_area DESC) AS citylike</Parameter>
+            <Parameter name="table"><![CDATA[
+                (SELECT *
+                 FROM osm_bayarea_polygon
+                 WHERE building IS NULL
+                   AND (amenity IN ('school', 'college', 'university', 'library', 'hospital')
+                        OR landuse IN ('industrial', 'commercial')
+                        OR aeroway IN ('apron'))
+                 ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
         </Datasource>
     </Layer>
     <Layer class="parklike area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
@@ -51,7 +58,7 @@
             <Parameter name="table">(SELECT * FROM osm_bayarea_polygon WHERE building IS NULL AND (amenity IN ('park') OR landuse IN ('recreation_ground', 'greenfield', 'cemetery') OR leisure IN ('park', 'pitch', 'track', 'golf_course', 'common', 'playground', 'garden', 'plaza')) ORDER BY z_order ASC, way_area DESC) AS parklike</Parameter>
         </Datasource>
     </Layer>
-    <Layer class="parking area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="citylike parking area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
             <Parameter name="host">127.0.0.1</Parameter>
@@ -60,7 +67,12 @@
             <Parameter name="password">0sm</Parameter>
             <Parameter name="dbname">osm_bayarea</Parameter>
             <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_polygon WHERE building IS NULL AND amenity = 'parking' ORDER BY z_order ASC, way_area DESC) AS citylike</Parameter>
+            <Parameter name="table"><![CDATA[
+                (SELECT *
+                 FROM osm_bayarea_polygon
+                 WHERE building IS NULL
+                   AND amenity = 'parking'
+                 ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
         </Datasource>
     </Layer>
 
@@ -292,10 +304,12 @@
             <Parameter name="estimate_extent">false</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
-                        (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large' WHEN round(way_area * 1000000) >= 1 THEN 'medium' ELSE 'small' END) AS size
+                        (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large'
+                              WHEN round(way_area * 1000000) >= 1 THEN 'medium'
+                              ELSE 'small' END) AS size
                  FROM osm_bayarea_polygon
                  WHERE building IS NULL
-                   AND (amenity IN ('school', 'college', 'university', 'library', 'hospital')
+                   AND (amenity IN ('parking', 'school', 'college', 'university', 'library', 'hospital')
                      OR landuse IN ('industrial', 'commercial')
                      OR aeroway IN ('apron'))
                  ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
