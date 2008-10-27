@@ -107,14 +107,29 @@ class Filter:
         """ Return true if this filter is not trivially false, i.e. self-contradictory.
         """
         equals = {}
+        nequals = {}
         
         for test in self.tests:
             if test.op == '=':
                 if equals.has_key(test.arg1) and test.arg2 != equals[test.arg1]:
-                    # a contradiction!
+                    # we've already stated that this arg must equal something else
+                    return False
+                    
+                if nequals.has_key(test.arg1) and test.arg2 in nequals[test.arg1]:
+                    # we've already stated that this arg must not equal its current value
                     return False
                     
                 equals[test.arg1] = test.arg2
+        
+            if test.op == '!=':
+                if equals.has_key(test.arg1) and test.arg2 == equals[test.arg1]:
+                    # we've already stated that this arg must equal its current value
+                    return False
+                    
+                if not nequals.has_key(test.arg1):
+                    nequals[test.arg1] = set()
+
+                nequals[test.arg1].add(test.arg2)
         
         return True
 
@@ -314,7 +329,6 @@ def selectors_filters(selectors):
     arg1tests = {}
     
     if len(tests):
-    
         # divide up the tests by their first argument, e.g. "landuse" vs. "tourism",
         # into lists of all possible legal combinations of those tests.
         for arg1 in arg1s:
