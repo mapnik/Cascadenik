@@ -40,7 +40,7 @@
                 (SELECT *
                  FROM osm_bayarea_polygon
                  WHERE building IS NULL
-                   AND (amenity IN ('school', 'college', 'university', 'library', 'hospital')
+                   AND (amenity IN ('school', 'college', 'university', 'library', 'hospital', 'police', 'fire_station')
                         OR landuse IN ('industrial', 'commercial')
                         OR aeroway IN ('apron'))
                  ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
@@ -55,7 +55,15 @@
             <Parameter name="password">0sm</Parameter>
             <Parameter name="dbname">osm_bayarea</Parameter>
             <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_polygon WHERE building IS NULL AND (amenity IN ('park') OR landuse IN ('recreation_ground', 'greenfield', 'cemetery') OR leisure IN ('park', 'pitch', 'track', 'golf_course', 'common', 'playground', 'garden', 'plaza')) ORDER BY z_order ASC, way_area DESC) AS parklike</Parameter>
+            <Parameter name="table"><![CDATA[
+                (SELECT *,
+                        (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large' WHEN round(way_area * 1000000) >= 1 THEN 'medium' ELSE 'small' END) AS size
+                 FROM osm_bayarea_polygon
+                 WHERE building IS NULL
+                   AND (amenity IN ('park')
+                     OR landuse IN ('recreation_ground', 'greenfield', 'cemetery')
+                     OR leisure IN ('park', 'pitch', 'track', 'golf_course', 'common', 'playground', 'garden', 'plaza'))
+                 ORDER BY z_order ASC, way_area DESC) AS parklike]]></Parameter>
         </Datasource>
     </Layer>
     <Layer class="citylike parking area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
@@ -85,7 +93,13 @@
             <Parameter name="password">0sm</Parameter>
             <Parameter name="dbname">osm_bayarea</Parameter>
             <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_polygon WHERE landuse IN ('reservoir', 'water') OR "natural" IN ('lake', 'water', 'land') ORDER BY z_order ASC) AS water</Parameter>
+            <Parameter name="table"><![CDATA[
+                (SELECT *
+                 FROM osm_bayarea_polygon
+                 WHERE landuse IN ('reservoir', 'water')
+                    OR "natural" IN ('lake', 'water', 'land')
+                    OR waterway IN ('canal', 'riverbank', 'river')
+                 ORDER BY z_order ASC) AS water]]></Parameter>
         </Datasource>
     </Layer>
     <Layer class="water line" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
@@ -97,7 +111,7 @@
             <Parameter name="password">0sm</Parameter>
             <Parameter name="dbname">osm_bayarea</Parameter>
             <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE waterway IN ('river', 'stream') ORDER BY z_order ASC) AS rivers</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE waterway IN ('river', 'stream', 'canal') ORDER BY z_order ASC) AS rivers</Parameter>
         </Datasource>
     </Layer>
 
@@ -309,7 +323,7 @@
                               ELSE 'small' END) AS size
                  FROM osm_bayarea_polygon
                  WHERE building IS NULL
-                   AND (amenity IN ('parking', 'school', 'college', 'university', 'library', 'hospital')
+                   AND (amenity IN ('parking', 'school', 'college', 'university', 'library', 'hospital', 'police', 'fire_station')
                      OR landuse IN ('industrial', 'commercial')
                      OR aeroway IN ('apron'))
                  ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>

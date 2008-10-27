@@ -3,6 +3,23 @@
 .rail.line[zoom>=14][zoom<=15][tunnel!=yes][tunnel!=true] { line-pattern-file: url('img/rail-medium.png'); }
 .rail.line[zoom>=12][zoom<=13][tunnel!=yes][tunnel!=true] { line-pattern-file: url('img/rail-narrow.png'); }
 
+.rail.line[zoom>=14][tunnel!=yes][tunnel!=true][bridge=yes],
+.rail.line[zoom>=14][tunnel!=yes][tunnel!=true][bridge=true]
+{
+    line-color: #e4f7f2;
+    outline-color: #d2d2d2;
+    outline-width: 1;
+}
+
+.rail.line[zoom>=17][bridge=yes],
+.rail.line[zoom>=17][bridge=true] { line-width: 16; }
+
+.rail.line[zoom=16][bridge=yes],
+.rail.line[zoom=16][bridge=true] { line-width: 13; }
+
+.rail.line[zoom>=14][zoom<=15][bridge=yes],
+.rail.line[zoom>=14][zoom<=15][bridge=true] { line-width: 8; }
+
 .rail.point[zoom>=15] name
 {
     text-face-name: "DejaVu Sans Book";

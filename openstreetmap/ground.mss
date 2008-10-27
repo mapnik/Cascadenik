@@ -30,32 +30,37 @@ Map
 
 .water.line
 {
-    line-color: #8cb6d3;
+    line-color: #7eaac1;
     line-join: round;
+}
 
+.water.line[zoom>=13],
+.water.line[zoom>=15][waterway=stream]
+{
+    line-color: #8cb6d3;
+
+    outline-width: 1;
     outline-color: #7eaac1;
     outline-join: round;
 }
 
-.water.line[zoom>=13][waterway=river] { outline-width: 1; }
-.water.line[zoom>=15][waterway=stream] { outline-width: 1; }
-
+.water.line[zoom>=11][zoom<=12] { line-width: 2; }
 .water.line[zoom>=11][zoom<=12][waterway=stream] { line-width: 1; }
-.water.line[zoom>=11][zoom<=12][waterway=river] { line-width: 2; }
 
+.water.line[zoom=13] { line-width: 3; }
 .water.line[zoom=13][waterway=stream] { line-width: 1; }
-.water.line[zoom=13][waterway=river] { line-width: 3; }
 
+.water.line[zoom=14] { line-width: 5; }
 .water.line[zoom=14][waterway=stream] { line-width: 2; }
-.water.line[zoom=14][waterway=river] { line-width: 5; }
 
-.water.line[zoom=15][waterway=stream] { line-width: 4; }
-.water.line[zoom=15][waterway=river] { line-width: 9; }
+.water.line[zoom=15] { line-width: 7; }
+.water.line[zoom=15][waterway=stream] { line-width: 3; }
 
-.water.line[zoom=16][waterway=stream] { line-width: 8; }
-.water.line[zoom=16][waterway=river] { line-width: 11; }
+.water.line[zoom=16] { line-width: 9; }
+.water.line[zoom=16][waterway=stream] { line-width: 5; }
 
-.water.line[zoom>=17] { line-width: 15; }
+.water.line[zoom>=17] { line-width: 12; }
+.water.line[zoom>=17][waterway=stream] { line-width: 8; }
 
 .coast.fill
 {
@@ -71,30 +76,42 @@ Map
     polygon-fill: #d0d0d0;
 }
 
+/*
+.citylike.area[amenity=school],
+.citylike.area[amenity=college],
+.citylike.area[amenity=university]
+{
+    polygon-fill: #d2caba;
+}
+*/
+
 .parklike.area
 {
     polygon-fill: #91b156;
 }
 
-.parklike.area[zoom>=16]
+.parklike.area[zoom>=16][leisure!=pitch][leisure!=track],
+.parklike.area[zoom>=14][zoom<=15][leisure!=pitch][leisure!=track][size=large]
 {
     polygon-pattern-file: url('img/trees-z.png');
-}
-
-.parklike.area[landuse=cemetery]
-{
-    polygon-fill: #94b580;
-}
-
-.parklike.area[zoom>=16][landuse=cemetery]
-{
-    polygon-pattern-file: url('img/graveyard-z.png');
 }
 
 .parklike.area[zoom>=11]
 {
     line-width: 1;
     line-color: #6dbe3c;
+}
+
+.parklike.area[landuse=cemetery]
+{
+    line-color: #799a67;
+    polygon-fill: #94b580;
+}
+
+.parklike.area[zoom>=16][landuse=cemetery],
+.parklike.area[zoom=15][landuse=cemetery][size=large]
+{
+    polygon-pattern-file: url('img/graveyard-z.png');
 }
 
 .building.area[zoom>=13]
@@ -136,23 +153,87 @@ Map
     text-wrap-width: 50;
 }
 
+.building.label[zoom>=17][amenity=school],
 .citylike.label[zoom>=17][amenity=school]
 {
     point-file: url('img/icons/24x24/symbol/landmark/amenity=school.png');
     text-dy: 20;
 }
 
+.building.label[zoom>=15][zoom<=16][amenity=school],
 .citylike.label[zoom>=15][zoom<=16][amenity=school]
 {
     point-file: url('img/icons/16x16/symbol/landmark/amenity=school.png');
     text-dy: 18;
 }
 
+.building.label[zoom=14][amenity=school],
 .citylike.label[zoom=14][amenity=school]
 {
     point-file: url('img/icons/12x12/symbol/landmark/amenity=school.png');
 }
 
+.building.label[zoom>=17][amenity=police],
+.citylike.label[zoom>=17][amenity=police]
+{
+    point-file: url('img/icons/24x24/symbol/emergency/amenity=police.png');
+    text-dy: 20;
+}
+
+.building.label[zoom>=15][zoom<=16][amenity=police],
+.citylike.label[zoom>=15][zoom<=16][amenity=police]
+{
+    point-file: url('img/icons/16x16/symbol/emergency/amenity=police.png');
+    text-dy: 18;
+}
+
+.building.label[zoom=14][amenity=police],
+.citylike.label[zoom=14][amenity=police]
+{
+    point-file: url('img/icons/12x12/symbol/emergency/amenity=police.png');
+}
+
+.building.label[zoom>=17][amenity=fire_station],
+.citylike.label[zoom>=17][amenity=fire_station]
+{
+    point-file: url('img/icons/24x24/symbol/emergency/amenity=fire_station.png');
+    text-dy: 20;
+}
+
+.building.label[zoom>=15][zoom<=16][amenity=fire_station],
+.citylike.label[zoom>=15][zoom<=16][amenity=fire_station]
+{
+    point-file: url('img/icons/16x16/symbol/emergency/amenity=fire_station.png');
+    text-dy: 18;
+}
+
+.building.label[zoom=14][amenity=fire_station],
+.citylike.label[zoom=14][amenity=fire_station]
+{
+    point-file: url('img/icons/12x12/symbol/emergency/amenity=fire_station.png');
+}
+
+.building.label[zoom>=17][amenity=hospital],
+.citylike.label[zoom>=17][amenity=hospital]
+{
+    point-file: url('img/icons/24x24/symbol/emergency/amenity=hospital.png');
+    text-dy: 20;
+}
+
+.building.label[zoom>=15][zoom<=16][amenity=hospital],
+.citylike.label[zoom>=15][zoom<=16][amenity=hospital]
+{
+    point-file: url('img/icons/16x16/symbol/emergency/amenity=hospital.png');
+    text-dy: 18;
+}
+
+.building.label[zoom=14][amenity=hospital],
+.citylike.label[zoom=14][amenity=hospital]
+{
+    point-file: url('img/icons/12x12/symbol/emergency/amenity=hospital.png');
+}
+
+.building.label[zoom>=17][amenity=parking],
 .citylike.label[zoom>=17][amenity=parking]
 {
     point-file: url('img/icons/16x16/panel/transport/amenity=parking.png');

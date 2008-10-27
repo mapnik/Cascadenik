@@ -84,7 +84,9 @@
 .road.inline[zoom>=17] { line-width: 15; }
 .road.outline[zoom>=17] { line-width: 17; }
 .road.outline[zoom>=17][highway=motorway] { line-width: 19; }
+.road.inline[zoom>=17][highway=service],
 .road.inline[zoom>=17][highway=motorway_link] { line-width: 10; }
+.road.outline[zoom>=17][highway=service],
 .road.outline[zoom>=17][highway=motorway_link] { line-width: 12; }
 
 
