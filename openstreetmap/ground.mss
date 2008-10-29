@@ -90,8 +90,8 @@ Map
     polygon-fill: #91b156;
 }
 
-.parklike.area[zoom>=16][leisure!=pitch][leisure!=track],
-.parklike.area[zoom>=14][zoom<=15][leisure!=pitch][leisure!=track][size=large]
+.parklike.area[zoom>=16][leisure!=pitch][leisure!=track][landuse!=cemetery],
+.parklike.area[zoom>=14][zoom<=15][leisure!=pitch][leisure!=track][landuse!=cemetery][size=large]
 {
     polygon-pattern-file: url('img/trees-z.png');
 }
