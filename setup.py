@@ -10,8 +10,8 @@ except:
 readme = file('README.txt','rb').read()
 
 setup(name='cascadenik',
-        version = 0.1.0,
-        #py_modules = ['cascadenik.compile', 'cascadenik.style']
+        version = '0.1.0',
+        #py_modules = ['../cascadenik'],
         description='Cascading Stylesheets For Mapnik',
         long_description=readme,
         author='Michal Migurski',
