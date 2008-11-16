@@ -11,7 +11,6 @@ readme = file('README.txt','rb').read()
 
 setup(name='cascadenik',
         version = '0.1.0',
-        #py_modules = ['../cascadenik'],
         description='Cascading Stylesheets For Mapnik',
         long_description=readme,
         author='Michal Migurski',
@@ -32,8 +31,6 @@ setup(name='cascadenik',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Utilities'
         ],
-        #scripts = ['nik2img.py'],
-        #packages=['niktests'],
-        packages=find_packages(exclude=[]),
-        zip_safe=False,
+        packages=find_packages(exclude=['style']),
+        zip_safe=False, # not sure what this does...
         )
