@@ -1,0 +1,11 @@
+=============================
+cascadenik changelog
+=============================
+
+
+Version 0.1.0, ___ Novemeber 2008:
+---------------------------------
+
+ * Initial version.
+ 
+ * Packaged from revision ___ in Subversion.
