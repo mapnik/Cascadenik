@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Learned it all here: http://ianbicking.org/docs/setuptools-presentation/
+# and here: http://peak.telecommunity.com/DevCenter/setuptools
+
 try:
     from setuptools import setup, find_packages
 except:
