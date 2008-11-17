@@ -35,6 +35,6 @@ setup(name='cascadenik',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Utilities'
         ],
-        packages=find_packages(exclude=['style']),
+        packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
         zip_safe=False, # not sure what this does...
         )
