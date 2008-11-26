@@ -35,6 +35,9 @@ setup(name='cascadenik',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Utilities'
         ],
+        #scripts=['cascadenik/compile.py','cascadenik/style.py'],
+        # grab the script that just call main...
+        scripts=['compile.py','style.py'],
         packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
         zip_safe=False, # not sure what this does...
         )
