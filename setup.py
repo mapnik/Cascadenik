@@ -24,7 +24,7 @@ setup(name='cascadenik',
         install_requires = ['cssutils>0.9.0'],
         # Installation of PIL recommended before installing Cascadenik
         #install_requires = ['cssutils>0.9.0','Imaging'],
-        dependency_links = ['http://effbot.org/downloads/#Imaging'],
+        #dependency_links = ['http://effbot.org/downloads/#Imaging'],
         test_suite = 'tests.test',
         keywords='Mapnik,xml,css,mapping',
         url='http://mapnik-utils.googlecode.com/',
