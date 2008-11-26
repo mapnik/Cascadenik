@@ -21,7 +21,16 @@ setup(name='cascadenik',
         platforms='OS Independent',
         license='todo',
         requires=['Mapnik','cssutils'],
-        install_requires = 'cssutils>0.9.0',
+        # Note: easy_install with PIL is bizarre. It requires adding
+        # the dependency link and the 'Imaging' keyword and on mac os
+        # to get the import PIL working requires manually add a file 
+        # called 'PIL.pth' with the word PIL in it to your site-packages.
+        # ie get your site packaged dir
+        # $ python -c 'from distutils.sysconfig import get_python_lib; print get_python_lib()'
+        # Then place the PIL.pth file
+        # sudo echo 'PIL' > /path/to/site-packages/PIL.pth
+        install_requires = ['cssutils>0.9.0','Imaging'],
+        dependency_links = ['http://effbot.org/downloads/#Imaging'],
         test_suite = 'tests.test',
         keywords='Mapnik,xml,css,mapping',
         url='http://mapnik-utils.googlecode.com/',
