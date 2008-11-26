@@ -1,9 +1,9 @@
 import sys
 import unittest
-from style import ParseException, parse_stylesheet, unroll_rulesets
-from style import Selector, SelectorElement, SelectorAttributeTest
-from style import postprocess_property, postprocess_value, Property
-from compile import selectors_filters
+from cascadenik.style import ParseException, parse_stylesheet, unroll_rulesets
+from cascadenik.style import Selector, SelectorElement, SelectorAttributeTest
+from cascadenik.style import postprocess_property, postprocess_value, Property
+from cascadenik.compile import selectors_filters
 
 class ParseTests(unittest.TestCase):
     
