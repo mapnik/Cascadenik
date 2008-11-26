@@ -1,7 +1,6 @@
 import re
 import sys
 import os.path
-import pprint
 import urlparse
 import operator
 from binascii import unhexlify as unhex
@@ -9,34 +8,6 @@ from binascii import unhexlify as unhex
 # monkey with sys.path due to some weirdness inside cssutils
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 from cssutils.tokenize2 import Tokenizer as cssTokenizer
-
-def main(file):
-    """ Given an input file containing nothing but styles, print out an
-        unrolled list of declarations in cascade order.
-    """
-    input = open(file, 'r').read()
-    rulesets = parse_stylesheet(input)
-    
-    for dec in unroll_rulesets(rulesets):
-        print dec.selector,
-        print '{',
-        print dec.property.name+':',
-        
-        if properties[dec.property.name] in (color, boolean, numbers):
-            print str(dec.value.value)+';',
-        
-        elif properties[dec.property.name] is uri:
-            print 'url("'+str(dec.value.value)+'");',
-        
-        elif properties[dec.property.name] is str:
-            print '"'+str(dec.value.value)+'";',
-        
-        elif properties[dec.property.name] in (int, float) or type(properties[dec.property.name]) is tuple:
-            print str(dec.value.value)+';',
-        
-        print '}'
-    
-    return 0
 
 class color:
     def __init__(self, r, g, b):
@@ -901,9 +872,3 @@ def postprocess_value(tokens, property, base=None, line=0, col=0):
         value = numbers(*values)
 
     return Value(value, important)
-
-if __name__ == '__main__':
-
-    stylefile = sys.argv[1]
-
-    sys.exit(main(stylefile))
