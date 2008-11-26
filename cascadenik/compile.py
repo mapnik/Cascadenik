@@ -6,7 +6,6 @@ import urllib
 import urlparse
 import tempfile
 import StringIO
-import optparse
 import operator
 from operator import lt, le, eq, ge, gt
 import xml.etree.ElementTree
@@ -910,23 +909,3 @@ def compile(src, dir=None):
     doc.write(out)
     
     return out.getvalue()
-
-parser = optparse.OptionParser(usage="""compile.py [options]
-
-Example map of San Francisco and Oakland:
-    python compose.py -o out.png -p MICROSOFT_ROAD -d 800 800 -c 37.8 -122.3 11
-
-Map provider and output image dimensions MUST be specified before extent
-or center/zoom. Multiple extents and center/zooms may be specified, but
-only the last will be used.""")
-
-parser.add_option('-d', '--dir', dest='directory',
-                  help='Write to output directory')
-
-if __name__ == '__main__':
-
-    (options, args) = parser.parse_args()
-    
-    layersfile = args[0]
-
-    sys.exit(main(layersfile, options.directory))
