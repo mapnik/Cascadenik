@@ -298,7 +298,10 @@
             <Parameter name="estimate_extent">false</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
-                        (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large' WHEN round(way_area * 1000000) >= 1 THEN 'medium' ELSE 'small' END) AS size
+                        (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large'
+                              WHEN round(way_area * 1000000) >= 1 THEN 'medium'
+                              ELSE 'small' END) AS size,
+                        REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
                  FROM osm_bayarea_polygon
                  WHERE building IS NULL
                    AND (amenity IN ('park')
@@ -320,7 +323,8 @@
                 (SELECT *,
                         (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large'
                               WHEN round(way_area * 1000000) >= 1 THEN 'medium'
-                              ELSE 'small' END) AS size
+                              ELSE 'small' END) AS size,
+                        REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
                  FROM osm_bayarea_polygon
                  WHERE building IS NULL
                    AND (amenity IN ('parking', 'school', 'college', 'university', 'library', 'hospital', 'police', 'fire_station')
@@ -352,7 +356,10 @@
             <Parameter name="estimate_extent">false</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
-                        (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large' WHEN round(way_area * 1000000) >= 1 THEN 'medium' ELSE 'small' END) AS size
+                        (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large'
+                              WHEN round(way_area * 1000000) >= 1 THEN 'medium'
+                              ELSE 'small' END) AS size,
+                        REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
                  FROM osm_bayarea_polygon
                  WHERE landuse IN ('reservoir', 'water')
                     OR "natural" IN ('lake', 'water', 'land')
@@ -370,7 +377,10 @@
             <Parameter name="estimate_extent">false</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
-                        (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large' WHEN round(way_area * 1000000) >= 1 THEN 'medium' ELSE 'small' END) AS size
+                        (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large'
+                              WHEN round(way_area * 1000000) >= 1 THEN 'medium'
+                              ELSE 'small' END) AS size,
+                        REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
                  FROM osm_bayarea_polygon
                  WHERE building IS NOT NULL
                  ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
