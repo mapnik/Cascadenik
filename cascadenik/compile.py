@@ -869,6 +869,15 @@ def compile(src, dir=None):
 
     for layer in map.findall('Layer'):
     
+        for parameter in layer.find('Datasource').findall('Parameter'):
+            if parameter.get('name', None) == 'file':
+                # make shapefiles absolute paths
+                parameter.text = os.path.realpath(urlparse.urljoin(src, parameter.text))
+
+            elif parameter.get('name', None) == 'table':
+                # remove line breaks from possible SQL
+                parameter.text = parameter.text.replace('\r', ' ').replace('\n', ' ')
+
         if layer.get('status') == 'off':
             # don't bother
             continue
@@ -895,15 +904,6 @@ def compile(src, dir=None):
     
         if 'class' in layer.attrib:
             del layer.attrib['class']
-
-        for parameter in layer.find('Datasource').findall('Parameter'):
-            if parameter.get('name', None) == 'file':
-                # make shapefiles absolute paths
-                parameter.text = os.path.realpath(urlparse.urljoin(src, parameter.text))
-
-            elif parameter.get('name', None) == 'table':
-                # remove line breaks from possible SQL
-                parameter.text = parameter.text.replace('\r', ' ').replace('\n', ' ')
 
     out = StringIO.StringIO()
     doc.write(out)
