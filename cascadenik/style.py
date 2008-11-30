@@ -19,6 +19,16 @@ class color:
     def __str__(self):
         return repr(self)
 
+class color_transparent:
+    def __init__(self, r, g, b):
+        self.channels = r, g, b
+
+    def __repr__(self):
+        return '#%02x%02x%02x' % self.channels
+
+    def __str__(self):
+        return repr(self)
+
 class uri:
     def __init__(self, address, base=None):
         if base:
@@ -61,7 +71,7 @@ properties = {
     #--------------- map
 
     # 
-    'map-bgcolor': color,
+    'map-bgcolor': color_transparent,
 
     #--------------- polygon symbolizer
 
@@ -797,6 +807,26 @@ def postprocess_value(tokens, property, base=None, line=0, col=0):
             raise ParseException('String value only for property "%(property)s"' % locals(), line, col)
 
         value = tokens[0][1][1:-1]
+
+    elif properties[property.name] is color_transparent:
+        if tokens[0][0] != 'HASH' and (tokens[0][0] != 'IDENT' or tokens[0][1] != 'transparent'):
+            raise ParseException('Hash or transparent value only for property "%(property)s"' % locals(), line, col)
+
+        if tokens[0][0] == 'HASH':
+            if not re.match(r'^#([0-9a-f]{3}){1,2}$', tokens[0][1], re.I):
+                raise ParseException('Unrecognized color value for property "%(property)s"' % locals(), line, col)
+    
+            hex = tokens[0][1][1:]
+            
+            if len(hex) == 3:
+                hex = hex[0]+hex[0] + hex[1]+hex[1] + hex[2]+hex[2]
+            
+            rgb = (ord(unhex(h)) for h in (hex[0:2], hex[2:4], hex[4:6]))
+            
+            value = color(*rgb)
+
+        else:
+            value = 'transparent'
 
     elif properties[property.name] is color:
         if tokens[0][0] != 'HASH':
