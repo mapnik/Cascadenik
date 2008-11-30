@@ -1,8 +1,3 @@
-Map
-{
-    map-bgcolor: #8cb6d3;
-}
-
 .coast.edge.outer
 {
     line-width: 13;

@@ -35,30 +35,30 @@
 .motorway.inline[zoom>=7][zoom<=11] { line-width: 2; }
 .motorway.outline[zoom>=7][zoom<=11] { line-width: 4; }
 
-.road.inline[zoom>=7][zoom<=11][highway=motoryway] { line-width: 2; }
-.road.outline[zoom>=7][zoom<=11][highway=motoryway] { line-width: 4; }
+.road.inline[zoom>=7][zoom<=11][prominence=major][highway=motoryway] { line-width: 2; }
+.road.outline[zoom>=7][zoom<=11][prominence=major][highway=motoryway] { line-width: 4; }
 
-.road.inline[zoom>=7][zoom<=10][highway!=motorway][highway!=motorway_link] { line-width: 1; } /* general background fuzz */
+.road.texture[zoom>=7][zoom<=10] { line-width: 1; } /* general background fuzz */
 
 .road.inline[zoom>=7][zoom<=10][prominence=major][highway=motorway] { line-width: 2; }
 .road.inline[zoom>=11][zoom<=12][prominence=major][highway!=motorway_link] { line-width: 2; }
 .road.outline[zoom>=11][zoom<=12][prominence=major][highway!=motorway_link] { line-width: 4; }
 
-.road.inline[zoom>=11][zoom<=12][prominence=minor] { line-width: 1; }
+.road.texture[zoom>=11][zoom<=12] { line-width: 1; }
 
 .road.inline[zoom=13][prominence=major] { line-width: 5; }
 .road.outline[zoom=13][prominence=major] { line-width: 7; }
 .road.inline[zoom=13][prominence=major][highway=motorway_link] { line-width: 2; }
 .road.outline[zoom=13][prominence=major][highway=motorway_link] { line-width: 4; }
 
-.road.inline[zoom=13][prominence=minor] { line-width: 1; }
+.road.texture[zoom=13] { line-width: 1; }
 
 .road.inline[zoom=14][prominence=major] { line-width: 7; }
 .road.outline[zoom=14][prominence=major] { line-width: 9; }
 .road.inline[zoom=14][prominence=major][highway=motorway_link] { line-width: 2; }
 .road.outline[zoom=14][prominence=major][highway=motorway_link] { line-width: 4; }
 
-.road.inline[zoom=14][prominence=minor] { line-width: 2; }
+.road.texture[zoom=14] { line-width: 2; }
 
 .road.inline[zoom=15][prominence=major] { line-width: 11; }
 .road.outline[zoom=15][prominence=major] { line-width: 13; }
@@ -253,15 +253,14 @@
 
 
 
-.road.inline[zoom>=12][zoom<=14][prominence=minor]
-{
-    line-color: #5f6e6d;
-    line-opacity: 0.37;
-}
-
-.road.inline[zoom>=7][zoom<=11][prominence=minor],
-.road.inline[zoom>=7][zoom<=10][prominence=major][highway!=motorway]
+.road.texture[zoom>=7][zoom<=11]
 {
     line-color: #b6cccb;
     line-opacity: 1;
+}
+
+.road.texture[zoom>=12][zoom<=14]
+{
+    line-color: #5f6e6d;
+    line-opacity: 0.37;
 }
