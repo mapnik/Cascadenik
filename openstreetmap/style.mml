@@ -11,7 +11,7 @@
     <!ENTITY dbname "osm_bayarea">
     <!ENTITY osm_polygon "osm_bayarea_polygon">
     <!ENTITY osm_line "osm_bayarea_line">
-    <!ENTITY osm_line "osm_bayarea_point">
+    <!ENTITY osm_point "osm_bayarea_point">
     <!ENTITY estimate_extent "false">
 ]>
 <Map srs="&map_srs;">
