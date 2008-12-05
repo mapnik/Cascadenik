@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs +over">
-
+<!DOCTYPE Map[
+    <!ENTITY map_srs "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs +over">
+    <!ENTITY coastlines "../../coastlines/processed_p">
+    <!ENTITY coastlines_srs "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs +over">
+    <!ENTITY osm_srs "+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <!ENTITY host "127.0.0.1">
+    <!ENTITY port "5432">
+    <!ENTITY user "osm">
+    <!ENTITY password "0sm">
+    <!ENTITY dbname "osm_bayarea">
+    <!ENTITY osm_polygon "osm_bayarea_polygon">
+    <!ENTITY osm_line "osm_bayarea_line">
+    <!ENTITY osm_line "osm_bayarea_point">
+    <!ENTITY estimate_extent "false">
+]>
+<Map srs="&map_srs;">
     <Stylesheet>
         Map { map-bgcolor: #8cb6d3; }
     </Stylesheet>
@@ -10,39 +24,40 @@
     <Stylesheet src="rail.mss"/>
     <Stylesheet src="places.mss"/>
 
-    <Layer class="coast edge outer" srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs +over">
+    <Layer class="coast edge outer" srs="&coastlines_srs;">
         <Datasource>
             <Parameter name="type">shape</Parameter>
-            <Parameter name="file">../../coastlines/processed_p</Parameter>
+            <Parameter name="file">&coastlines;</Parameter>
             <!-- coastline shapefiles can be found at http://hypercube.telascience.org/~kleptog/ -->
         </Datasource>
     </Layer>
-    <Layer class="coast edge inner" srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs +over">
+    <Layer class="coast edge inner" srs="&coastlines_srs;">
         <Datasource>
             <Parameter name="type">shape</Parameter>
-            <Parameter name="file">../../coastlines/processed_p</Parameter>
+            <Parameter name="file">&coastlines;</Parameter>
             <!-- coastline shapefiles can be found at http://hypercube.telascience.org/~kleptog/ -->
         </Datasource>
     </Layer>
-    <Layer class="coast fill" srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs +over">
+    <Layer class="coast fill" srs="&coastlines_srs;">
         <Datasource>
             <Parameter name="type">shape</Parameter>
-            <Parameter name="file">../../coastlines/processed_p</Parameter>
+            <Parameter name="file">&coastlines;</Parameter>
             <!-- coastline shapefiles can be found at http://hypercube.telascience.org/~kleptog/ -->
         </Datasource>
     </Layer>
-    <Layer class="citylike nonparking area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="citylike nonparking area" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+
             <Parameter name="table"><![CDATA[
                 (SELECT *
-                 FROM osm_bayarea_polygon
+                 FROM &osm_polygon;
                  WHERE building IS NULL
                    AND (amenity IN ('school', 'college', 'university', 'library', 'hospital', 'police', 'fire_station')
                         OR landuse IN ('industrial', 'commercial')
@@ -50,19 +65,19 @@
                  ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
         </Datasource>
     </Layer>
-    <Layer class="parklike area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="parklike area" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
                         (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large' WHEN round(way_area * 1000000) >= 1 THEN 'medium' ELSE 'small' END) AS size
-                 FROM osm_bayarea_polygon
+                 FROM &osm_polygon;
                  WHERE building IS NULL
                    AND (amenity IN ('park')
                      OR landuse IN ('recreation_ground', 'greenfield', 'cemetery')
@@ -70,65 +85,65 @@
                  ORDER BY z_order ASC, way_area DESC) AS parklike]]></Parameter>
         </Datasource>
     </Layer>
-    <Layer class="citylike parking area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="citylike parking area" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *
-                 FROM osm_bayarea_polygon
+                 FROM &osm_polygon;
                  WHERE building IS NULL
                    AND amenity = 'parking'
                  ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
         </Datasource>
     </Layer>
 
-    <Layer class="water area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="water area" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *
-                 FROM osm_bayarea_polygon
+                 FROM &osm_polygon;
                  WHERE landuse IN ('reservoir', 'water')
                     OR "natural" IN ('lake', 'water', 'land')
                     OR waterway IN ('canal', 'riverbank', 'river')
                  ORDER BY z_order ASC) AS water]]></Parameter>
         </Datasource>
     </Layer>
-    <Layer class="water line" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="water line" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE waterway IN ('river', 'stream', 'canal') ORDER BY z_order ASC) AS rivers</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+            <Parameter name="table">(SELECT * FROM &osm_line; WHERE waterway IN ('river', 'stream', 'canal') ORDER BY z_order ASC) AS rivers</Parameter>
         </Datasource>
     </Layer>
 
 
-    <Layer class="road texture" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="road texture" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
                         (CASE WHEN highway IN ('motorway', 'motorway_link') THEN 0
@@ -138,7 +153,7 @@
                               ELSE 4 END) AS priority,
                         (CASE WHEN highway IN ('secondary', 'trunk', 'primary', 'motorway', 'motorway_link') THEN 'major'
                               ELSE 'minor' END) AS prominence
-                 FROM osm_bayarea_line
+                 FROM &osm_line;
                  WHERE highway IN ('residential', 'unclassified', 'service', 'minor', 'road', 'tertiary', 'secondary', 'trunk', 'primary', 'motorway', 'motorway_link')
                  ORDER BY z_order ASC, priority DESC)
                  
@@ -146,27 +161,27 @@
         </Datasource>
     </Layer>
 
-    <Layer class="path outline" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="path outline" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway IN ('footpath', 'footway', 'steps', 'pedestrian', 'path', 'cycleway') ORDER BY z_order ASC) AS minor_roads</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+            <Parameter name="table">(SELECT * FROM &osm_line; WHERE highway IN ('footpath', 'footway', 'steps', 'pedestrian', 'path', 'cycleway') ORDER BY z_order ASC) AS minor_roads</Parameter>
         </Datasource>
     </Layer>
-    <Layer class="road outline" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="road outline" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
                         (CASE WHEN highway IN ('motorway', 'motorway_link') THEN 0
@@ -176,7 +191,7 @@
                               ELSE 4 END) AS priority,
                         (CASE WHEN highway IN ('secondary', 'trunk', 'primary', 'motorway', 'motorway_link') THEN 'major'
                               ELSE 'minor' END) AS prominence
-                 FROM osm_bayarea_line
+                 FROM &osm_line;
                  WHERE highway IN ('residential', 'unclassified', 'service', 'minor', 'road', 'tertiary', 'secondary', 'trunk', 'primary', 'motorway', 'motorway_link')
                  ORDER BY z_order ASC, priority DESC)
                  
@@ -184,27 +199,27 @@
         </Datasource>
     </Layer>
 
-    <Layer class="path inline" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="path inline" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway IN ('footpath', 'footway', 'steps', 'pedestrian', 'path', 'cycleway') ORDER BY z_order ASC) AS minor_roads</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+            <Parameter name="table">(SELECT * FROM &osm_line; WHERE highway IN ('footpath', 'footway', 'steps', 'pedestrian', 'path', 'cycleway') ORDER BY z_order ASC) AS minor_roads</Parameter>
         </Datasource>
     </Layer>
-    <Layer class="road inline" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="road inline" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
                         (CASE WHEN highway IN ('motorway', 'motorway_link') THEN 0
@@ -214,7 +229,7 @@
                               ELSE 4 END) AS priority,
                         (CASE WHEN highway IN ('secondary', 'trunk', 'primary', 'motorway', 'motorway_link') THEN 'major'
                               ELSE 'minor' END) AS prominence
-                 FROM osm_bayarea_line
+                 FROM &osm_line;
                  WHERE highway IN ('residential', 'unclassified', 'service', 'minor', 'road', 'tertiary', 'secondary', 'trunk', 'primary', 'motorway', 'motorway_link')
                  ORDER BY z_order ASC, priority DESC)
                  
@@ -223,116 +238,116 @@
     </Layer>
 
     <!-- motorways here are repeated, so that they may be overlaid cleanly at low zoom levels and provide a centerline at high zoom levels. -->
-    <Layer class="motorway outline" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="motorway outline" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway = 'motorway') AS motorways</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+            <Parameter name="table">(SELECT * FROM &osm_line; WHERE highway = 'motorway') AS motorways</Parameter>
         </Datasource>
     </Layer>
-    <Layer class="motorway inline" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="motorway inline" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway = 'motorway') AS motorways</Parameter>
-        </Datasource>
-    </Layer>
-
-    <Layer class="rail line" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
-        <Datasource>
-            <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE railway IN ('rail', 'spur', 'subway', 'light_rail', 'tram', 'abandoned', 'disused', 'monorail') ORDER BY z_order ASC) AS railways</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+            <Parameter name="table">(SELECT * FROM &osm_line; WHERE highway = 'motorway') AS motorways</Parameter>
         </Datasource>
     </Layer>
 
-    <Layer class="building area" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="rail line" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_polygon WHERE building IS NOT NULL ORDER BY z_order ASC, way_area DESC) AS citylike</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+            <Parameter name="table">(SELECT * FROM &osm_line; WHERE railway IN ('rail', 'spur', 'subway', 'light_rail', 'tram', 'abandoned', 'disused', 'monorail') ORDER BY z_order ASC) AS railways</Parameter>
+        </Datasource>
+    </Layer>
+
+    <Layer class="building area" srs="&osm_srs;">
+        <Datasource>
+            <Parameter name="type">postgis</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+            <Parameter name="table">(SELECT * FROM &osm_polygon; WHERE building IS NOT NULL ORDER BY z_order ASC, way_area DESC) AS citylike</Parameter>
         </Datasource>
     </Layer>
 
     <!-- all labels go below -->
-    <Layer class="place label" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="place label" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT *, COALESCE(z_order, 0) AS correct_z_order, (CASE WHEN place = 'city' THEN 0 WHEN place = 'town' THEN 1 WHEN place = 'village' THEN 2 ELSE 3 END) AS priority FROM osm_bayarea_point WHERE place IN ('city', 'town', 'hamlet', 'village') ORDER BY priority ASC, correct_z_order DESC) AS places</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+            <Parameter name="table">(SELECT *, COALESCE(z_order, 0) AS correct_z_order, (CASE WHEN place = 'city' THEN 0 WHEN place = 'town' THEN 1 WHEN place = 'village' THEN 2 ELSE 3 END) AS priority FROM &osm_point; WHERE place IN ('city', 'town', 'hamlet', 'village') ORDER BY priority ASC, correct_z_order DESC) AS places</Parameter>
         </Datasource>
     </Layer>
-    <Layer class="rail point" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="rail point" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT *, y(astext(way)) AS latitude FROM osm_bayarea_point WHERE railway IN ('station', 'subway_entrance') AND name IS NOT NULL ORDER BY z_order ASC, latitude DESC) AS rail_points</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+            <Parameter name="table">(SELECT *, y(astext(way)) AS latitude FROM &osm_point; WHERE railway IN ('station', 'subway_entrance') AND name IS NOT NULL ORDER BY z_order ASC, latitude DESC) AS rail_points</Parameter>
         </Datasource>
     </Layer>
-    <Layer class="road label major" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="road label major" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *, length(way) AS length, CHAR_LENGTH(ref) AS ref_length,
                         (CASE WHEN CHAR_LENGTH(ref) BETWEEN 2 AND 9 THEN ref ELSE NULL END) AS ref_content,
                         (CASE WHEN highway IN ('motorway', 'motorway_link') THEN 0 WHEN highway IN ('trunk', 'primary') THEN 1 WHEN highway = 'secondary' THEN 2 WHEN highway = 'tertiary' THEN 3 ELSE 4 END) AS priority
-                 FROM osm_bayarea_line
+                 FROM &osm_line;
                  WHERE highway IN ('secondary', 'trunk', 'primary', 'motorway', 'motorway_link')
                  ORDER BY priority ASC, z_order ASC, length DESC) AS major_roads]]></Parameter>
         </Datasource>
     </Layer>
-    <Layer class="parklike label" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="parklike label" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
                         (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large'
                               WHEN round(way_area * 1000000) >= 1 THEN 'medium'
                               ELSE 'small' END) AS size,
                         REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
-                 FROM osm_bayarea_polygon
+                 FROM &osm_polygon;
                  WHERE building IS NULL
                    AND (amenity IN ('park')
                      OR landuse IN ('recreation_ground', 'greenfield', 'cemetery')
@@ -340,22 +355,22 @@
                  ORDER BY z_order ASC, way_area DESC) AS parklike]]></Parameter>
         </Datasource>
     </Layer>
-    <Layer class="citylike label" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="citylike label" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
                         (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large'
                               WHEN round(way_area * 1000000) >= 1 THEN 'medium'
                               ELSE 'small' END) AS size,
                         REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
-                 FROM osm_bayarea_polygon
+                 FROM &osm_polygon;
                  WHERE building IS NULL
                    AND (amenity IN ('parking', 'school', 'college', 'university', 'library', 'hospital', 'police', 'fire_station')
                      OR landuse IN ('industrial', 'commercial')
@@ -363,55 +378,55 @@
                  ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
         </Datasource>
     </Layer>
-    <Layer class="road label minor" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="road label minor" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT *, length(way) AS length, (CASE WHEN highway IN ('motorway', 'motorway_link') THEN 0 WHEN highway IN ('trunk', 'primary') THEN 1 WHEN highway = 'secondary' THEN 2 WHEN highway = 'tertiary' THEN 3 ELSE 4 END) AS priority FROM osm_bayarea_line WHERE highway IN ('residential', 'unclassified', 'service', 'minor', 'road', 'tertiary') ORDER BY priority ASC, z_order ASC, length DESC) AS minor_roads</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
+            <Parameter name="table">(SELECT *, length(way) AS length, (CASE WHEN highway IN ('motorway', 'motorway_link') THEN 0 WHEN highway IN ('trunk', 'primary') THEN 1 WHEN highway = 'secondary' THEN 2 WHEN highway = 'tertiary' THEN 3 ELSE 4 END) AS priority FROM &osm_line; WHERE highway IN ('residential', 'unclassified', 'service', 'minor', 'road', 'tertiary') ORDER BY priority ASC, z_order ASC, length DESC) AS minor_roads</Parameter>
         </Datasource>
     </Layer>
-    <Layer class="water label" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="water label" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
                         (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large'
                               WHEN round(way_area * 1000000) >= 1 THEN 'medium'
                               ELSE 'small' END) AS size,
                         REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
-                 FROM osm_bayarea_polygon
+                 FROM &osm_polygon;
                  WHERE landuse IN ('reservoir', 'water')
                     OR "natural" IN ('lake', 'water', 'land')
                  ORDER BY z_order ASC) AS water]]></Parameter>
         </Datasource>
     </Layer>
-    <Layer class="building label" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer class="building label" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
-            <Parameter name="host">127.0.0.1</Parameter>
-            <Parameter name="port">5432</Parameter>
-            <Parameter name="user">osm</Parameter>
-            <Parameter name="password">0sm</Parameter>
-            <Parameter name="dbname">osm_bayarea</Parameter>
-            <Parameter name="estimate_extent">false</Parameter>
+            <Parameter name="host">&host;</Parameter>
+            <Parameter name="port">&port;</Parameter>
+            <Parameter name="user">&user;</Parameter>
+            <Parameter name="password">&password;</Parameter>
+            <Parameter name="dbname">&dbname;</Parameter>
+            <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *,
                         (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large'
                               WHEN round(way_area * 1000000) >= 1 THEN 'medium'
                               ELSE 'small' END) AS size,
                         REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
-                 FROM osm_bayarea_polygon
+                 FROM &osm_polygon;
                  WHERE building IS NOT NULL
                  ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
         </Datasource>
