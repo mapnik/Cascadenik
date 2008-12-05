@@ -9,9 +9,6 @@
     <!ENTITY user "osm">
     <!ENTITY password "0sm">
     <!ENTITY dbname "osm_bayarea">
-    <!ENTITY osm_polygon "osm_bayarea_polygon">
-    <!ENTITY osm_line "osm_bayarea_line">
-    <!ENTITY osm_point "osm_bayarea_point">
     <!ENTITY estimate_extent "false">
 ]>
 <Map srs="&map_srs;">
@@ -57,7 +54,7 @@
 
             <Parameter name="table"><![CDATA[
                 (SELECT *
-                 FROM &osm_polygon;
+                 FROM osm_bayarea_polygon
                  WHERE building IS NULL
                    AND (amenity IN ('school', 'college', 'university', 'library', 'hospital', 'police', 'fire_station')
                         OR landuse IN ('industrial', 'commercial')
@@ -77,7 +74,7 @@
             <Parameter name="table"><![CDATA[
                 (SELECT *,
                         (CASE WHEN round(way_area * 1000000) >= 20 THEN 'large' WHEN round(way_area * 1000000) >= 1 THEN 'medium' ELSE 'small' END) AS size
-                 FROM &osm_polygon;
+                 FROM osm_bayarea_polygon
                  WHERE building IS NULL
                    AND (amenity IN ('park')
                      OR landuse IN ('recreation_ground', 'greenfield', 'cemetery')
@@ -96,7 +93,7 @@
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *
-                 FROM &osm_polygon;
+                 FROM osm_bayarea_polygon
                  WHERE building IS NULL
                    AND amenity = 'parking'
                  ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
@@ -114,7 +111,7 @@
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
             <Parameter name="table"><![CDATA[
                 (SELECT *
-                 FROM &osm_polygon;
+                 FROM osm_bayarea_polygon
                  WHERE landuse IN ('reservoir', 'water')
                     OR "natural" IN ('lake', 'water', 'land')
                     OR waterway IN ('canal', 'riverbank', 'river')
@@ -130,7 +127,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT * FROM &osm_line; WHERE waterway IN ('river', 'stream', 'canal') ORDER BY z_order ASC) AS rivers</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE waterway IN ('river', 'stream', 'canal') ORDER BY z_order ASC) AS rivers</Parameter>
         </Datasource>
     </Layer>
 
@@ -153,7 +150,7 @@
                               ELSE 4 END) AS priority,
                         (CASE WHEN highway IN ('secondary', 'trunk', 'primary', 'motorway', 'motorway_link') THEN 'major'
                               ELSE 'minor' END) AS prominence
-                 FROM &osm_line;
+                 FROM osm_bayarea_line
                  WHERE highway IN ('residential', 'unclassified', 'service', 'minor', 'road', 'tertiary', 'secondary', 'trunk', 'primary', 'motorway', 'motorway_link')
                  ORDER BY z_order ASC, priority DESC)
                  
@@ -170,7 +167,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT * FROM &osm_line; WHERE highway IN ('footpath', 'footway', 'steps', 'pedestrian', 'path', 'cycleway') ORDER BY z_order ASC) AS minor_roads</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway IN ('footpath', 'footway', 'steps', 'pedestrian', 'path', 'cycleway') ORDER BY z_order ASC) AS minor_roads</Parameter>
         </Datasource>
     </Layer>
     <Layer class="road outline" srs="&osm_srs;">
@@ -191,7 +188,7 @@
                               ELSE 4 END) AS priority,
                         (CASE WHEN highway IN ('secondary', 'trunk', 'primary', 'motorway', 'motorway_link') THEN 'major'
                               ELSE 'minor' END) AS prominence
-                 FROM &osm_line;
+                 FROM osm_bayarea_line
                  WHERE highway IN ('residential', 'unclassified', 'service', 'minor', 'road', 'tertiary', 'secondary', 'trunk', 'primary', 'motorway', 'motorway_link')
                  ORDER BY z_order ASC, priority DESC)
                  
@@ -208,7 +205,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT * FROM &osm_line; WHERE highway IN ('footpath', 'footway', 'steps', 'pedestrian', 'path', 'cycleway') ORDER BY z_order ASC) AS minor_roads</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway IN ('footpath', 'footway', 'steps', 'pedestrian', 'path', 'cycleway') ORDER BY z_order ASC) AS minor_roads</Parameter>
         </Datasource>
     </Layer>
     <Layer class="road inline" srs="&osm_srs;">
@@ -229,7 +226,7 @@
                               ELSE 4 END) AS priority,
                         (CASE WHEN highway IN ('secondary', 'trunk', 'primary', 'motorway', 'motorway_link') THEN 'major'
                               ELSE 'minor' END) AS prominence
-                 FROM &osm_line;
+                 FROM osm_bayarea_line
                  WHERE highway IN ('residential', 'unclassified', 'service', 'minor', 'road', 'tertiary', 'secondary', 'trunk', 'primary', 'motorway', 'motorway_link')
                  ORDER BY z_order ASC, priority DESC)
                  
@@ -247,7 +244,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT * FROM &osm_line; WHERE highway = 'motorway') AS motorways</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway = 'motorway') AS motorways</Parameter>
         </Datasource>
     </Layer>
     <Layer class="motorway inline" srs="&osm_srs;">
@@ -259,7 +256,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT * FROM &osm_line; WHERE highway = 'motorway') AS motorways</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway = 'motorway') AS motorways</Parameter>
         </Datasource>
     </Layer>
 
@@ -272,7 +269,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT * FROM &osm_line; WHERE railway IN ('rail', 'spur', 'subway', 'light_rail', 'tram', 'abandoned', 'disused', 'monorail') ORDER BY z_order ASC) AS railways</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE railway IN ('rail', 'spur', 'subway', 'light_rail', 'tram', 'abandoned', 'disused', 'monorail') ORDER BY z_order ASC) AS railways</Parameter>
         </Datasource>
     </Layer>
 
@@ -285,7 +282,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT * FROM &osm_polygon; WHERE building IS NOT NULL ORDER BY z_order ASC, way_area DESC) AS citylike</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_polygon WHERE building IS NOT NULL ORDER BY z_order ASC, way_area DESC) AS citylike</Parameter>
         </Datasource>
     </Layer>
 
@@ -299,7 +296,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT *, COALESCE(z_order, 0) AS correct_z_order, (CASE WHEN place = 'city' THEN 0 WHEN place = 'town' THEN 1 WHEN place = 'village' THEN 2 ELSE 3 END) AS priority FROM &osm_point; WHERE place IN ('city', 'town', 'hamlet', 'village') ORDER BY priority ASC, correct_z_order DESC) AS places</Parameter>
+            <Parameter name="table">(SELECT *, COALESCE(z_order, 0) AS correct_z_order, (CASE WHEN place = 'city' THEN 0 WHEN place = 'town' THEN 1 WHEN place = 'village' THEN 2 ELSE 3 END) AS priority FROM osm_bayarea_point WHERE place IN ('city', 'town', 'hamlet', 'village') ORDER BY priority ASC, correct_z_order DESC) AS places</Parameter>
         </Datasource>
     </Layer>
     <Layer class="rail point" srs="&osm_srs;">
@@ -311,7 +308,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT *, y(astext(way)) AS latitude FROM &osm_point; WHERE railway IN ('station', 'subway_entrance') AND name IS NOT NULL ORDER BY z_order ASC, latitude DESC) AS rail_points</Parameter>
+            <Parameter name="table">(SELECT *, y(astext(way)) AS latitude FROM osm_bayarea_point WHERE railway IN ('station', 'subway_entrance') AND name IS NOT NULL ORDER BY z_order ASC, latitude DESC) AS rail_points</Parameter>
         </Datasource>
     </Layer>
     <Layer class="road label major" srs="&osm_srs;">
@@ -327,7 +324,7 @@
                 (SELECT *, length(way) AS length, CHAR_LENGTH(ref) AS ref_length,
                         (CASE WHEN CHAR_LENGTH(ref) BETWEEN 2 AND 9 THEN ref ELSE NULL END) AS ref_content,
                         (CASE WHEN highway IN ('motorway', 'motorway_link') THEN 0 WHEN highway IN ('trunk', 'primary') THEN 1 WHEN highway = 'secondary' THEN 2 WHEN highway = 'tertiary' THEN 3 ELSE 4 END) AS priority
-                 FROM &osm_line;
+                 FROM osm_bayarea_line
                  WHERE highway IN ('secondary', 'trunk', 'primary', 'motorway', 'motorway_link')
                  ORDER BY priority ASC, z_order ASC, length DESC) AS major_roads]]></Parameter>
         </Datasource>
@@ -347,7 +344,7 @@
                               WHEN round(way_area * 1000000) >= 1 THEN 'medium'
                               ELSE 'small' END) AS size,
                         REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
-                 FROM &osm_polygon;
+                 FROM osm_bayarea_polygon
                  WHERE building IS NULL
                    AND (amenity IN ('park')
                      OR landuse IN ('recreation_ground', 'greenfield', 'cemetery')
@@ -370,7 +367,7 @@
                               WHEN round(way_area * 1000000) >= 1 THEN 'medium'
                               ELSE 'small' END) AS size,
                         REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
-                 FROM &osm_polygon;
+                 FROM osm_bayarea_polygon
                  WHERE building IS NULL
                    AND (amenity IN ('parking', 'school', 'college', 'university', 'library', 'hospital', 'police', 'fire_station')
                      OR landuse IN ('industrial', 'commercial')
@@ -387,7 +384,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT *, length(way) AS length, (CASE WHEN highway IN ('motorway', 'motorway_link') THEN 0 WHEN highway IN ('trunk', 'primary') THEN 1 WHEN highway = 'secondary' THEN 2 WHEN highway = 'tertiary' THEN 3 ELSE 4 END) AS priority FROM &osm_line; WHERE highway IN ('residential', 'unclassified', 'service', 'minor', 'road', 'tertiary') ORDER BY priority ASC, z_order ASC, length DESC) AS minor_roads</Parameter>
+            <Parameter name="table">(SELECT *, length(way) AS length, (CASE WHEN highway IN ('motorway', 'motorway_link') THEN 0 WHEN highway IN ('trunk', 'primary') THEN 1 WHEN highway = 'secondary' THEN 2 WHEN highway = 'tertiary' THEN 3 ELSE 4 END) AS priority FROM osm_bayarea_line WHERE highway IN ('residential', 'unclassified', 'service', 'minor', 'road', 'tertiary') ORDER BY priority ASC, z_order ASC, length DESC) AS minor_roads</Parameter>
         </Datasource>
     </Layer>
     <Layer class="water label" srs="&osm_srs;">
@@ -405,7 +402,7 @@
                               WHEN round(way_area * 1000000) >= 1 THEN 'medium'
                               ELSE 'small' END) AS size,
                         REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
-                 FROM &osm_polygon;
+                 FROM osm_bayarea_polygon
                  WHERE landuse IN ('reservoir', 'water')
                     OR "natural" IN ('lake', 'water', 'land')
                  ORDER BY z_order ASC) AS water]]></Parameter>
@@ -426,7 +423,7 @@
                               WHEN round(way_area * 1000000) >= 1 THEN 'medium'
                               ELSE 'small' END) AS size,
                         REGEXP_REPLACE(UPPER(name), '(.)', E'\\1\xC2\xA0\xC2\xA0', 'g') AS name_stretched
-                 FROM &osm_polygon;
+                 FROM osm_bayarea_polygon
                  WHERE building IS NOT NULL
                  ORDER BY z_order ASC, way_area DESC) AS citylike]]></Parameter>
         </Datasource>
