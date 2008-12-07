@@ -25,7 +25,6 @@ counter = 0
 
 opsort = {lt: 1, le: 2, eq: 3, ge: 4, gt: 5}
 opstr = {lt: '<', le: '<=', eq: '==', ge: '>=', gt: '>'}
-opfilter = {'<': '<', '<=': '<=', '=': '=', '!=': '<>', '>': '>=', '>': '>'}
     
 class Range:
     """ Represents a range for use in min/max scale denominator.
@@ -400,6 +399,19 @@ def extract_declarations(map_el, base):
 
     return declarations
 
+def test2str(test):
+    """ Return a mapnik-happy Filter expression atom for a single test
+    """
+    # for unquoting numbers
+    unquoter = re.compile(r'^\'(\d+)\'$')
+    
+    if test.op == '!=':
+        return "not [%s] = %s" % (test.arg1, unquoter.sub(r'\1', ("'%s'" % test.arg2)))
+    elif test.op in ('<', '<=', '=', '>=', '>'):
+        return "[%s] %s %s" % (test.arg1, test.op, unquoter.sub(r'\1', ("'%s'" % test.arg2)))
+    else:
+        raise Exception('"%s" is not a valid filter operation' % test.op)
+
 def make_rule_element(range, filter, *symbolizer_els):
     """ Given a Range, return a Rule element prepopulated
         with applicable min/max scale denominator elements.
@@ -424,10 +436,7 @@ def make_rule_element(range, filter, *symbolizer_els):
         elif range.rightop is lt:
             maxscale.text = str(range.rightedge - 1)
     
-    # for unquoting numbers
-    unquoter = re.compile(r'^\'(\d+)\'$')
-    
-    filter_text = ' and '.join("[%s] %s %s" % (test.arg1, opfilter[test.op], unquoter.sub(r'\1', ("'%s'" % test.arg2))) for test in filter.tests)
+    filter_text = ' and '.join(test2str(test) for test in filter.tests)
     
     if filter_text:
         filter_el = Element('Filter')
