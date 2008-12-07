@@ -58,6 +58,8 @@
 .road.inline[zoom=14][prominence=major][highway=motorway_link] { line-width: 2; }
 .road.outline[zoom=14][prominence=major][highway=motorway_link] { line-width: 4; }
 
+.road.inline[zoom=14][prominence=minor][highway=tertiary] { line-width: 3; }
+.road.outline[zoom=14][prominence=minor][highway=tertiary] { line-width: 5; }
 .road.texture[zoom=14] { line-width: 2; }
 
 .road.inline[zoom=15][prominence=major] { line-width: 11; }
@@ -65,8 +67,10 @@
 .road.inline[zoom=15][prominence=major][highway=motorway_link] { line-width: 4; }
 .road.outline[zoom=15][prominence=major][highway=motorway_link] { line-width: 6; }
 
-.road.inline[zoom=15][prominence=minor][highway!=service] { line-width: 4; }
-.road.outline[zoom=15][prominence=minor][highway!=service] { line-width: 6; }
+.road.inline[zoom=15][prominence=minor][highway=tertiary] { line-width: 6; }
+.road.outline[zoom=15][prominence=minor][highway=tertiary] { line-width: 8; }
+.road.inline[zoom=15][prominence=minor][highway!=tertiary][highway!=service] { line-width: 4; }
+.road.outline[zoom=15][prominence=minor][highway!=tertiary][highway!=service] { line-width: 6; }
 .road.inline[zoom=15][prominence=minor][highway=service] { line-width: 2; }
 .road.outline[zoom=15][prominence=minor][highway=service] { line-width: 4; }
 
