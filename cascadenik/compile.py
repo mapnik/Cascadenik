@@ -266,7 +266,13 @@ def test_combinations(tests):
     """
     filters = []
     
-    for i in range(int(math.pow(2, len(tests)))):
+    # quick hack to prevent memory overload
+    if len(tests) > 15:
+      max_test = 15
+    else:
+      max_test = len(tests)
+    
+    for i in range(int(math.pow(2, max_test))):
         filter = Filter()
     
         for (j, test) in enumerate(tests):
