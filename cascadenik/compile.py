@@ -12,6 +12,8 @@ import xml.etree.ElementTree
 from xml.etree.ElementTree import Element
 import style
 import PIL.Image
+import os.path
+import zipfile
 
 def main(file, dir):
     """ Given an input layers file and a directory, print the compiled
@@ -685,7 +687,7 @@ def postprocess_symbolizer_image_file(symbolizer_el, out, temp_name):
     img = PIL.Image.open(img_file)
     
     # save the image to a tempfile, making it a PNG no matter what
-    (handle, path) = tempfile.mkstemp('.png', 'cascadenik-%s-' % temp_name, out)
+    (handle, path) = tempfile.mkstemp(suffix='.png', prefix='cascadenik-%s-' % temp_name, dir=out)
     os.close(handle)
     
     img.save(path)
@@ -872,6 +874,50 @@ def get_applicable_declarations(element, declarations):
     return [dec for dec in declarations
             if dec.selector.matches(element_tag, element_id, element_classes)]
 
+def localize_shapefile(src, shapefile, dir=None):
+    """ Given a stylesheet path, a shapefile name, and a temp directory,
+        modify the shapefile name so it's an absolute path.
+    
+        Shapefile is assumed to be relative to the stylesheet path.
+        If it's found to look like a URL (e.g. "http://...") it's assumed
+        to be a remote zip file containing .shp, .shx, and .dbf files.
+    """
+    (scheme, netloc, path, params, query, fragment) = urlparse.urlparse(shapefile)
+    
+    if scheme == '':
+        # assumed to be local
+        return os.path.realpath(urlparse.urljoin(src, shapefile))
+
+    # assumed to be a remote zip archive with .shp, .shx, and .dbf files
+    zip_data = urllib.urlopen(shapefile).read()
+    zip_file = zipfile.ZipFile(StringIO.StringIO(zip_data))
+    
+    infos = zip_file.infolist()
+    extensions = [os.path.splitext(info.filename)[1] for info in infos]
+    basenames = [os.path.basename(info.filename) for info in infos]
+    
+    tmp_dir = tempfile.mkdtemp(prefix='cascadenik-shapefile-', dir=dir)
+    
+    for (expected, required) in (('.shp', True), ('.shx', True), ('.dbf', True), ('.prj', False)):
+        if required and expected not in extensions:
+            raise Exception('Zip file %(shapefile)s missing extension "%(expected)s"' % locals())
+
+        for (info, extension, basename) in zip(infos, extensions, basenames):
+            if extension == expected:
+                file_data = zip_file.read(info.filename)
+                file_name = '%(tmp_dir)s/%(basename)s' % locals()
+                
+                file = open(file_name, 'wb')
+                file.write(file_data)
+                file.close()
+                
+                if extension == '.shp':
+                    local = file_name[:-4]
+                
+                break
+
+    return local
+
 def compile(src, dir=None):
     """
     """
@@ -886,8 +932,8 @@ def compile(src, dir=None):
     
         for parameter in layer.find('Datasource').findall('Parameter'):
             if parameter.get('name', None) == 'file':
-                # make shapefiles absolute paths
-                parameter.text = os.path.realpath(urlparse.urljoin(src, parameter.text))
+                # make shapefiles local, absolute paths
+                parameter.text = localize_shapefile(src, parameter.text, dir)
 
             elif parameter.get('name', None) == 'table':
                 # remove line breaks from possible SQL
