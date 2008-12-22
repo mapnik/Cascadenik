@@ -1,7 +1,7 @@
 import os, tempfile
 import compile, style
 from compile import compile
-from style import parse_stylesheet, unroll_rulesets
+from style import stylesheet_rulesets, rulesets_declarations, stylesheet_declarations
 
 try:
     import mapnik

@@ -6,14 +6,14 @@ import cascadenik
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 from cssutils.tokenize2 import Tokenizer as cssTokenizer
 
-def main(file):
+def main(filename):
     """ Given an input file containing nothing but styles, print out an
         unrolled list of declarations in cascade order.
     """
-    input = open(file, 'r').read()
-    rulesets = cascadenik.parse_stylesheet(input)
+    input = open(filename, 'r').read()
+    declarations = cascadenik.stylesheet_declarations(input)
     
-    for dec in cascadenik.unroll_rulesets(rulesets):
+    for dec in declarations:
         print dec.selector,
         print '{',
         print dec.property.name+':',

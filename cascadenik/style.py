@@ -293,22 +293,22 @@ class Selector:
             }
         
         for test in self.elements[0].tests:
-            if test.arg1 == 'zoom':
-                test.arg1 = 'scale-denominator'
+            if test.property == 'zoom':
+                test.property = 'scale-denominator'
 
                 if test.op == '=':
                     # zoom level equality implies two tests, so we add one and modify one
-                    self.elements[0].addTest(SelectorAttributeTest('scale-denominator', '<', max(zooms[test.arg2])))
-                    test.op, test.arg2 = '>=', min(zooms[test.arg2])
+                    self.elements[0].addTest(SelectorAttributeTest('scale-denominator', '<', max(zooms[test.value])))
+                    test.op, test.value = '>=', min(zooms[test.value])
 
                 elif test.op == '<':
-                    test.op, test.arg2 = '>=', max(zooms[test.arg2])
+                    test.op, test.value = '>=', max(zooms[test.value])
                 elif test.op == '<=':
-                    test.op, test.arg2 = '>=', min(zooms[test.arg2])
+                    test.op, test.value = '>=', min(zooms[test.value])
                 elif test.op == '>=':
-                    test.op, test.arg2 = '<', max(zooms[test.arg2])
+                    test.op, test.value = '<', max(zooms[test.value])
                 elif test.op == '>':
-                    test.op, test.arg2 = '<', min(zooms[test.arg2])
+                    test.op, test.value = '<', min(zooms[test.value])
                     
 
     def specificity(self):
@@ -353,6 +353,16 @@ class Selector:
         """
         """
         return [test for test in self.allTests() if test.isRanged()]
+    
+    def isMapScaled(self):
+        """
+        """
+        return bool(self.mapScaleTests())
+    
+    def mapScaleTests(self):
+        """
+        """
+        return [test for test in self.allTests() if test.isMapScaled()]
     
     def allTests(self):
         """
@@ -414,13 +424,14 @@ class SelectorElement:
 class SelectorAttributeTest:
     """ Attribute test for a Selector, i.e. the part that looks like "[foo=bar]"
     """
-    def __init__(self, arg1, op, arg2):
+    def __init__(self, property, op, value):
+        assert op in ('<', '<=', '=', '!=', '>=', '>')
         self.op = op
-        self.arg1 = arg1
-        self.arg2 = arg2
+        self.property = property
+        self.value = value
 
     def __repr__(self):
-        return '[%(arg1)s%(op)s%(arg2)s]' % self.__dict__
+        return '[%(property)s%(op)s%(value)s]' % self.__dict__
 
     def __cmp__(self, other):
         """
@@ -434,19 +445,31 @@ class SelectorAttributeTest:
     
     def inverse(self):
         """
+        
+            TODO: define this for non-simple tests.
         """
-        assert self.isSimple()
+        assert self.isSimple(), 'inverse() is only defined for simple tests'
         
         if self.op == '=':
-            return SelectorAttributeTest(self.arg1, '!=', self.arg2)
+            return SelectorAttributeTest(self.property, '!=', self.value)
         
         elif self.op == '!=':
-            return SelectorAttributeTest(self.arg1, '=', self.arg2)
+            return SelectorAttributeTest(self.property, '=', self.value)
+    
+    def isNumeric(self):
+        """
+        """
+        return type(self.value) in (int, float)
     
     def isRanged(self):
         """
         """
-        return self.arg1 == 'scale-denominator'
+        return self.op in ('<', '<=', '>=', '>')
+    
+    def isMapScaled(self):
+        """
+        """
+        return self.property == 'scale-denominator'
     
     def inRange(self, scale_denominator):
         """
@@ -455,46 +478,149 @@ class SelectorAttributeTest:
             # always in range
             return True
 
-        elif self.op == '>' and scale_denominator > self.arg2:
+        elif self.op == '>' and scale_denominator > self.value:
             return True
 
-        elif self.op == '>=' and scale_denominator >= self.arg2:
+        elif self.op == '>=' and scale_denominator >= self.value:
             return True
 
-        elif self.op == '=' and scale_denominator == self.arg2:
+        elif self.op == '=' and scale_denominator == self.value:
             return True
 
-        elif self.op == '<=' and scale_denominator <= self.arg2:
+        elif self.op == '<=' and scale_denominator <= self.value:
             return True
 
-        elif self.op == '<' and scale_denominator < self.arg2:
+        elif self.op == '<' and scale_denominator < self.value:
             return True
 
         return False
 
-    def inFilter(self, tests):
+    def isCompatible(self, tests):
         """ Given a collection of tests, return false if this test contradicts any of them.
         """
+        # print '?', self, tests
+        
         for test in tests:
-            if self.arg1 == test.arg1:
-                if test.op == '=' and self.op == '=' and self.arg2 != test.arg2:
-                    # equal different things
-                    return False
-
-                elif test.op == '!=' and self.op == '=' and self.arg2 == test.arg2:
-                    # contradict: equal vs. not equal
-                    return False
-
-                elif test.op == '=' and self.op == '!=' and self.arg2 == test.arg2:
-                    # contradict: equal vs. not equal
-                    return False
+            if self.property == test.property:
+                if self.op == '=':
+                    if test.op == '=' and self.value != test.value:
+                        return False
+    
+                    if test.op == '!=' and self.value == test.value:
+                        return False
+    
+                    if test.op == '<' and self.value >= test.value:
+                        return False
+                
+                    if test.op == '>' and self.value <= test.value:
+                        return False
+                
+                    if test.op == '<=' and self.value > test.value:
+                        return False
+                
+                    if test.op == '>=' and self.value < test.value:
+                        return False
+            
+                if self.op == '!=':
+                    if test.op == '=' and self.value == test.value:
+                        return False
+    
+                    if test.op == '!=':
+                        pass
+    
+                    if test.op == '<':
+                        pass
+                
+                    if test.op == '>':
+                        pass
+                
+                    if test.op == '<=' and self.value == test.value:
+                        return False
+                
+                    if test.op == '>=' and self.value == test.value:
+                        return False
+            
+                if self.op == '<':
+                    if test.op == '=' and self.value <= test.value:
+                        return False
+    
+                    if test.op == '!=':
+                        return False
+    
+                    if test.op == '<':
+                        pass
+                
+                    if test.op == '>' and self.value <= test.value:
+                        return False
+                
+                    if test.op == '<=':
+                        pass
+                
+                    if test.op == '>=' and self.value <= test.value:
+                        return False
+            
+                if self.op == '>':
+                    if test.op == '=' and self.value >= test.value:
+                        return False
+    
+                    if test.op == '!=':
+                        return False
+    
+                    if test.op == '<' and self.value >= test.value:
+                        return False
+                
+                    if test.op == '>':
+                        pass
+                
+                    if test.op == '<=' and self.value >= test.value:
+                        return False
+                
+                    if test.op == '>=':
+                        pass
+            
+                if self.op == '<=':
+                    if test.op == '=' and self.value < test.value:
+                        return False
+    
+                    if test.op == '!=' and self.value == test.value:
+                        return False
+    
+                    if test.op == '<':
+                        pass
+                
+                    if test.op == '>' and self.value <= test.value:
+                        return False
+                
+                    if test.op == '<=':
+                        pass
+                
+                    if test.op == '>=' and self.value < test.value:
+                        return False
+            
+                if self.op == '>=':
+                    if test.op == '=' and self.value > test.value:
+                        return False
+    
+                    if test.op == '!=' and self.value == test.value:
+                        return False
+    
+                    if test.op == '<' and self.value >= test.value:
+                        return False
+                
+                    if test.op == '>':
+                        pass
+                
+                    if test.op == '<=' and self.value > test.value:
+                        return False
+                
+                    if test.op == '>=':
+                        pass
 
         return True
     
     def rangeOpEdge(self):
-        if self.isRanged():
-            ops = {'<': operator.lt, '<=': operator.le, '=': operator.eq, '>=': operator.ge, '>': operator.gt}
-            return ops[self.op], self.arg2
+        ops = {'<': operator.lt, '<=': operator.le, '=': operator.eq, '>=': operator.ge, '>': operator.gt}
+        return ops[self.op], self.value
 
         return None
 
@@ -531,7 +657,12 @@ class Value:
     def __str__(self):
         return str(self.value)
 
-def parse_stylesheet(string, base=None, is_gym=False):
+def stylesheet_declarations(string, base=None, is_gym=False):
+    """
+    """
+    return rulesets_declarations(stylesheet_rulesets(string, base, is_gym))
+
+def stylesheet_rulesets(string, base=None, is_gym=False):
     """ Parse a string representing a stylesheet into a list of rulesets.
     
         Optionally, accept a base string so we know where linked files come from,
@@ -625,8 +756,8 @@ def parse_stylesheet(string, base=None, is_gym=False):
 
     return rulesets
 
-def unroll_rulesets(rulesets):
-    """ Convert a list of rulesets (as returned by parse_stylesheet)
+def rulesets_declarations(rulesets):
+    """ Convert a list of rulesets (as returned by stylesheet_rulesets)
         into an ordered list of individual selectors and declarations.
     """
     declarations = []

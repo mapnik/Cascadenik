@@ -15,19 +15,16 @@ import PIL.Image
 import os.path
 import zipfile
 
-def main(file, dir):
-    """ Given an input layers file and a directory, print the compiled
-        XML file to stdout and save any encountered external image files
-        to the named directory.
-    """
-    print compile(file, dir)
-    return 0
-
-counter = 0
-
 opsort = {lt: 1, le: 2, eq: 3, ge: 4, gt: 5}
 opstr = {lt: '<', le: '<=', eq: '==', ge: '>=', gt: '>'}
     
+counter = 0
+
+def next_counter():
+    global counter
+    counter += 1
+    return counter
+
 class Range:
     """ Represents a range for use in min/max scale denominator.
     
@@ -77,6 +74,25 @@ class Range:
 
         return True
     
+    def toFilter(self, property):
+        """ Convert this range to a Filter with a tests having a given property.
+        """
+        if self.leftedge == self.rightedge and self.leftop is ge and self.rightop is le:
+            # equivalent to ==
+            return Filter(style.SelectorAttributeTest(property, '=', self.leftedge))
+    
+        try:
+            return Filter(style.SelectorAttributeTest(property, opstr[self.leftop], self.leftedge),
+                          style.SelectorAttributeTest(property, opstr[self.rightop], self.rightedge))
+        except KeyError:
+            try:
+                return Filter(style.SelectorAttributeTest(property, opstr[self.rightop], self.rightedge))
+            except KeyError:
+                try:
+                    return Filter(style.SelectorAttributeTest(property, opstr[self.leftop], self.leftedge))
+                except KeyError:
+                    return Filter()
+    
     def __repr__(self):
         """
         """
@@ -111,25 +127,25 @@ class Filter:
         
         for test in self.tests:
             if test.op == '=':
-                if equals.has_key(test.arg1) and test.arg2 != equals[test.arg1]:
+                if equals.has_key(test.property) and test.value != equals[test.property]:
                     # we've already stated that this arg must equal something else
                     return False
                     
-                if nequals.has_key(test.arg1) and test.arg2 in nequals[test.arg1]:
+                if nequals.has_key(test.property) and test.value in nequals[test.property]:
                     # we've already stated that this arg must not equal its current value
                     return False
                     
-                equals[test.arg1] = test.arg2
+                equals[test.property] = test.value
         
             if test.op == '!=':
-                if equals.has_key(test.arg1) and test.arg2 == equals[test.arg1]:
+                if equals.has_key(test.property) and test.value == equals[test.property]:
                     # we've already stated that this arg must equal its current value
                     return False
                     
-                if not nequals.has_key(test.arg1):
-                    nequals[test.arg1] = set()
+                if not nequals.has_key(test.property):
+                    nequals[test.property] = set()
 
-                nequals[test.arg1].add(test.arg2)
+                nequals[test.property].add(test.value)
         
         return True
 
@@ -150,12 +166,12 @@ class Filter:
         
         for test in trimmed.tests:
             if test.op == '=':
-                equals[test.arg1] = test.arg2
+                equals[test.property] = test.value
 
         extras = []
 
         for (i, test) in enumerate(trimmed.tests):
-            if test.op == '!=' and equals.has_key(test.arg1) and equals[test.arg1] != test.arg2:
+            if test.op == '!=' and equals.has_key(test.property) and equals[test.property] != test.value:
                 extras.append(i)
 
         while extras:
@@ -173,23 +189,26 @@ class Filter:
         """
         return cmp(repr(self), repr(other))
 
-def selectors_ranges(selectors):
-    """ Given a list of selectors and a map, return a list of Ranges that
-        fully describes all possible unique slices within those selectors.
-        
-        If the map looks like it uses the well-known Google/VEarth maercator
-        projection, accept "zoom" attributes in place of "scale-denominator".
+def test_ranges(tests):
+    """ Given a list of tests, return a list of Ranges that fully describes
+        all possible unique ranged slices within those tests.
         
         This function was hard to write, it should be hard to read.
         
         TODO: make this work for <= following by >= in breaks
     """
+    if len(tests) == 0:
+        return [Range()]
+    
+    assert 1 == len(set(test.property for test in tests)), 'All tests must share the same property'
+    assert True in [test.isRanged() for test in tests], 'At least one test must be ranged'
+    assert False not in [test.isNumeric() for test in tests], 'All tests must be numeric'
+    
     repeated_breaks = []
     
     # start by getting all the range edges from the selectors into a list of break points
-    for selector in selectors:
-        for test in selector.rangeTests():
-            repeated_breaks.append(test.rangeOpEdge())
+    for test in tests:
+        repeated_breaks.append(test.rangeOpEdge())
     
     # from here on out, *order will matter*
     # it's expected that the breaks will be sorted from minimum to maximum,
@@ -264,20 +283,19 @@ def selectors_ranges(selectors):
         return [Range()]
 
 def test_combinations(tests):
-    """ Given a list of tests, return a list of possible combinations.
+    """ Given a list of simple =/!= tests, return a list of possible combinations.
     """
+    assert len(set([test.property for test in tests])) in (0, 1), 'All tests must share the same property'
+    assert False not in ([test.isSimple() for test in tests]), 'All tests must be simple, i.e. = or !='
+    assert len(tests) <= 15, 'Number of tests must be 15 or less, a crude way to prevent memory overload'
+    
     filters = []
     
-    # quick hack to prevent memory overload
-    if len(tests) > 15:
-      max_test = 15
-    else:
-      max_test = len(tests)
-    
-    for i in range(int(math.pow(2, max_test))):
+    for i in xrange(int(math.pow(2, len(tests)))):
         filter = Filter()
     
         for (j, test) in enumerate(tests):
+            # we are treating i like a bitfield here
             if bool(i & (0x01 << j)):
                 filter.tests.append(test)
             else:
@@ -315,54 +333,70 @@ def xindexes(slots):
             else:
                 carry = 0
 
-def selectors_filters(selectors):
-    """ Given a list of selectors and a map, return a list of Filters that
-        fully describes all possible unique equality tests within those selectors.
+def selectors_tests(selectors, property=None):
+    """ Given a list of selectors, return a list of unique tests.
+    
+        Optionally limit to those with a given property.
     """
     tests = {}
-    arg1s = set()
     
-    # get all the tests and test.arg1 values out of the selectors
     for selector in selectors:
         for test in selector.allTests():
-            if test.isSimple():
+            if property is None or test.property == property:
                 tests[str(test)] = test
-                arg1s.add(test.arg1)
 
-    arg1s = sorted(list(arg1s))
-    tests = tests.values()
-    filters = []
-    arg1tests = {}
+    return tests.values()
+
+def tests_filter_combinations(tests):
+    """ Return a complete list of filter combinations for given list of tests
+    """
+    if len(tests) == 0:
+        return [Filter()]
     
-    if len(tests):
-        # divide up the tests by their first argument, e.g. "landuse" vs. "tourism",
-        # into lists of all possible legal combinations of those tests.
-        for arg1 in arg1s:
-            arg1tests[arg1] = test_combinations([test for test in tests if test.arg1 == arg1])
-            
-        # get a list of the number of combinations for each group of tests from above.
-        arg1counts = [len(arg1tests[arg1]) for arg1 in arg1s]
+    # unique properties
+    properties = sorted(list(set([test.property for test in tests])))
+
+    property_tests = {}
+    
+    # divide up the tests by their first argument, e.g. "landuse" vs. "tourism",
+    # into lists of all possible legal combinations of those tests.
+    for property in properties:
         
-        # now iterate over each combination - for large numbers of tests, this can get big really, really fast
-        for arg1indexes in xindexes(arg1counts):
-            # list of lists of tests
-            testslist = [arg1tests[arg1s[i]][j] for (i, j) in enumerate(arg1indexes)]
+        # limit tests to those with the current property
+        current_tests = [test for test in tests if test.property == property]
+        
+        has_ranged_tests = True in [test.isRanged() for test in current_tests]
+        has_nonnumeric_tests = False in [test.isNumeric() for test in current_tests]
+        
+        if has_ranged_tests and has_nonnumeric_tests:
+            raise Exception('Mixed ranged/non-numeric tests in %s' % str(current_tests))
+
+        elif has_ranged_tests:
+            property_tests[property] = [range.toFilter(property).tests for range in test_ranges(current_tests)]
+
+        else:
+            property_tests[property] = test_combinations(current_tests)
             
-            # corresponding filter
-            filter = Filter(*reduce(operator.add, testslist))
-            
-            filters.append(filter)
+    # get a list of the number of combinations for each group of tests from above.
+    property_counts = [len(property_tests[property]) for property in properties]
     
-        if len(filters):
-            return filters
+    filters = []
+        
+    # now iterate over each combination - for large numbers of tests, this can get big really, really fast
+    for property_indexes in xindexes(property_counts):
+        # list of lists of tests
+        testslist = [property_tests[properties[i]][j] for (i, j) in enumerate(property_indexes)]
+        
+        # corresponding filter
+        filter = Filter(*reduce(operator.add, testslist))
+        
+        filters.append(filter)
+
+    if len(filters):
+        return filters
 
     # if no filters have been defined, return a blank one that matches anything
     return [Filter()]
-
-def next_counter():
-    global counter
-    counter += 1
-    return counter
 
 def is_gym_projection(map_el):
     """ Return true if the map projection matches that used by VEarth, Google, OSM, etc.
@@ -402,8 +436,8 @@ def extract_declarations(map_el, base):
         else:
             continue
             
-        rulesets = style.parse_stylesheet(styles, base=local_base, is_gym=is_gym_projection(map_el))
-        declarations += style.unroll_rulesets(rulesets)
+        rulesets = style.stylesheet_rulesets(styles, base=local_base, is_gym=is_gym_projection(map_el))
+        declarations += style.rulesets_declarations(rulesets)
 
     return declarations
 
@@ -414,37 +448,42 @@ def test2str(test):
     unquoter = re.compile(r'^\'(\d+)\'$')
     
     if test.op == '!=':
-        return "not [%s] = %s" % (test.arg1, unquoter.sub(r'\1', ("'%s'" % test.arg2)))
+        return "not [%s] = %s" % (test.property, unquoter.sub(r'\1', ("'%s'" % test.value)))
     elif test.op in ('<', '<=', '=', '>=', '>'):
-        return "[%s] %s %s" % (test.arg1, test.op, unquoter.sub(r'\1', ("'%s'" % test.arg2)))
+        return "[%s] %s %s" % (test.property, test.op, unquoter.sub(r'\1', ("'%s'" % test.value)))
     else:
         raise Exception('"%s" is not a valid filter operation' % test.op)
 
-def make_rule_element(range, filter, *symbolizer_els):
-    """ Given a Range, return a Rule element prepopulated
-        with applicable min/max scale denominator elements.
+def make_rule_element(filter, *symbolizer_els):
+    """ Given a Filter, return a Rule element prepopulated with
+        applicable min/max scale denominator and filter elements.
     """
     rule_el = Element('Rule')
+    
+    scale_tests = [test for test in filter.tests if test.isMapScaled()]
+    other_tests = [test for test in filter.tests if not test.isMapScaled()]
+    
+    for scale_test in scale_tests:
 
-    if range.leftedge:
-        minscale = Element('MinScaleDenominator')
-        rule_el.append(minscale)
+        if scale_test.op in ('>', '>='):
+            minscale = Element('MinScaleDenominator')
+            rule_el.append(minscale)
+        
+            if scale_test.op == '>=':
+                minscale.text = str(scale_test.value)
+            elif scale_test.op == '>':
+                minscale.text = str(scale_test.value + 1)
+
+        if scale_test.op in ('<', '<='):
+            maxscale = Element('MaxScaleDenominator')
+            rule_el.append(maxscale)
+        
+            if scale_test.op == '<=':
+                maxscale.text = str(scale_test.value)
+            elif scale_test.op == '<':
+                maxscale.text = str(scale_test.value - 1)
     
-        if range.leftop is ge:
-            minscale.text = str(range.leftedge)
-        elif range.leftop is gt:
-            minscale.text = str(range.leftedge + 1)
-    
-    if range.rightedge:
-        maxscale = Element('MaxScaleDenominator')
-        rule_el.append(maxscale)
-    
-        if range.rightop is le:
-            maxscale.text = str(range.rightedge)
-        elif range.rightop is lt:
-            maxscale.text = str(range.rightedge - 1)
-    
-    filter_text = ' and '.join(test2str(test) for test in filter.tests)
+    filter_text = ' and '.join(test2str(test) for test in other_tests)
     
     if filter_text:
         filter_el = Element('Filter')
@@ -472,15 +511,12 @@ def insert_layer_style(map_el, layer_el, style_el):
     layer_el.insert(layer_el._children.index(layer_el.find('Datasource')), stylename)
     layer_el.set('status', 'on')
 
-def is_applicable_selector(selector, range, filter):
-    """ Given a Selector, Range, and Filter, return True if the Selector is
-        compatible with the given Range and Filter, and False if they contradict.
+def is_applicable_selector(selector, filter):
+    """ Given a Selector and Filter, return True if the Selector is
+        compatible with the given Filter, and False if they contradict.
     """
-    if not selector.inRange(range.midpoint()) and selector.isRanged():
-        return False
-
     for test in selector.allTests():
-        if not test.inFilter(filter.tests):
+        if not test.isCompatible(filter.tests):
             return False
     
     return True
@@ -494,33 +530,27 @@ def add_map_style(map_el, declarations):
         if dec.property.name in property_map:
             map_el.set(property_map[dec.property.name], str(dec.value))
 
-def ranged_filtered_property_declarations(declarations, property_map):
-    """ Given a list of declarations and a map of properties, return a list
-        of rule tuples: (range, filter, parameter_values), where parameter_values
-        is a list of (parameter, value) tuples.
+def filtered_property_declarations(declarations, property_map):
+    """
     """
     # just the ones we care about here
     declarations = [dec for dec in declarations if dec.property.name in property_map]
+    selectors = [dec.selector for dec in declarations]
 
     # a place to put rules
     rules = []
     
-    # a matrix of checks for filter and min/max scale limitations
-    ranges = selectors_ranges([dec.selector for dec in declarations])
-    filters = selectors_filters([dec.selector for dec in declarations])
-    
-    for range in ranges:
-        for filter in filters:
-            rule = (range, filter, {})
-            
-            # collect all the applicable declarations into a list of parameters and values
-            for dec in declarations:
-                if is_applicable_selector(dec.selector, range, filter):
-                    parameter = property_map[dec.property.name]
-                    rule[2][parameter] = dec.value
+    for filter in tests_filter_combinations(selectors_tests(selectors)):
+        rule = (filter, {})
+        
+        # collect all the applicable declarations into a list of parameters and values
+        for dec in declarations:
+            if is_applicable_selector(dec.selector, filter):
+                parameter = property_map[dec.property.name]
+                rule[1][parameter] = dec.value
 
-            if rule[2]:
-                rules.append(rule)
+        if rule[1]:
+            rules.append(rule)
 
     return rules
 
@@ -534,7 +564,7 @@ def add_polygon_style(map_el, layer_el, declarations):
     # a place to put rule elements
     rule_els = []
     
-    for (range, filter, parameter_values) in ranged_filtered_property_declarations(declarations, property_map):
+    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
         symbolizer_el = Element('PolygonSymbolizer')
         
         for (parameter, value) in parameter_values.items():
@@ -542,7 +572,7 @@ def add_polygon_style(map_el, layer_el, declarations):
             parameter.text = str(value)
             symbolizer_el.append(parameter)
 
-        rule_el = make_rule_element(range, filter, symbolizer_el)
+        rule_el = make_rule_element(filter, symbolizer_el)
         rule_els.append(rule_el)
     
     if rule_els:
@@ -574,7 +604,7 @@ def add_line_style(map_el, layer_el, declarations):
     # a place to put rule elements
     rule_els = []
     
-    for (range, filter, parameter_values) in ranged_filtered_property_declarations(declarations, property_map):
+    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
         if 'in:stroke' in parameter_values and 'in:stroke-width' in parameter_values:
             insymbolizer_el = Element('LineSymbolizer')
         else:
@@ -605,7 +635,7 @@ def add_line_style(map_el, layer_el, declarations):
                 parameter.text = str(value)
                 outsymbolizer_el.append(parameter)
 
-        rule_el = make_rule_element(range, filter, outsymbolizer_el, insymbolizer_el)
+        rule_el = make_rule_element(filter, outsymbolizer_el, insymbolizer_el)
         rule_els.append(rule_el)
     
     if rule_els:
@@ -651,7 +681,7 @@ def add_text_styles(map_el, layer_el, declarations):
         # a place to put rule elements
         rule_els = []
         
-        for (range, filter, parameter_values) in ranged_filtered_property_declarations(name_declarations, property_map):
+        for (filter, parameter_values) in filtered_property_declarations(name_declarations, property_map):
             if 'face_name' in parameter_values and 'size' in parameter_values:
                 symbolizer_el = Element('TextSymbolizer')
             else:
@@ -663,7 +693,7 @@ def add_text_styles(map_el, layer_el, declarations):
             for (parameter, value) in parameter_values.items():
                 symbolizer_el.set(parameter, str(value))
     
-            rule_el = make_rule_element(range, filter, symbolizer_el)
+            rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
         
         if rule_els:
@@ -730,7 +760,7 @@ def add_shield_styles(map_el, layer_el, declarations, out=None):
         # a place to put rule elements
         rule_els = []
         
-        for (range, filter, parameter_values) in ranged_filtered_property_declarations(name_declarations, property_map):
+        for (filter, parameter_values) in filtered_property_declarations(name_declarations, property_map):
             if 'file' in parameter_values and 'face_name' in parameter_values and 'size' in parameter_values:
                 symbolizer_el = Element('ShieldSymbolizer')
             else:
@@ -745,7 +775,7 @@ def add_shield_styles(map_el, layer_el, declarations, out=None):
             if symbolizer_el.get('file', False):
                 postprocess_symbolizer_image_file(symbolizer_el, out, 'shield')
     
-                rule_el = make_rule_element(range, filter, symbolizer_el)
+                rule_el = make_rule_element(filter, symbolizer_el)
                 rule_els.append(rule_el)
         
         if rule_els:
@@ -771,7 +801,7 @@ def add_point_style(map_el, layer_el, declarations, out=None):
     # a place to put rule elements
     rule_els = []
     
-    for (range, filter, parameter_values) in ranged_filtered_property_declarations(declarations, property_map):
+    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
         symbolizer_el = Element('PointSymbolizer')
         
         # collect all the applicable declarations into a symbolizer element
@@ -781,7 +811,7 @@ def add_point_style(map_el, layer_el, declarations, out=None):
         if symbolizer_el.get('file', False):
             postprocess_symbolizer_image_file(symbolizer_el, out, 'point')
             
-            rule_el = make_rule_element(range, filter, symbolizer_el)
+            rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
     
     if rule_els:
@@ -806,7 +836,7 @@ def add_polygon_pattern_style(map_el, layer_el, declarations, out=None):
     # a place to put rule elements
     rule_els = []
     
-    for (range, filter, parameter_values) in ranged_filtered_property_declarations(declarations, property_map):
+    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
         symbolizer_el = Element('PolygonPatternSymbolizer')
         
         # collect all the applicable declarations into a symbolizer element
@@ -816,7 +846,7 @@ def add_polygon_pattern_style(map_el, layer_el, declarations, out=None):
         if symbolizer_el.get('file', False):
             postprocess_symbolizer_image_file(symbolizer_el, out, 'polygon-pattern')
             
-            rule_el = make_rule_element(range, filter, symbolizer_el)
+            rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
     
     if rule_els:
@@ -841,7 +871,7 @@ def add_line_pattern_style(map_el, layer_el, declarations, out=None):
     # a place to put rule elements
     rule_els = []
     
-    for (range, filter, parameter_values) in ranged_filtered_property_declarations(declarations, property_map):
+    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
         symbolizer_el = Element('LinePatternSymbolizer')
         
         # collect all the applicable declarations into a symbolizer element
@@ -851,7 +881,7 @@ def add_line_pattern_style(map_el, layer_el, declarations, out=None):
         if symbolizer_el.get('file', False):
             postprocess_symbolizer_image_file(symbolizer_el, out, 'line-pattern')
             
-            rule_el = make_rule_element(range, filter, symbolizer_el)
+            rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
     
     if rule_els:

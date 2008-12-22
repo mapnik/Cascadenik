@@ -1,189 +1,203 @@
+import os
 import sys
+import shutil
 import unittest
-from cascadenik.style import ParseException, parse_stylesheet, unroll_rulesets
+import tempfile
+import xml.etree.ElementTree
+from cascadenik.style import ParseException, stylesheet_rulesets, rulesets_declarations, stylesheet_declarations
 from cascadenik.style import Selector, SelectorElement, SelectorAttributeTest
 from cascadenik.style import postprocess_property, postprocess_value, Property
-from cascadenik.compile import selectors_filters
+from cascadenik.compile import tests_filter_combinations, Filter, selectors_tests
+from cascadenik.compile import filtered_property_declarations, is_applicable_selector
+from cascadenik.compile import add_polygon_style, add_line_style, add_text_styles, add_shield_styles
+from cascadenik.compile import add_point_style, add_polygon_pattern_style, add_line_pattern_style
 
 class ParseTests(unittest.TestCase):
     
     def testBadSelector1(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Too Many Things { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Too Many Things { }')
 
     def testBadSelector2(self):
-        self.assertRaises(ParseException, parse_stylesheet, '{ }')
+        self.assertRaises(ParseException, stylesheet_rulesets, '{ }')
 
     def testBadSelector3(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Illegal { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Illegal { }')
 
     def testBadSelector4(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer foo[this=that] { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer foo[this=that] { }')
 
     def testBadSelector5(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer[this>that] foo { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[this>that] foo { }')
 
     def testBadSelector6(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer foo#bar { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer foo#bar { }')
 
     def testBadSelector7(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer foo.bar { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer foo.bar { }')
 
     def testBadSelectorTest1(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer[foo>] { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[foo>] { }')
 
     def testBadSelectorTest2(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer[foo><bar] { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[foo><bar] { }')
 
     def testBadSelectorTest3(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer[foo<<bar] { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[foo<<bar] { }')
 
     def testBadSelectorTest4(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer[<bar] { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[<bar] { }')
 
     def testBadSelectorTest5(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer[<<bar] { }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[<<bar] { }')
 
     def testBadProperty1(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer { unknown-property: none; }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer { unknown-property: none; }')
 
     def testBadProperty2(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer { extra thing: none; }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer { extra thing: none; }')
 
     def testBadProperty3(self):
-        self.assertRaises(ParseException, parse_stylesheet, 'Layer { "not an ident": none; }')
+        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer { "not an ident": none; }')
 
     def testRulesets1(self):
-        self.assertEqual(0, len(parse_stylesheet('/* empty stylesheet */')))
+        self.assertEqual(0, len(stylesheet_rulesets('/* empty stylesheet */')))
 
     def testRulesets2(self):
-        self.assertEqual(1, len(parse_stylesheet('Layer { }')))
+        self.assertEqual(1, len(stylesheet_rulesets('Layer { }')))
 
     def testRulesets3(self):
-        self.assertEqual(2, len(parse_stylesheet('Layer { } Layer { }')))
+        self.assertEqual(2, len(stylesheet_rulesets('Layer { } Layer { }')))
 
     def testRulesets4(self):
-        self.assertEqual(3, len(parse_stylesheet('Layer { } /* something */ Layer { } /* extra */ Layer { }')))
+        self.assertEqual(3, len(stylesheet_rulesets('Layer { } /* something */ Layer { } /* extra */ Layer { }')))
 
     def testRulesets5(self):
-        self.assertEqual(1, len(parse_stylesheet('Map { }')))
+        self.assertEqual(1, len(stylesheet_rulesets('Map { }')))
 
 class SelectorTests(unittest.TestCase):
     
     def testSpecificity1(self):
-        self.assertEquals((0, 1, 0), Selector(SelectorElement(['Layer'])).specificity())
+        self.assertEqual((0, 1, 0), Selector(SelectorElement(['Layer'])).specificity())
     
     def testSpecificity2(self):
-        self.assertEquals((0, 2, 0), Selector(SelectorElement(['Layer']), SelectorElement(['name'])).specificity())
+        self.assertEqual((0, 2, 0), Selector(SelectorElement(['Layer']), SelectorElement(['name'])).specificity())
     
     def testSpecificity3(self):
-        self.assertEquals((0, 2, 0), Selector(SelectorElement(['Layer', '.class'])).specificity())
+        self.assertEqual((0, 2, 0), Selector(SelectorElement(['Layer', '.class'])).specificity())
     
     def testSpecificity4(self):
-        self.assertEquals((0, 3, 0), Selector(SelectorElement(['Layer', '.class']), SelectorElement(['name'])).specificity())
+        self.assertEqual((0, 3, 0), Selector(SelectorElement(['Layer', '.class']), SelectorElement(['name'])).specificity())
     
     def testSpecificity5(self):
-        self.assertEquals((1, 2, 0), Selector(SelectorElement(['Layer', '#id']), SelectorElement(['name'])).specificity())
+        self.assertEqual((1, 2, 0), Selector(SelectorElement(['Layer', '#id']), SelectorElement(['name'])).specificity())
     
     def testSpecificity6(self):
-        self.assertEquals((1, 0, 0), Selector(SelectorElement(['#id'])).specificity())
+        self.assertEqual((1, 0, 0), Selector(SelectorElement(['#id'])).specificity())
     
     def testSpecificity7(self):
-        self.assertEquals((1, 0, 1), Selector(SelectorElement(['#id'], [SelectorAttributeTest('a', '>', 'b')])).specificity())
+        self.assertEqual((1, 0, 1), Selector(SelectorElement(['#id'], [SelectorAttributeTest('a', '>', 'b')])).specificity())
     
     def testSpecificity8(self):
-        self.assertEquals((1, 0, 2), Selector(SelectorElement(['#id'], [SelectorAttributeTest('a', '>', 'b'), SelectorAttributeTest('a', '<', 'b')])).specificity())
+        self.assertEqual((1, 0, 2), Selector(SelectorElement(['#id'], [SelectorAttributeTest('a', '>', 'b'), SelectorAttributeTest('a', '<', 'b')])).specificity())
 
     def testSpecificity9(self):
-        self.assertEquals((1, 0, 2), Selector(SelectorElement(['#id'], [SelectorAttributeTest('a', '>', 100), SelectorAttributeTest('a', '<', 'b')])).specificity())
+        self.assertEqual((1, 0, 2), Selector(SelectorElement(['#id'], [SelectorAttributeTest('a', '>', 100), SelectorAttributeTest('a', '<', 'b')])).specificity())
 
     def testMatch1(self):
-        self.assertEqual(True, Selector(SelectorElement(['Layer'])).matches('Layer', 'foo', []))
+        assert Selector(SelectorElement(['Layer'])).matches('Layer', 'foo', [])
 
     def testMatch2(self):
-        self.assertEqual(True, Selector(SelectorElement(['#foo'])).matches('Layer', 'foo', []))
+        assert Selector(SelectorElement(['#foo'])).matches('Layer', 'foo', [])
 
     def testMatch3(self):
-        self.assertEqual(False, Selector(SelectorElement(['#foo'])).matches('Layer', 'bar', []))
+        assert not Selector(SelectorElement(['#foo'])).matches('Layer', 'bar', [])
 
     def testMatch4(self):
-        self.assertEqual(True, Selector(SelectorElement(['.bar'])).matches('Layer', None, ['bar']))
+        assert Selector(SelectorElement(['.bar'])).matches('Layer', None, ['bar'])
 
     def testMatch5(self):
-        self.assertEqual(True, Selector(SelectorElement(['.bar'])).matches('Layer', None, ['bar', 'baz']))
+        assert Selector(SelectorElement(['.bar'])).matches('Layer', None, ['bar', 'baz'])
 
     def testMatch6(self):
-        self.assertEqual(True, Selector(SelectorElement(['.bar', '.baz'])).matches('Layer', None, ['bar', 'baz']))
+        assert Selector(SelectorElement(['.bar', '.baz'])).matches('Layer', None, ['bar', 'baz'])
 
     def testMatch7(self):
-        self.assertEqual(False, Selector(SelectorElement(['.bar', '.baz'])).matches('Layer', None, ['bar']))
+        assert not Selector(SelectorElement(['.bar', '.baz'])).matches('Layer', None, ['bar'])
 
     def testMatch8(self):
-        self.assertEqual(False, Selector(SelectorElement(['Layer'])).matches('Map', None, []))
+        assert not Selector(SelectorElement(['Layer'])).matches('Map', None, [])
 
     def testMatch9(self):
-        self.assertEqual(False, Selector(SelectorElement(['Map'])).matches('Layer', None, []))
+        assert not Selector(SelectorElement(['Map'])).matches('Layer', None, [])
 
     def testMatch10(self):
-        self.assertEqual(True, Selector(SelectorElement(['*'])).matches('Layer', None, []))
+        assert Selector(SelectorElement(['*'])).matches('Layer', None, [])
 
     def testMatch10(self):
-        self.assertEqual(True, Selector(SelectorElement(['*'])).matches('Map', None, []))
+        assert Selector(SelectorElement(['*'])).matches('Map', None, [])
 
     def testRange1(self):
         selector = Selector(SelectorElement(['*'], [SelectorAttributeTest('scale-denominator', '>', 100)]))
-        self.assertEqual(True, selector.isRanged())
-        self.assertEqual(False, selector.inRange(99))
-        self.assertEqual(False, selector.inRange(100))
-        self.assertEqual(True, selector.inRange(1000))
+        assert selector.isRanged()
+        assert not selector.inRange(99)
+        assert not selector.inRange(100)
+        assert selector.inRange(1000)
 
     def testRange2(self):
         selector = Selector(SelectorElement(['*'], [SelectorAttributeTest('scale-denominator', '>=', 100)]))
-        self.assertEqual(True, selector.isRanged())
-        self.assertEqual(False, selector.inRange(99))
-        self.assertEqual(True, selector.inRange(100))
-        self.assertEqual(True, selector.inRange(1000))
+        assert selector.isRanged()
+        assert selector.isMapScaled()
+        assert not selector.inRange(99)
+        assert selector.inRange(100)
+        assert selector.inRange(1000)
 
     def testRange3(self):
         selector = Selector(SelectorElement(['*'], [SelectorAttributeTest('scale-denominator', '<', 100)]))
-        self.assertEqual(True, selector.isRanged())
-        self.assertEqual(True, selector.inRange(99))
-        self.assertEqual(False, selector.inRange(100))
-        self.assertEqual(False, selector.inRange(1000))
+        assert selector.isRanged()
+        assert selector.isMapScaled()
+        assert selector.inRange(99)
+        assert not selector.inRange(100)
+        assert not selector.inRange(1000)
 
     def testRange4(self):
         selector = Selector(SelectorElement(['*'], [SelectorAttributeTest('scale-denominator', '<=', 100)]))
-        self.assertEqual(True, selector.isRanged())
-        self.assertEqual(True, selector.inRange(99))
-        self.assertEqual(True, selector.inRange(100))
-        self.assertEqual(False, selector.inRange(1000))
+        assert selector.isRanged()
+        assert selector.isMapScaled()
+        assert selector.inRange(99)
+        assert selector.inRange(100)
+        assert not selector.inRange(1000)
 
     def testRange5(self):
         selector = Selector(SelectorElement(['*'], [SelectorAttributeTest('nonsense', '<=', 100)]))
-        self.assertEqual(False, selector.isRanged())
-        self.assertEqual(True, selector.inRange(99))
-        self.assertEqual(True, selector.inRange(100))
-        self.assertEqual(True, selector.inRange(1000))
+        assert selector.isRanged()
+        assert not selector.isMapScaled()
+        assert selector.inRange(99)
+        assert selector.inRange(100)
+        assert not selector.inRange(1000)
 
     def testRange6(self):
         selector = Selector(SelectorElement(['*'], [SelectorAttributeTest('scale-denominator', '>=', 100), SelectorAttributeTest('scale-denominator', '<', 1000)]))
-        self.assertEqual(True, selector.isRanged())
-        self.assertEqual(False, selector.inRange(99))
-        self.assertEqual(True, selector.inRange(100))
-        self.assertEqual(False, selector.inRange(1000))
+        assert selector.isRanged()
+        assert selector.isMapScaled()
+        assert not selector.inRange(99)
+        assert selector.inRange(100)
+        assert not selector.inRange(1000)
 
     def testRange7(self):
         selector = Selector(SelectorElement(['*'], [SelectorAttributeTest('scale-denominator', '>', 100), SelectorAttributeTest('scale-denominator', '<=', 1000)]))
-        self.assertEqual(True, selector.isRanged())
-        self.assertEqual(False, selector.inRange(99))
-        self.assertEqual(False, selector.inRange(100))
-        self.assertEqual(True, selector.inRange(1000))
+        assert selector.isRanged()
+        assert selector.isMapScaled()
+        assert not selector.inRange(99)
+        assert not selector.inRange(100)
+        assert selector.inRange(1000)
 
     def testRange8(self):
         selector = Selector(SelectorElement(['*'], [SelectorAttributeTest('scale-denominator', '<=', 100), SelectorAttributeTest('scale-denominator', '>=', 1000)]))
-        self.assertEqual(True, selector.isRanged())
-        self.assertEqual(False, selector.inRange(99))
-        self.assertEqual(False, selector.inRange(100))
-        self.assertEqual(False, selector.inRange(1000))
+        assert selector.isRanged()
+        assert selector.isMapScaled()
+        assert not selector.inRange(99)
+        assert not selector.inRange(100)
+        assert not selector.inRange(1000)
 
 class PropertyTests(unittest.TestCase):
 
@@ -197,10 +211,10 @@ class PropertyTests(unittest.TestCase):
         self.assertRaises(ParseException, postprocess_property, [('IDENT', 'illegal-property')])
 
     def testProperty4(self):
-        self.assertEquals('shield', postprocess_property([('IDENT', 'shield-fill')]).group())
+        self.assertEqual('shield', postprocess_property([('IDENT', 'shield-fill')]).group())
 
     def testProperty5(self):
-        self.assertEquals('shield', postprocess_property([('S', ' '), ('IDENT', 'shield-fill'), ('COMMENT', 'ignored comment')]).group())
+        self.assertEqual('shield', postprocess_property([('S', ' '), ('IDENT', 'shield-fill'), ('COMMENT', 'ignored comment')]).group())
 
 class ValueTests(unittest.TestCase):
 
@@ -283,7 +297,7 @@ class CascadeTests(unittest.TestCase):
                 text-dy: -10;
             }
         """
-        rulesets = parse_stylesheet(s)
+        rulesets = stylesheet_rulesets(s)
         
         self.assertEqual(1, len(rulesets))
         self.assertEqual(1, len(rulesets[0]['selectors']))
@@ -293,7 +307,7 @@ class CascadeTests(unittest.TestCase):
         self.assertEqual('text-dx', rulesets[0]['declarations'][0]['property'].name)
         self.assertEqual(-10, rulesets[0]['declarations'][0]['value'].value)
         
-        declarations = unroll_rulesets(rulesets)
+        declarations = rulesets_declarations(rulesets)
         
         self.assertEqual(2, len(declarations))
         self.assertEqual('text-dx', declarations[0].property.name)
@@ -315,7 +329,7 @@ class CascadeTests(unittest.TestCase):
                 text-dx: -10;
             }
         """
-        rulesets = parse_stylesheet(s)
+        rulesets = stylesheet_rulesets(s)
         
         self.assertEqual(2, len(rulesets))
         self.assertEqual(1, len(rulesets[0]['selectors']))
@@ -324,7 +338,7 @@ class CascadeTests(unittest.TestCase):
         self.assertEqual(2, len(rulesets[1]['selectors'][0].elements))
         self.assertEqual(1, len(rulesets[1]['selectors'][1].elements))
         
-        declarations = unroll_rulesets(rulesets)
+        declarations = rulesets_declarations(rulesets)
 
         self.assertEqual(15, len(declarations))
 
@@ -396,9 +410,9 @@ class FilterCombinationTests(unittest.TestCase):
             Layer[landuse=civilian]     { polygon-fill: #001; }
             Layer[landuse=agriculture]  { polygon-fill: #010; }
         """
-        rulesets = parse_stylesheet(s)
-        selectors = [dec.selector for dec in unroll_rulesets(rulesets)]
-        filters = selectors_filters(selectors)
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 4)
         self.assertEqual(str(sorted(filters)), '[[landuse!=agriculture][landuse!=civilian][landuse!=military], [landuse=agriculture], [landuse=civilian], [landuse=military]]')
@@ -410,9 +424,9 @@ class FilterCombinationTests(unittest.TestCase):
             Layer[landuse=agriculture]  { polygon-fill: #010; }
             Layer[horse=yes]    { polygon-fill: #011; }
         """
-        rulesets = parse_stylesheet(s)
-        selectors = [dec.selector for dec in unroll_rulesets(rulesets)]
-        filters = selectors_filters(selectors)
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 8)
         self.assertEqual(str(sorted(filters)), '[[horse!=yes][landuse!=agriculture][landuse!=civilian][landuse!=military], [horse!=yes][landuse=agriculture], [horse!=yes][landuse=civilian], [horse!=yes][landuse=military], [horse=yes][landuse!=agriculture][landuse!=civilian][landuse!=military], [horse=yes][landuse=agriculture], [horse=yes][landuse=civilian], [horse=yes][landuse=military]]')
@@ -425,9 +439,9 @@ class FilterCombinationTests(unittest.TestCase):
             Layer[horse=yes]    { polygon-fill: #011; }
             Layer[horse=no]     { polygon-fill: #100; }
         """
-        rulesets = parse_stylesheet(s)
-        selectors = [dec.selector for dec in unroll_rulesets(rulesets)]
-        filters = selectors_filters(selectors)
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 12)
         self.assertEqual(str(sorted(filters)), '[[horse!=no][horse!=yes][landuse!=agriculture][landuse!=civilian][landuse!=military], [horse!=no][horse!=yes][landuse=agriculture], [horse!=no][horse!=yes][landuse=civilian], [horse!=no][horse!=yes][landuse=military], [horse=no][landuse!=agriculture][landuse!=civilian][landuse!=military], [horse=no][landuse=agriculture], [horse=no][landuse=civilian], [horse=no][landuse=military], [horse=yes][landuse!=agriculture][landuse!=civilian][landuse!=military], [horse=yes][landuse=agriculture], [horse=yes][landuse=civilian], [horse=yes][landuse=military]]')
@@ -440,12 +454,766 @@ class FilterCombinationTests(unittest.TestCase):
             Layer[horse=yes]    { polygon-fill: #011; }
             Layer[leisure=park] { polygon-fill: #100; }
         """
-        rulesets = parse_stylesheet(s)
-        selectors = [dec.selector for dec in unroll_rulesets(rulesets)]
-        filters = selectors_filters(selectors)
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 16)
         self.assertEqual(str(sorted(filters)), '[[horse!=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure!=park], [horse!=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure=park], [horse!=yes][landuse=agriculture][leisure!=park], [horse!=yes][landuse=agriculture][leisure=park], [horse!=yes][landuse=civilian][leisure!=park], [horse!=yes][landuse=civilian][leisure=park], [horse!=yes][landuse=military][leisure!=park], [horse!=yes][landuse=military][leisure=park], [horse=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure!=park], [horse=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure=park], [horse=yes][landuse=agriculture][leisure!=park], [horse=yes][landuse=agriculture][leisure=park], [horse=yes][landuse=civilian][leisure!=park], [horse=yes][landuse=civilian][leisure=park], [horse=yes][landuse=military][leisure!=park], [horse=yes][landuse=military][leisure=park]]')
+
+class SimpleRangeTests(unittest.TestCase):
+
+    def testRanges1(self):
+        s = """
+            Layer[foo<1000] { polygon-fill: #000; }
+            Layer[foo>1000] { polygon-fill: #001; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual(len(filters), 3)
+        self.assertEqual(str(sorted(filters)), '[[foo<1000], [foo=1000], [foo>1000]]')
+
+    def testRanges2(self):
+        s = """
+            Layer[foo>1] { polygon-fill: #000; }
+            Layer[foo<2] { polygon-fill: #001; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual(len(filters), 3)
+        self.assertEqual(str(sorted(filters)), '[[foo<2][foo>1], [foo<=1], [foo>=2]]')
+
+    def testRanges3(self):
+        s = """
+            Layer[foo>1] { polygon-fill: #000; }
+            Layer[foo<2] { polygon-fill: #001; }
+            Layer[bar>4] { polygon-fill: #010; }
+            Layer[bar<8] { polygon-fill: #011; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual(len(filters), 9)
+        self.assertEqual(str(sorted(filters)), '[[bar<8][bar>4][foo<2][foo>1], [bar<8][bar>4][foo<=1], [bar<8][bar>4][foo>=2], [bar<=4][foo<2][foo>1], [bar<=4][foo<=1], [bar<=4][foo>=2], [bar>=8][foo<2][foo>1], [bar>=8][foo<=1], [bar>=8][foo>=2]]')
+
+    def testRanges4(self):
+        s = """
+            Layer[foo>1] { polygon-fill: #000; }
+            Layer[foo<2] { polygon-fill: #001; }
+            Layer[bar=this] { polygon-fill: #010; }
+            Layer[bar=that] { polygon-fill: #011; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual(len(filters), 9)
+        self.assertEqual(str(sorted(filters)), '[[bar!=that][bar!=this][foo<2][foo>1], [bar!=that][bar!=this][foo<=1], [bar!=that][bar!=this][foo>=2], [bar=that][foo<2][foo>1], [bar=that][foo<=1], [bar=that][foo>=2], [bar=this][foo<2][foo>1], [bar=this][foo<=1], [bar=this][foo>=2]]')
+
+    def testRanges5(self):
+        s = """
+            Layer[foo>1] { polygon-fill: #000; }
+            Layer[foo<2] { polygon-fill: #001; }
+            Layer[bar=this] { polygon-fill: #010; }
+            Layer[bar=that] { polygon-fill: #011; }
+            Layer[bar=blah] { polygon-fill: #100; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual(len(filters), 12)
+        self.assertEqual(str(sorted(filters)), '[[bar!=blah][bar!=that][bar!=this][foo<2][foo>1], [bar!=blah][bar!=that][bar!=this][foo<=1], [bar!=blah][bar!=that][bar!=this][foo>=2], [bar=blah][foo<2][foo>1], [bar=blah][foo<=1], [bar=blah][foo>=2], [bar=that][foo<2][foo>1], [bar=that][foo<=1], [bar=that][foo>=2], [bar=this][foo<2][foo>1], [bar=this][foo<=1], [bar=this][foo>=2]]')
+
+class CompatibilityTests(unittest.TestCase):
+
+    def testCompatibility1(self):
+        a = SelectorAttributeTest('foo', '=', 1)
+        b = SelectorAttributeTest('foo', '=', 1)
+        assert a.isCompatible([b])
+        assert b.isCompatible([a])
+
+    def testCompatibility2(self):
+        a = SelectorAttributeTest('foo', '=', 1)
+        b = SelectorAttributeTest('bar', '=', 1)
+        assert a.isCompatible([b])
+        assert b.isCompatible([a])
+
+    def testCompatibility3(self):
+        a = SelectorAttributeTest('foo', '=', 1)
+        b = SelectorAttributeTest('foo', '!=', 1)
+        assert not a.isCompatible([b])
+        assert not b.isCompatible([a])
+
+    def testCompatibility4(self):
+        a = SelectorAttributeTest('foo', '!=', 1)
+        b = SelectorAttributeTest('bar', '=', 1)
+        assert a.isCompatible([b])
+        assert b.isCompatible([a])
+
+    def testCompatibility5(self):
+        a = SelectorAttributeTest('foo', '!=', 1)
+        b = SelectorAttributeTest('foo', '!=', 2)
+        assert a.isCompatible([b])
+        assert b.isCompatible([a])
+
+    def testCompatibility6(self):
+        a = SelectorAttributeTest('foo', '!=', 1)
+        b = SelectorAttributeTest('foo', '!=', 1)
+        assert a.isCompatible([b])
+        assert b.isCompatible([a])
+
+    def testCompatibility7(self):
+        a = SelectorAttributeTest('foo', '=', 1)
+        b = SelectorAttributeTest('foo', '<', 1)
+        assert not a.isCompatible([b])
+        assert not b.isCompatible([a])
+
+    def testCompatibility8(self):
+        a = SelectorAttributeTest('foo', '>=', 1)
+        b = SelectorAttributeTest('foo', '=', 1)
+        assert a.isCompatible([b])
+        assert b.isCompatible([a])
+
+    def testCompatibility9(self):
+        a = SelectorAttributeTest('foo', '=', 1)
+        b = SelectorAttributeTest('foo', '<=', 1)
+        assert a.isCompatible([b])
+        assert b.isCompatible([a])
+
+    def testCompatibility10(self):
+        a = SelectorAttributeTest('foo', '>', 1)
+        b = SelectorAttributeTest('foo', '=', 1)
+        assert not a.isCompatible([b])
+        assert not b.isCompatible([a])
+
+    def testCompatibility11(self):
+        a = SelectorAttributeTest('foo', '>', 2)
+        b = SelectorAttributeTest('foo', '<=', 1)
+        assert not a.isCompatible([b])
+        assert not b.isCompatible([a])
+
+    def testCompatibility12(self):
+        a = SelectorAttributeTest('foo', '<=', 1)
+        b = SelectorAttributeTest('foo', '>', 2)
+        assert not a.isCompatible([b])
+        assert not b.isCompatible([a])
+
+    def testCompatibility13(self):
+        a = SelectorAttributeTest('foo', '<', 1)
+        b = SelectorAttributeTest('foo', '>', 1)
+        assert not a.isCompatible([b])
+        assert not b.isCompatible([a])
+
+    def testCompatibility14(self):
+        a = SelectorAttributeTest('foo', '<', 2)
+        b = SelectorAttributeTest('foo', '>', 1)
+        assert a.isCompatible([b])
+        assert b.isCompatible([a])
+
+    def testCompatibility15(self):
+        # Layer[scale-denominator>1000][bar>1]
+        s = Selector(SelectorElement(['Layer'], [SelectorAttributeTest('scale-denominator', '>', 1000), SelectorAttributeTest('bar', '<', 3)]))
+        
+        # [bar>=3][baz=quux][foo>1][scale-denominator>1000]
+        f = Filter(SelectorAttributeTest('scale-denominator', '>', 1000), SelectorAttributeTest('bar', '>=', 3), SelectorAttributeTest('foo', '>', 1), SelectorAttributeTest('baz', '=', 'quux'))
+        
+        assert not is_applicable_selector(s, f)
+
+    def testCompatibility16(self):
+        # Layer[scale-denominator<1000][foo=1]
+        s = Selector(SelectorElement(['Layer'], [SelectorAttributeTest('scale-denominator', '<', 1000), SelectorAttributeTest('foo', '=', 1)]))
+        
+        # [baz!=quux][foo=1][scale-denominator>1000]
+        f = Filter(SelectorAttributeTest('baz', '!=', 'quux'), SelectorAttributeTest('foo', '=', 1), SelectorAttributeTest('scale-denominator', '>', 1000))
+        
+        assert not is_applicable_selector(s, f)
+
+class StyleRuleTests(unittest.TestCase):
+
+    def setUp(self):
+        # a directory for all the temp files to be created below
+        self.tmpdir = tempfile.mkdtemp(prefix='cascadenik-tests-')
+
+    def tearDown(self):
+        # destroy the above-created directory
+        shutil.rmtree(self.tmpdir)
+
+    def testStyleRules1(self):
+        s = """
+            Layer[zoom<=10][use=park] { polygon-fill: #0f0; }
+            Layer[zoom<=10][use=cemetery] { polygon-fill: #999; }
+            Layer[zoom>10][use=park] { polygon-fill: #6f6; }
+            Layer[zoom>10][use=cemetery] { polygon-fill: #ccc; }
+        """
+
+        declarations = stylesheet_declarations(s, is_gym=True)
+        
+        layer = xml.etree.ElementTree.Element('Layer')
+        layer.append(xml.etree.ElementTree.Element('Datasource'))
+    
+        map = xml.etree.ElementTree.Element('Map')
+        map.append(layer)
+        
+        add_polygon_style(map, layer, declarations)
+        
+        assert map.find('Layer/StyleName') is not None
+        
+        stylename = map.find('Layer/StyleName').text
+        
+        style_el = map.find('Style')
+        
+        assert style_el is not None
+        self.assertEqual(stylename, style_el.get('name'))
+        
+        rule_els = style_el.findall('Rule')
+        
+        self.assertEqual('399999', rule_els[0].find('MaxScaleDenominator').text)
+        self.assertEqual('fill', rule_els[0].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#cccccc', rule_els[0].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual("[use] = 'cemetery'", rule_els[0].find('Filter').text)
+        
+        self.assertEqual('399999', rule_els[1].find('MaxScaleDenominator').text)
+        self.assertEqual('fill', rule_els[1].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#66ff66', rule_els[1].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual("[use] = 'park'", rule_els[1].find('Filter').text)
+    
+        self.assertEqual('400000', rule_els[2].find('MinScaleDenominator').text)
+        self.assertEqual('fill', rule_els[2].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#999999', rule_els[2].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual("[use] = 'cemetery'", rule_els[2].find('Filter').text)
+        
+        self.assertEqual('400000', rule_els[3].find('MinScaleDenominator').text)
+        self.assertEqual('fill', rule_els[3].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#00ff00', rule_els[3].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual("[use] = 'park'", rule_els[3].find('Filter').text)
+
+    def testStyleRules2(self):
+        s = """
+            Layer[zoom<=10][foo<1] { polygon-fill: #000; }
+            Layer[zoom<=10][foo>1] { polygon-fill: #00f; }
+            Layer[zoom>10][foo<1] { polygon-fill: #0f0; }
+            Layer[zoom>10][foo>1] { polygon-fill: #f00; }
+        """
+    
+        declarations = stylesheet_declarations(s, is_gym=True)
+        
+        layer = xml.etree.ElementTree.Element('Layer')
+        layer.append(xml.etree.ElementTree.Element('Datasource'))
+    
+        map = xml.etree.ElementTree.Element('Map')
+        map.append(layer)
+        
+        add_polygon_style(map, layer, declarations)
+        
+        assert map.find('Layer/StyleName') is not None
+        
+        stylename = map.find('Layer/StyleName').text
+        
+        style_el = map.find('Style')
+        
+        assert style_el is not None
+        self.assertEqual(stylename, style_el.get('name'))
+        
+        rule_els = style_el.findall('Rule')
+        
+        self.assertEqual('399999', rule_els[0].find('MaxScaleDenominator').text)
+        self.assertEqual('fill', rule_els[0].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#00ff00', rule_els[0].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual('[foo] < 1', rule_els[0].find('Filter').text)
+        
+        self.assertEqual('400000', rule_els[1].find('MinScaleDenominator').text)
+        self.assertEqual('fill', rule_els[1].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#000000', rule_els[1].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual('[foo] < 1', rule_els[1].find('Filter').text)
+        
+        self.assertEqual('399999', rule_els[2].find('MaxScaleDenominator').text)
+        self.assertEqual('fill', rule_els[2].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#ff0000', rule_els[2].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual('[foo] > 1', rule_els[2].find('Filter').text)
+    
+        self.assertEqual('400000', rule_els[3].find('MinScaleDenominator').text)
+        self.assertEqual('fill', rule_els[3].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#0000ff', rule_els[3].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual('[foo] > 1', rule_els[3].find('Filter').text)
+
+    def testStyleRules3(self):
+        s = """
+            Layer[zoom<=10][foo<1] { polygon-fill: #000; }
+            Layer[zoom<=10][foo>1] { polygon-fill: #00f; }
+            Layer[zoom>10][foo<1] { polygon-fill: #0f0; }
+            Layer[zoom>10][foo>1] { polygon-fill: #f00; }
+    
+            Layer[zoom<=10] { line-width: 1; }
+            Layer[zoom>10] { line-width: 2; }
+            Layer[foo<1] { line-color: #0ff; }
+            Layer[foo=1] { line-color: #f0f; }
+            Layer[foo>1] { line-color: #ff0; }
+        """
+    
+        declarations = stylesheet_declarations(s, is_gym=True)
+        
+        layer = xml.etree.ElementTree.Element('Layer')
+        layer.append(xml.etree.ElementTree.Element('Datasource'))
+    
+        map = xml.etree.ElementTree.Element('Map')
+        map.append(layer)
+        
+        add_polygon_style(map, layer, declarations)
+        add_line_style(map, layer, declarations)
+
+        self.assertEqual(2, len(map.findall('Layer/StyleName')))
+        
+        stylenames = [stylename.text for stylename in map.findall('Layer/StyleName')]
+        
+        style_els = map.findall('Style')
+        
+        self.assertEqual(2, len(style_els))
+    
+        assert style_els[0].get('name') in (stylenames)
+        poly_rule_els = style_els[0].findall('Rule')
+        
+        self.assertEqual('399999', poly_rule_els[0].find('MaxScaleDenominator').text)
+        self.assertEqual('fill', poly_rule_els[0].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#00ff00', poly_rule_els[0].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual('[foo] < 1', poly_rule_els[0].find('Filter').text)
+        
+        self.assertEqual('400000', poly_rule_els[1].find('MinScaleDenominator').text)
+        self.assertEqual('fill', poly_rule_els[1].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#000000', poly_rule_els[1].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual('[foo] < 1', poly_rule_els[1].find('Filter').text)
+        
+        self.assertEqual('399999', poly_rule_els[2].find('MaxScaleDenominator').text)
+        self.assertEqual('fill', poly_rule_els[2].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#ff0000', poly_rule_els[2].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual('[foo] > 1', poly_rule_els[2].find('Filter').text)
+    
+        self.assertEqual('400000', poly_rule_els[3].find('MinScaleDenominator').text)
+        self.assertEqual('fill', poly_rule_els[3].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#0000ff', poly_rule_els[3].find('PolygonSymbolizer/CssParameter').text)
+        self.assertEqual('[foo] > 1', poly_rule_els[3].find('Filter').text)
+    
+        assert style_els[1].get('name') in (stylenames)
+        line_rule_els = style_els[1].findall('Rule')
+        
+        self.assertEqual('399999', line_rule_els[0].find('MaxScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('2.0', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#00ffff', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] < 1', line_rule_els[0].find('Filter').text)
+        
+        self.assertEqual('400000', line_rule_els[1].find('MinScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('1.0', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#00ffff', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] < 1', line_rule_els[1].find('Filter').text)
+        
+        self.assertEqual('399999', line_rule_els[2].find('MaxScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('2.0', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#ff00ff', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] = 1', line_rule_els[2].find('Filter').text)
+    
+        self.assertEqual('400000', line_rule_els[3].find('MinScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('1.0', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#ff00ff', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] = 1', line_rule_els[3].find('Filter').text)
+        
+        self.assertEqual('399999', line_rule_els[4].find('MaxScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('2.0', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#ffff00', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] > 1', line_rule_els[4].find('Filter').text)
+    
+        self.assertEqual('400000', line_rule_els[5].find('MinScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('1.0', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#ffff00', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] > 1', line_rule_els[5].find('Filter').text)
+
+    def testStyleRules4(self):
+        s = """
+            Layer[zoom<=10] { line-width: 1; }
+            Layer[zoom>10] { line-width: 2; }
+            Layer[foo<1] { line-color: #0ff; }
+            Layer[foo=1] { line-color: #f0f; }
+            Layer[foo>1] { line-color: #ff0; }
+            
+            Layer label { text-face-name: 'Helvetica'; text-size: 12; }
+            Layer[foo<1] label { text-face-name: 'Arial'; }
+            Layer[zoom<=10] label { text-size: 10; }
+        """
+    
+        declarations = stylesheet_declarations(s, is_gym=True)
+        
+        layer = xml.etree.ElementTree.Element('Layer')
+        layer.append(xml.etree.ElementTree.Element('Datasource'))
+    
+        map = xml.etree.ElementTree.Element('Map')
+        map.append(layer)
+        
+        add_line_style(map, layer, declarations)
+        add_text_styles(map, layer, declarations)
+        
+        self.assertEqual(2, len(map.findall('Layer/StyleName')))
+        
+        stylenames = [stylename.text for stylename in map.findall('Layer/StyleName')]
+        
+        style_els = map.findall('Style')
+        
+        self.assertEqual(2, len(style_els))
+    
+        assert style_els[0].get('name') in (stylenames)
+        line_rule_els = style_els[0].findall('Rule')
+        
+        self.assertEqual('399999', line_rule_els[0].find('MaxScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('2.0', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#00ffff', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] < 1', line_rule_els[0].find('Filter').text)
+        
+        self.assertEqual('400000', line_rule_els[1].find('MinScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('1.0', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#00ffff', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] < 1', line_rule_els[1].find('Filter').text)
+        
+        self.assertEqual('399999', line_rule_els[2].find('MaxScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('2.0', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#ff00ff', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] = 1', line_rule_els[2].find('Filter').text)
+    
+        self.assertEqual('400000', line_rule_els[3].find('MinScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('1.0', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#ff00ff', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] = 1', line_rule_els[3].find('Filter').text)
+        
+        self.assertEqual('399999', line_rule_els[4].find('MaxScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('2.0', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#ffff00', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] > 1', line_rule_els[4].find('Filter').text)
+    
+        self.assertEqual('400000', line_rule_els[5].find('MinScaleDenominator').text)
+        self.assertEqual('stroke-width', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('1.0', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('#ffff00', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('[foo] > 1', line_rule_els[5].find('Filter').text)
+        
+        assert style_els[1].get('name') in (stylenames)
+        text_rule_els = style_els[1].findall('Rule')
+        
+        self.assertEqual('399999', text_rule_els[0].find('MaxScaleDenominator').text)
+        self.assertEqual('label', text_rule_els[0].find('TextSymbolizer').get('name'))
+        self.assertEqual('Arial', text_rule_els[0].find('TextSymbolizer').get('face_name'))
+        self.assertEqual('12', text_rule_els[0].find('TextSymbolizer').get('size'))
+        self.assertEqual('[foo] < 1', text_rule_els[0].find('Filter').text)
+        
+        self.assertEqual('400000', text_rule_els[1].find('MinScaleDenominator').text)
+        self.assertEqual('label', text_rule_els[1].find('TextSymbolizer').get('name'))
+        self.assertEqual('Arial', text_rule_els[1].find('TextSymbolizer').get('face_name'))
+        self.assertEqual('10', text_rule_els[1].find('TextSymbolizer').get('size'))
+        self.assertEqual('[foo] < 1', text_rule_els[1].find('Filter').text)
+        
+        self.assertEqual('399999', text_rule_els[2].find('MaxScaleDenominator').text)
+        self.assertEqual('label', text_rule_els[2].find('TextSymbolizer').get('name'))
+        self.assertEqual('Helvetica', text_rule_els[2].find('TextSymbolizer').get('face_name'))
+        self.assertEqual('12', text_rule_els[2].find('TextSymbolizer').get('size'))
+        self.assertEqual('[foo] >= 1', text_rule_els[2].find('Filter').text)
+    
+        self.assertEqual('400000', text_rule_els[3].find('MinScaleDenominator').text)
+        self.assertEqual('label', text_rule_els[3].find('TextSymbolizer').get('name'))
+        self.assertEqual('Helvetica', text_rule_els[3].find('TextSymbolizer').get('face_name'))
+        self.assertEqual('10', text_rule_els[3].find('TextSymbolizer').get('size'))
+        self.assertEqual('[foo] >= 1', text_rule_els[3].find('Filter').text)
+
+    def testStyleRules5(self):
+        s = """
+            Layer label { text-face-name: 'Helvetica'; text-size: 12; text-fill: #000; }
+            Layer[foo<1] label { text-face-name: 'Arial'; }
+            Layer[zoom<=10] label { text-size: 10; }
+            
+            Layer label { shield-face-name: 'Helvetica'; shield-size: 12; shield-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
+            Layer[foo>1] label { shield-size: 10; }
+            Layer[bar=baz] label { shield-size: 14; }
+            Layer[bar=quux] label { shield-size: 16; }
+        """
+    
+        declarations = stylesheet_declarations(s, is_gym=True)
+        
+        layer = xml.etree.ElementTree.Element('Layer')
+        layer.append(xml.etree.ElementTree.Element('Datasource'))
+    
+        map = xml.etree.ElementTree.Element('Map')
+        map.append(layer)
+        
+        add_text_styles(map, layer, declarations)
+        add_shield_styles(map, layer, declarations, self.tmpdir)
+        
+        self.assertEqual(2, len(map.findall('Layer/StyleName')))
+        
+        stylenames = [stylename.text for stylename in map.findall('Layer/StyleName')]
+        
+        style_els = map.findall('Style')
+        
+        self.assertEqual(2, len(style_els))
+    
+        assert style_els[0].get('name') in (stylenames)
+        text_rule_els = style_els[0].findall('Rule')
+        
+        self.assertEqual('399999', text_rule_els[0].find('MaxScaleDenominator').text)
+        self.assertEqual('label', text_rule_els[0].find('TextSymbolizer').get('name'))
+        self.assertEqual('Arial', text_rule_els[0].find('TextSymbolizer').get('face_name'))
+        self.assertEqual('12', text_rule_els[0].find('TextSymbolizer').get('size'))
+        self.assertEqual('[foo] < 1', text_rule_els[0].find('Filter').text)
+        
+        self.assertEqual('400000', text_rule_els[1].find('MinScaleDenominator').text)
+        self.assertEqual('label', text_rule_els[1].find('TextSymbolizer').get('name'))
+        self.assertEqual('Arial', text_rule_els[1].find('TextSymbolizer').get('face_name'))
+        self.assertEqual('10', text_rule_els[1].find('TextSymbolizer').get('size'))
+        self.assertEqual('[foo] < 1', text_rule_els[1].find('Filter').text)
+        
+        self.assertEqual('399999', text_rule_els[2].find('MaxScaleDenominator').text)
+        self.assertEqual('label', text_rule_els[2].find('TextSymbolizer').get('name'))
+        self.assertEqual('Helvetica', text_rule_els[2].find('TextSymbolizer').get('face_name'))
+        self.assertEqual('12', text_rule_els[2].find('TextSymbolizer').get('size'))
+        self.assertEqual('[foo] >= 1', text_rule_els[2].find('Filter').text)
+    
+        self.assertEqual('400000', text_rule_els[3].find('MinScaleDenominator').text)
+        self.assertEqual('label', text_rule_els[3].find('TextSymbolizer').get('name'))
+        self.assertEqual('Helvetica', text_rule_els[3].find('TextSymbolizer').get('face_name'))
+        self.assertEqual('10', text_rule_els[3].find('TextSymbolizer').get('size'))
+        self.assertEqual('[foo] >= 1', text_rule_els[3].find('Filter').text)
+    
+        assert style_els[1].get('name') in (stylenames)
+        shield_rule_els = style_els[1].findall('Rule')
+        
+        assert shield_rule_els[0].find('MinScaleDenominator') is None
+        assert shield_rule_els[0].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[0].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[0].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('12', shield_rule_els[0].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] <= 1", shield_rule_els[0].find('Filter').text)
+        
+        assert shield_rule_els[1].find('MinScaleDenominator') is None
+        assert shield_rule_els[1].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[1].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[1].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('10', shield_rule_els[1].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] > 1", shield_rule_els[1].find('Filter').text)
+        
+        assert shield_rule_els[2].find('MinScaleDenominator') is None
+        assert shield_rule_els[2].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[2].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[2].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('14', shield_rule_els[2].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("[bar] = 'baz' and [foo] <= 1", shield_rule_els[2].find('Filter').text)
+        
+        assert shield_rule_els[3].find('MinScaleDenominator') is None
+        assert shield_rule_els[3].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[3].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[3].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('14', shield_rule_els[3].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("[bar] = 'baz' and [foo] > 1", shield_rule_els[3].find('Filter').text)
+        
+        assert shield_rule_els[4].find('MinScaleDenominator') is None
+        assert shield_rule_els[4].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[4].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[4].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('16', shield_rule_els[4].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("[bar] = 'quux' and [foo] <= 1", shield_rule_els[4].find('Filter').text)
+        
+        assert shield_rule_els[5].find('MinScaleDenominator') is None
+        assert shield_rule_els[5].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[5].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[5].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('16', shield_rule_els[5].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("[bar] = 'quux' and [foo] > 1", shield_rule_els[5].find('Filter').text)
+
+    def testStyleRules6(self):
+        s = """
+            Layer label { shield-face-name: 'Helvetica'; shield-size: 12; shield-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
+            Layer[foo>1] label { shield-size: 10; }
+            Layer[bar=baz] label { shield-size: 14; }
+            Layer[bar=quux] label { shield-size: 16; }
+    
+            Layer { point-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
+        """
+    
+        declarations = stylesheet_declarations(s, is_gym=True)
+        
+        layer = xml.etree.ElementTree.Element('Layer')
+        layer.append(xml.etree.ElementTree.Element('Datasource'))
+    
+        map = xml.etree.ElementTree.Element('Map')
+        map.append(layer)
+        
+        add_shield_styles(map, layer, declarations, self.tmpdir)
+        add_point_style(map, layer, declarations, self.tmpdir)
+        
+        self.assertEqual(2, len(map.findall('Layer/StyleName')))
+        
+        stylenames = [stylename.text for stylename in map.findall('Layer/StyleName')]
+        
+        style_els = map.findall('Style')
+        
+        self.assertEqual(2, len(style_els))
+    
+        assert style_els[0].get('name') in (stylenames)
+        shield_rule_els = style_els[0].findall('Rule')
+        
+        assert shield_rule_els[0].find('MinScaleDenominator') is None
+        assert shield_rule_els[0].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[0].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[0].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('12', shield_rule_els[0].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] <= 1", shield_rule_els[0].find('Filter').text)
+        
+        assert shield_rule_els[1].find('MinScaleDenominator') is None
+        assert shield_rule_els[1].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[1].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[1].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('10', shield_rule_els[1].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] > 1", shield_rule_els[1].find('Filter').text)
+        
+        assert shield_rule_els[2].find('MinScaleDenominator') is None
+        assert shield_rule_els[2].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[2].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[2].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('14', shield_rule_els[2].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("[bar] = 'baz' and [foo] <= 1", shield_rule_els[2].find('Filter').text)
+        
+        assert shield_rule_els[3].find('MinScaleDenominator') is None
+        assert shield_rule_els[3].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[3].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[3].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('14', shield_rule_els[3].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("[bar] = 'baz' and [foo] > 1", shield_rule_els[3].find('Filter').text)
+        
+        assert shield_rule_els[4].find('MinScaleDenominator') is None
+        assert shield_rule_els[4].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[4].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[4].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('16', shield_rule_els[4].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("[bar] = 'quux' and [foo] <= 1", shield_rule_els[4].find('Filter').text)
+        
+        assert shield_rule_els[5].find('MinScaleDenominator') is None
+        assert shield_rule_els[5].find('MaxScaleDenominator') is None
+        self.assertEqual('label', shield_rule_els[5].find('ShieldSymbolizer').get('name'))
+        self.assertEqual('Helvetica', shield_rule_els[5].find('ShieldSymbolizer').get('face_name'))
+        self.assertEqual('16', shield_rule_els[5].find('ShieldSymbolizer').get('size'))
+        self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('height'))
+        self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('width'))
+        self.assertEqual("[bar] = 'quux' and [foo] > 1", shield_rule_els[5].find('Filter').text)
+    
+        assert style_els[1].get('name') in (stylenames)
+        point_rule_els = style_els[1].findall('Rule')
+        
+        assert point_rule_els[0].find('Filter') is None
+        assert point_rule_els[0].find('MinScaleDenominator') is None
+        assert point_rule_els[0].find('MaxScaleDenominator') is None
+        self.assertEqual('png', point_rule_els[0].find('PointSymbolizer').get('type'))
+        self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('height'))
+        self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('width'))
+
+    def testStyleRules7(self):
+        s = """
+            Layer { point-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
+            Layer { polygon-pattern-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
+            Layer { line-pattern-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
+        """
+    
+        declarations = stylesheet_declarations(s, is_gym=True)
+        
+        layer = xml.etree.ElementTree.Element('Layer')
+        layer.append(xml.etree.ElementTree.Element('Datasource'))
+    
+        map = xml.etree.ElementTree.Element('Map')
+        map.append(layer)
+        
+        add_point_style(map, layer, declarations, self.tmpdir)
+        add_polygon_pattern_style(map, layer, declarations, self.tmpdir)
+        add_line_pattern_style(map, layer, declarations, self.tmpdir)
+        
+        self.assertEqual(3, len(map.findall('Layer/StyleName')))
+        
+        stylenames = [stylename.text for stylename in map.findall('Layer/StyleName')]
+        
+        style_els = map.findall('Style')
+        
+        self.assertEqual(3, len(style_els))
+    
+        assert style_els[0].get('name') in (stylenames)
+        point_rule_els = style_els[0].findall('Rule')
+        
+        assert point_rule_els[0].find('Filter') is None
+        assert point_rule_els[0].find('MinScaleDenominator') is None
+        assert point_rule_els[0].find('MaxScaleDenominator') is None
+        self.assertEqual('png', point_rule_els[0].find('PointSymbolizer').get('type'))
+        self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('height'))
+        self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('width'))
+    
+        assert style_els[1].get('name') in (stylenames)
+        point_rule_els = style_els[1].findall('Rule')
+        
+        assert point_rule_els[0].find('Filter') is None
+        assert point_rule_els[0].find('MinScaleDenominator') is None
+        assert point_rule_els[0].find('MaxScaleDenominator') is None
+        self.assertEqual('png', point_rule_els[0].find('PolygonPatternSymbolizer').get('type'))
+        self.assertEqual('8', point_rule_els[0].find('PolygonPatternSymbolizer').get('height'))
+        self.assertEqual('8', point_rule_els[0].find('PolygonPatternSymbolizer').get('width'))
+    
+        assert style_els[2].get('name') in (stylenames)
+        point_rule_els = style_els[2].findall('Rule')
+        
+        assert point_rule_els[0].find('Filter') is None
+        assert point_rule_els[0].find('MinScaleDenominator') is None
+        assert point_rule_els[0].find('MaxScaleDenominator') is None
+        self.assertEqual('png', point_rule_els[0].find('LinePatternSymbolizer').get('type'))
+        self.assertEqual('8', point_rule_els[0].find('LinePatternSymbolizer').get('height'))
+        self.assertEqual('8', point_rule_els[0].find('LinePatternSymbolizer').get('width'))
 
 if __name__ == '__main__':
     unittest.main()
