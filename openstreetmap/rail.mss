@@ -37,14 +37,14 @@
 {
     point-file: url('img/icons/24x24/symbol/transport/railway=station.png');
     point-allow-overlap: true;
-    text-dy: 20;
+    text-dy: 24;
 }
 
 .transit.point[aeroway=airport][zoom>=17],
 .transit.point[aeroway=aerodrome][zoom>=17]
 {
     point-file: url('img/icons/24x24/symbol/transport/amenity=airport.png');
-    text-dy: 20;
+    text-dy: 24;
 }
 
 .transit.point[railway=station][zoom>=15][zoom<=16],
@@ -52,14 +52,14 @@
 {
     point-file: url('img/icons/16x16/symbol/transport/railway=station.png');
     point-allow-overlap: true;
-    text-dy: 16;
+    text-dy: 20;
 }
 
 .transit.point[aeroway=airport][zoom>=14][zoom<=16],
 .transit.point[aeroway=aerodrome][zoom>=14][zoom<=16]
 {
     point-file: url('img/icons/24x24/symbol/transport/amenity=airport.png');
-    text-dy: 20;
+    text-dy: 24;
 }
 
 .transit.point[zoom>=17] name
@@ -83,19 +83,19 @@
 {
     point-file: url('img/icons/12x12/symbol/transport/railway=station.png');
     /* point-allow-overlap: true; */
-    text-dy: 14;
+    text-dy: 18;
 }
 
 .transit.point[aeroway=airport][zoom>=12][zoom<=13],
 .transit.point[aeroway=aerodrome][zoom>=12][zoom<=13]
 {
     point-file: url('img/icons/16x16/symbol/transport/amenity=airport.png');
-    text-dy: 16;
+    text-dy: 20;
 }
 
 .transit.point[aeroway=airport][zoom>=9][zoom<=11],
 .transit.point[aeroway=aerodrome][zoom>=9][zoom<=11]
 {
     point-file: url('img/icons/12x12/symbol/transport/amenity=airport.png');
-    text-dy: 14;
+    text-dy: 18;
 }
