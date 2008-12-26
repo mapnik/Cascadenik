@@ -232,7 +232,7 @@
             <Parameter name="password">0sm</Parameter>
             <Parameter name="dbname">osm_bayarea</Parameter>
             <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway = 'motorway') AS motorways</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway IN ('motorway', 'trunk')) AS motorways</Parameter>
         </Datasource>
     </Layer>
     <Layer status="off" class="motorway inline" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
@@ -244,7 +244,7 @@
             <Parameter name="password">0sm</Parameter>
             <Parameter name="dbname">osm_bayarea</Parameter>
             <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway = 'motorway') AS motorways</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway IN ('motorway', 'trunk')) AS motorways</Parameter>
         </Datasource>
     </Layer>
 
@@ -287,7 +287,7 @@
             <Parameter name="table">(SELECT *, COALESCE(z_order, 0) AS correct_z_order, (CASE WHEN place = 'city' THEN 0 WHEN place = 'town' THEN 1 WHEN place = 'village' THEN 2 ELSE 3 END) AS priority FROM osm_bayarea_point WHERE place IN ('city', 'town', 'hamlet', 'village') ORDER BY priority ASC, correct_z_order DESC) AS places</Parameter>
         </Datasource>
     </Layer>
-    <Layer status="off" class="rail point" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Layer status="off" class="transit point" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
             <Parameter name="host">127.0.0.1</Parameter>

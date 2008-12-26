@@ -302,7 +302,7 @@
             <Parameter name="table">(SELECT *, COALESCE(z_order, 0) AS correct_z_order, (CASE WHEN place = 'city' THEN 0 WHEN place = 'town' THEN 1 WHEN place = 'village' THEN 2 ELSE 3 END) AS priority FROM osm_bayarea_point WHERE place IN ('city', 'town', 'hamlet', 'village') ORDER BY priority ASC, correct_z_order DESC) AS places</Parameter>
         </Datasource>
     </Layer>
-    <Layer class="rail point" srs="&osm_srs;">
+    <Layer class="transit point" srs="&osm_srs;">
         <Datasource>
             <Parameter name="type">postgis</Parameter>
             <Parameter name="host">&host;</Parameter>
@@ -311,7 +311,13 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT *, y(astext(way)) AS latitude FROM osm_bayarea_point WHERE railway IN ('station', 'subway_entrance') AND name IS NOT NULL ORDER BY z_order ASC, latitude DESC) AS rail_points</Parameter>
+            <Parameter name="table"><![CDATA[
+                (SELECT *, y(astext(way)) AS latitude
+                 FROM osm_bayarea_point
+                 WHERE (railway IN ('station', 'subway_entrance')
+                        OR aeroway IN ('aerodrome', 'airport'))
+                   AND name IS NOT NULL
+                 ORDER BY z_order ASC, latitude DESC) AS rail_points]]></Parameter>
         </Datasource>
     </Layer>
     <Layer class="road label major" srs="&osm_srs;">
