@@ -296,7 +296,13 @@
             <Parameter name="password">0sm</Parameter>
             <Parameter name="dbname">osm_bayarea</Parameter>
             <Parameter name="estimate_extent">false</Parameter>
-            <Parameter name="table">(SELECT *, y(astext(way)) AS latitude FROM osm_bayarea_point WHERE railway IN ('station', 'subway_entrance') AND name IS NOT NULL ORDER BY z_order ASC, latitude DESC) AS rail_points</Parameter>
+            <Parameter name="table"><![CDATA[
+                (SELECT *, y(astext(way)) AS latitude
+                 FROM osm_bayarea_point
+                 WHERE (railway IN ('station', 'subway_entrance')
+                        OR aeroway IN ('aerodrome', 'airport'))
+                   AND name IS NOT NULL
+                 ORDER BY z_order ASC, latitude DESC) AS rail_points]]></Parameter>
         </Datasource>
     </Layer>
     <Layer status="off" class="road label major" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
