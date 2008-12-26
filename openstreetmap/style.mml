@@ -247,7 +247,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway = 'motorway') AS motorways</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway IN ('motorway', 'trunk')) AS motorways</Parameter>
         </Datasource>
     </Layer>
     <Layer class="motorway inline" srs="&osm_srs;">
@@ -259,7 +259,7 @@
             <Parameter name="password">&password;</Parameter>
             <Parameter name="dbname">&dbname;</Parameter>
             <Parameter name="estimate_extent">&estimate_extent;</Parameter>
-            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway = 'motorway') AS motorways</Parameter>
+            <Parameter name="table">(SELECT * FROM osm_bayarea_line WHERE highway IN ('motorway', 'trunk')) AS motorways</Parameter>
         </Datasource>
     </Layer>
 

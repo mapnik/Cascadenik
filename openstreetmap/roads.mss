@@ -102,19 +102,19 @@
     line-pattern-file: url('img/oneway-arrow.png');
 }
 
-.motorway.inline[zoom>=15]
+.motorway.inline[highway=motorway][zoom>=15]
 {
     line-width: 1;
     line-color: #ff9460;
     line-dasharray: 12, 12;
 }
 
-.motorway.inline[zoom=16]
+.motorway.inline[highway=motorway][zoom=16]
 {
     line-color: #ffad78;
 }
 
-.motorway.inline[zoom>=17]
+.motorway.inline[highway=motorway][zoom>=17]
 {
     line-color: #f9c38d;
 }
@@ -151,6 +151,8 @@
     text-size: 12 !important;
 }
 
+.road.label.major[zoom>=7][highway=trunk] ref_content,
+.road.label.major[zoom>=7][highway=primary] ref_content,
 .road.label.major[zoom>=7][highway=motorway] ref_content
 {
     shield-face-name: "DejaVu Sans Bold";
@@ -159,14 +161,30 @@
     shield-fill: #000;
 }
 
-.road.label.major[zoom>=7][highway=motorway][ref_length=2] ref_content { shield-file: url('img/horizontal-shield-2.png'); }
-.road.label.major[zoom>=7][highway=motorway][ref_length=3] ref_content { shield-file: url('img/horizontal-shield-3.png'); }
-.road.label.major[zoom>=7][highway=motorway][ref_length=4] ref_content { shield-file: url('img/horizontal-shield-4.png'); }
-.road.label.major[zoom>=7][highway=motorway][ref_length=5] ref_content { shield-file: url('img/horizontal-shield-5.png'); }
-.road.label.major[zoom>=7][highway=motorway][ref_length=6] ref_content { shield-file: url('img/horizontal-shield-6.png'); }
-.road.label.major[zoom>=7][highway=motorway][ref_length=7] ref_content { shield-file: url('img/horizontal-shield-7.png'); }
-.road.label.major[zoom>=7][highway=motorway][ref_length=8] ref_content { shield-file: url('img/horizontal-shield-8.png'); }
-.road.label.major[zoom>=7][highway=motorway][ref_length=9] ref_content { shield-file: url('img/horizontal-shield-9.png'); }
+.road.label.major[zoom>=7][ref_length=2][highway=trunk] ref_content,
+.road.label.major[zoom>=7][ref_length=2][highway=primary] ref_content,
+.road.label.major[zoom>=7][ref_length=2][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-2.png'); }
+.road.label.major[zoom>=7][ref_length=3][highway=trunk] ref_content,
+.road.label.major[zoom>=7][ref_length=3][highway=primary] ref_content,
+.road.label.major[zoom>=7][ref_length=3][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-3.png'); }
+.road.label.major[zoom>=7][ref_length=4][highway=trunk] ref_content,
+.road.label.major[zoom>=7][ref_length=4][highway=primary] ref_content,
+.road.label.major[zoom>=7][ref_length=4][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-4.png'); }
+.road.label.major[zoom>=7][ref_length=5][highway=trunk] ref_content,
+.road.label.major[zoom>=7][ref_length=5][highway=primary] ref_content,
+.road.label.major[zoom>=7][ref_length=5][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-5.png'); }
+.road.label.major[zoom>=7][ref_length=6][highway=trunk] ref_content,
+.road.label.major[zoom>=7][ref_length=6][highway=primary] ref_content,
+.road.label.major[zoom>=7][ref_length=6][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-6.png'); }
+.road.label.major[zoom>=7][ref_length=7][highway=trunk] ref_content,
+.road.label.major[zoom>=7][ref_length=7][highway=primary] ref_content,
+.road.label.major[zoom>=7][ref_length=7][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-7.png'); }
+.road.label.major[zoom>=7][ref_length=8][highway=trunk] ref_content,
+.road.label.major[zoom>=7][ref_length=8][highway=primary] ref_content,
+.road.label.major[zoom>=7][ref_length=8][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-8.png'); }
+.road.label.major[zoom>=7][ref_length=9][highway=trunk] ref_content,
+.road.label.major[zoom>=7][ref_length=9][highway=primary] ref_content,
+.road.label.major[zoom>=7][ref_length=9][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-9.png'); }
 
 
 
@@ -204,12 +222,14 @@
     line-color: #b5b880;
 }
 
+.motorway.inline[highway=trunk],
 .road.inline[highway=trunk],
 .road.inline[highway=primary]
 {
     line-color: #ffec9f;
 }
 
+.motorway.outline[highway=trunk],
 .road.outline[highway=trunk],
 .road.outline[highway=primary]
 {
@@ -226,13 +246,13 @@
     line-color: #6d8aa7;
 }
 
-.motorway.inline,
+.motorway.inline[highway=motorway],
 .road.inline[highway=motorway]
 {
     line-color: #ff5559;
 }
 
-.motorway.outline,
+.motorway.outline[highway=motorway],
 .road.outline[highway=motorway]
 {
     line-color: #03317d;
@@ -249,9 +269,9 @@
 .road.inline { outline-color: #d2d2d2; }
 .road.inline[highway=tertiary] { outline-color: #c3c3c3; }
 .road.inline[highway=secondary] { outline-color: #b5b880; }
-.road.inline[highway=trunk], .road.inline[highway=primary] { outline-color: #b1a67b; }
+.motorway.inline[highway=trunk], .road.inline[highway=trunk], .road.inline[highway=primary] { outline-color: #b1a67b; }
 .road.inline[highway=motorway_link] { outline-color: #6d8aa7; }
-.motorway.inline, .road.inline[highway=motorway] { outline-color: #03317d; }
+.motorway.inline[highway=motorway], .road.inline[highway=motorway] { outline-color: #03317d; }
 .road.inline[highway=motorway] { outline-color: #03317d; }
 .road.inline[zoom>=16][highway=motorway] { outline-color: #6c7dd5; }
 
