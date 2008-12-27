@@ -162,28 +162,28 @@
 }
 
 .road.label.major[zoom>=7][ref_length=2][highway=trunk] ref_content,
-.road.label.major[zoom>=7][ref_length=2][highway=primary] ref_content,
+.road.label.major[zoom>=11][ref_length=2][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=2][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-2.png'); }
 .road.label.major[zoom>=7][ref_length=3][highway=trunk] ref_content,
-.road.label.major[zoom>=7][ref_length=3][highway=primary] ref_content,
+.road.label.major[zoom>=11][ref_length=3][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=3][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-3.png'); }
 .road.label.major[zoom>=7][ref_length=4][highway=trunk] ref_content,
-.road.label.major[zoom>=7][ref_length=4][highway=primary] ref_content,
+.road.label.major[zoom>=11][ref_length=4][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=4][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-4.png'); }
 .road.label.major[zoom>=7][ref_length=5][highway=trunk] ref_content,
-.road.label.major[zoom>=7][ref_length=5][highway=primary] ref_content,
+.road.label.major[zoom>=11][ref_length=5][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=5][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-5.png'); }
 .road.label.major[zoom>=7][ref_length=6][highway=trunk] ref_content,
-.road.label.major[zoom>=7][ref_length=6][highway=primary] ref_content,
+.road.label.major[zoom>=11][ref_length=6][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=6][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-6.png'); }
 .road.label.major[zoom>=7][ref_length=7][highway=trunk] ref_content,
-.road.label.major[zoom>=7][ref_length=7][highway=primary] ref_content,
+.road.label.major[zoom>=11][ref_length=7][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=7][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-7.png'); }
 .road.label.major[zoom>=7][ref_length=8][highway=trunk] ref_content,
-.road.label.major[zoom>=7][ref_length=8][highway=primary] ref_content,
+.road.label.major[zoom>=11][ref_length=8][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=8][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-8.png'); }
 .road.label.major[zoom>=7][ref_length=9][highway=trunk] ref_content,
-.road.label.major[zoom>=7][ref_length=9][highway=primary] ref_content,
+.road.label.major[zoom>=11][ref_length=9][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=9][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-9.png'); }
 
 
