@@ -32,8 +32,10 @@
 
 /** Road Weights **/
 
-.motorway.inline[zoom>=7][zoom<=11] { line-width: 2; }
-.motorway.outline[zoom>=7][zoom<=11] { line-width: 4; }
+.motorway.inline[zoom>=9][zoom<=11][highway=trunk] { line-width: 2; }
+.motorway.outline[zoom>=9][zoom<=11][highway=trunk] { line-width: 4; }
+.motorway.inline[zoom>=7][zoom<=11][highway=motorway] { line-width: 2; }
+.motorway.outline[zoom>=7][zoom<=11][highway=motorway] { line-width: 4; }
 
 .road.inline[zoom>=7][zoom<=11][prominence=major][highway=motoryway] { line-width: 2; }
 .road.outline[zoom>=7][zoom<=11][prominence=major][highway=motoryway] { line-width: 4; }
@@ -151,8 +153,8 @@
     text-size: 12 !important;
 }
 
-.road.label.major[zoom>=7][highway=trunk] ref_content,
-.road.label.major[zoom>=7][highway=primary] ref_content,
+.road.label.major[zoom>=9][highway=trunk] ref_content,
+.road.label.major[zoom>=11][highway=primary] ref_content,
 .road.label.major[zoom>=7][highway=motorway] ref_content
 {
     shield-face-name: "DejaVu Sans Bold";
@@ -161,28 +163,28 @@
     shield-fill: #000;
 }
 
-.road.label.major[zoom>=7][ref_length=2][highway=trunk] ref_content,
+.road.label.major[zoom>=9][ref_length=2][highway=trunk] ref_content,
 .road.label.major[zoom>=11][ref_length=2][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=2][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-2.png'); }
-.road.label.major[zoom>=7][ref_length=3][highway=trunk] ref_content,
+.road.label.major[zoom>=9][ref_length=3][highway=trunk] ref_content,
 .road.label.major[zoom>=11][ref_length=3][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=3][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-3.png'); }
-.road.label.major[zoom>=7][ref_length=4][highway=trunk] ref_content,
+.road.label.major[zoom>=9][ref_length=4][highway=trunk] ref_content,
 .road.label.major[zoom>=11][ref_length=4][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=4][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-4.png'); }
-.road.label.major[zoom>=7][ref_length=5][highway=trunk] ref_content,
+.road.label.major[zoom>=9][ref_length=5][highway=trunk] ref_content,
 .road.label.major[zoom>=11][ref_length=5][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=5][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-5.png'); }
-.road.label.major[zoom>=7][ref_length=6][highway=trunk] ref_content,
+.road.label.major[zoom>=9][ref_length=6][highway=trunk] ref_content,
 .road.label.major[zoom>=11][ref_length=6][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=6][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-6.png'); }
-.road.label.major[zoom>=7][ref_length=7][highway=trunk] ref_content,
+.road.label.major[zoom>=9][ref_length=7][highway=trunk] ref_content,
 .road.label.major[zoom>=11][ref_length=7][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=7][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-7.png'); }
-.road.label.major[zoom>=7][ref_length=8][highway=trunk] ref_content,
+.road.label.major[zoom>=9][ref_length=8][highway=trunk] ref_content,
 .road.label.major[zoom>=11][ref_length=8][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=8][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-8.png'); }
-.road.label.major[zoom>=7][ref_length=9][highway=trunk] ref_content,
+.road.label.major[zoom>=9][ref_length=9][highway=trunk] ref_content,
 .road.label.major[zoom>=11][ref_length=9][highway=primary] ref_content,
 .road.label.major[zoom>=7][ref_length=9][highway=motorway] ref_content { shield-file: url('img/horizontal-shield-9.png'); }
 
