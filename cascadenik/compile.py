@@ -567,7 +567,7 @@ def add_polygon_style(map_el, layer_el, declarations):
     for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
         symbolizer_el = Element('PolygonSymbolizer')
         
-        for (parameter, value) in parameter_values.items():
+        for (parameter, value) in sorted(parameter_values.items()):
             parameter = Element('CssParameter', {'name': parameter})
             parameter.text = str(value)
             symbolizer_el.append(parameter)
@@ -596,46 +596,59 @@ def add_line_style(map_el, layer_el, declarations):
                     'line-opacity': 'stroke-opacity', 'line-join': 'stroke-linejoin',
                     'line-cap': 'stroke-linecap', 'line-dasharray': 'stroke-dasharray'}
 
-    # temporarily prepend parameter names with 'in:' and 'out:' to be removed later
+    # temporarily prepend parameter names with 'in:', 'on:', and 'out:' to be removed later
     for (property_name, parameter) in property_map.items():
+        property_map['in' + property_name] = 'in:' + parameter
         property_map['out' + property_name] = 'out:' + parameter
-        property_map[property_name] = 'in:' + parameter
+        property_map[property_name] = 'on:' + parameter
     
     # a place to put rule elements
     rule_els = []
     
     for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
-        if 'in:stroke' in parameter_values and 'in:stroke-width' in parameter_values:
-            insymbolizer_el = Element('LineSymbolizer')
+        if 'on:stroke' in parameter_values and 'on:stroke-width' in parameter_values:
+            line_symbolizer_el = Element('LineSymbolizer')
         else:
             # we can do nothing with a weightless, colorless line
             continue
         
         if 'out:stroke' in parameter_values and 'out:stroke-width' in parameter_values:
-            outsymbolizer_el = Element('LineSymbolizer')
+            outline_symbolizer_el = Element('LineSymbolizer')
         else:
             # we can do nothing with a weightless, colorless outline
-            outsymbolizer_el = False
+            outline_symbolizer_el = False
         
-        for (parameter, value) in parameter_values.items():
-            if parameter.startswith('in:'):
+        if 'in:stroke' in parameter_values and 'in:stroke-width' in parameter_values:
+            inline_symbolizer_el = Element('LineSymbolizer')
+        else:
+            # we can do nothing with a weightless, colorless inline
+            inline_symbolizer_el = False
+        
+        for (parameter, value) in sorted(parameter_values.items()):
+            if parameter.startswith('on:'):
+                # knock off the leading 'on:' from above
+                parameter = Element('CssParameter', {'name': parameter[3:]})
+                parameter.text = str(value)
+                line_symbolizer_el.append(parameter)
+
+            elif parameter.startswith('in:') and inline_symbolizer_el != False:
                 # knock off the leading 'in:' from above
                 parameter = Element('CssParameter', {'name': parameter[3:]})
                 parameter.text = str(value)
-                insymbolizer_el.append(parameter)
+                inline_symbolizer_el.append(parameter)
 
-            elif parameter.startswith('out:') and outsymbolizer_el != False:
+            elif parameter.startswith('out:') and outline_symbolizer_el != False:
                 # for the width...
                 if parameter == 'out:stroke-width':
                     # ...double the weight and add the interior to make a proper outline
-                    value = parameter_values['in:stroke-width'].value + 2 * value.value
+                    value = parameter_values['on:stroke-width'].value + 2 * value.value
             
                 # knock off the leading 'out:' from above
                 parameter = Element('CssParameter', {'name': parameter[4:]})
                 parameter.text = str(value)
-                outsymbolizer_el.append(parameter)
+                outline_symbolizer_el.append(parameter)
 
-        rule_el = make_rule_element(filter, outsymbolizer_el, insymbolizer_el)
+        rule_el = make_rule_element(filter, outline_symbolizer_el, line_symbolizer_el, inline_symbolizer_el)
         rule_els.append(rule_el)
     
     if rule_els:

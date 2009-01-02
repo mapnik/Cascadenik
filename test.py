@@ -802,45 +802,45 @@ class StyleRuleTests(unittest.TestCase):
         line_rule_els = style_els[1].findall('Rule')
         
         self.assertEqual('399999', line_rule_els[0].find('MaxScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('2.0', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#00ffff', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#00ffff', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('2.0', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] < 1', line_rule_els[0].find('Filter').text)
         
         self.assertEqual('400000', line_rule_els[1].find('MinScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('1.0', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#00ffff', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#00ffff', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('1.0', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] < 1', line_rule_els[1].find('Filter').text)
         
         self.assertEqual('399999', line_rule_els[2].find('MaxScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('2.0', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#ff00ff', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#ff00ff', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('2.0', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] = 1', line_rule_els[2].find('Filter').text)
     
         self.assertEqual('400000', line_rule_els[3].find('MinScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('1.0', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#ff00ff', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#ff00ff', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('1.0', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] = 1', line_rule_els[3].find('Filter').text)
         
         self.assertEqual('399999', line_rule_els[4].find('MaxScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('2.0', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#ffff00', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#ffff00', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('2.0', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] > 1', line_rule_els[4].find('Filter').text)
     
         self.assertEqual('400000', line_rule_els[5].find('MinScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('1.0', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#ffff00', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#ffff00', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('1.0', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] > 1', line_rule_els[5].find('Filter').text)
 
     def testStyleRules4(self):
@@ -879,45 +879,45 @@ class StyleRuleTests(unittest.TestCase):
         line_rule_els = style_els[0].findall('Rule')
         
         self.assertEqual('399999', line_rule_els[0].find('MaxScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('2.0', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#00ffff', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#00ffff', line_rule_els[0].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('2.0', line_rule_els[0].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] < 1', line_rule_els[0].find('Filter').text)
         
         self.assertEqual('400000', line_rule_els[1].find('MinScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('1.0', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#00ffff', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#00ffff', line_rule_els[1].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('1.0', line_rule_els[1].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] < 1', line_rule_els[1].find('Filter').text)
         
         self.assertEqual('399999', line_rule_els[2].find('MaxScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('2.0', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#ff00ff', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#ff00ff', line_rule_els[2].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('2.0', line_rule_els[2].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] = 1', line_rule_els[2].find('Filter').text)
     
         self.assertEqual('400000', line_rule_els[3].find('MinScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('1.0', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#ff00ff', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#ff00ff', line_rule_els[3].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('1.0', line_rule_els[3].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] = 1', line_rule_els[3].find('Filter').text)
         
         self.assertEqual('399999', line_rule_els[4].find('MaxScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('2.0', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#ffff00', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#ffff00', line_rule_els[4].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('2.0', line_rule_els[4].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] > 1', line_rule_els[4].find('Filter').text)
     
         self.assertEqual('400000', line_rule_els[5].find('MinScaleDenominator').text)
-        self.assertEqual('stroke-width', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].get('name'))
-        self.assertEqual('1.0', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].text)
-        self.assertEqual('stroke', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].get('name'))
-        self.assertEqual('#ffff00', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].text)
+        self.assertEqual('stroke', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#ffff00', line_rule_els[5].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('1.0', line_rule_els[5].findall('LineSymbolizer/CssParameter')[1].text)
         self.assertEqual('[foo] > 1', line_rule_els[5].find('Filter').text)
         
         assert style_els[1].get('name') in (stylenames)
@@ -1214,6 +1214,108 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('png', point_rule_els[0].find('LinePatternSymbolizer').get('type'))
         self.assertEqual('8', point_rule_els[0].find('LinePatternSymbolizer').get('height'))
         self.assertEqual('8', point_rule_els[0].find('LinePatternSymbolizer').get('width'))
+
+    def testStyleRules8(self):
+        s = """
+            Layer { line-width: 3; line-color: #fff; }
+            Layer[foo=1] { outline-width: 1; outline-color: #000; }
+            Layer[bar=1] { inline-width: 1; inline-color: #999; }
+        """
+    
+        declarations = stylesheet_declarations(s, is_gym=True)
+        
+        layer = xml.etree.ElementTree.Element('Layer')
+        layer.append(xml.etree.ElementTree.Element('Datasource'))
+    
+        map = xml.etree.ElementTree.Element('Map')
+        map.append(layer)
+        
+        add_line_style(map, layer, declarations)
+        
+        self.assertEqual(1, len(map.findall('Layer/StyleName')))
+        
+        stylenames = [stylename.text for stylename in map.findall('Layer/StyleName')]
+        
+        style_els = map.findall('Style')
+        
+        self.assertEqual(1, len(style_els))
+        
+        assert style_els[0].get('name') in (stylenames)
+        line_rule_els = style_els[0].findall('Rule')
+    
+        self.assertEqual(4, len(line_rule_els))
+        
+    
+        assert line_rule_els[0].find('MinScaleDenominator') is None
+        assert line_rule_els[0].find('MaxScaleDenominator') is None
+        self.assertEqual("not [bar] = 1 and not [foo] = 1", line_rule_els[0].find('Filter').text)
+        self.assertEqual(1, len(line_rule_els[0].findall('LineSymbolizer')))
+        
+        line_symbolizer = line_rule_els[0].findall('LineSymbolizer')[0]
+        self.assertEqual('stroke', line_symbolizer.findall('CssParameter')[0].get('name'))
+        self.assertEqual('#ffffff', line_symbolizer.findall('CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_symbolizer.findall('CssParameter')[1].get('name'))
+        self.assertEqual('3.0', line_symbolizer.findall('CssParameter')[1].text)
+        
+    
+        assert line_rule_els[1].find('MinScaleDenominator') is None
+        assert line_rule_els[1].find('MaxScaleDenominator') is None
+        self.assertEqual("not [bar] = 1 and [foo] = 1", line_rule_els[1].find('Filter').text)
+        self.assertEqual(2, len(line_rule_els[1].findall('LineSymbolizer')))
+        
+        outline_symbolizer = line_rule_els[1].findall('LineSymbolizer')[0]
+        self.assertEqual('stroke', outline_symbolizer.findall('CssParameter')[0].get('name'))
+        self.assertEqual('#000000', outline_symbolizer.findall('CssParameter')[0].text)
+        self.assertEqual('stroke-width', outline_symbolizer.findall('CssParameter')[1].get('name'))
+        self.assertEqual('5.0', outline_symbolizer.findall('CssParameter')[1].text)
+        
+        line_symbolizer = line_rule_els[1].findall('LineSymbolizer')[1]
+        self.assertEqual('stroke', line_symbolizer.findall('CssParameter')[0].get('name'))
+        self.assertEqual('#ffffff', line_symbolizer.findall('CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_symbolizer.findall('CssParameter')[1].get('name'))
+        self.assertEqual('3.0', line_symbolizer.findall('CssParameter')[1].text)
+    
+    
+        assert line_rule_els[2].find('MinScaleDenominator') is None
+        assert line_rule_els[2].find('MaxScaleDenominator') is None
+        self.assertEqual("[bar] = 1 and not [foo] = 1", line_rule_els[2].find('Filter').text)
+        self.assertEqual(2, len(line_rule_els[2].findall('LineSymbolizer')))
+        
+        line_symbolizer = line_rule_els[2].findall('LineSymbolizer')[0]
+        self.assertEqual('stroke', line_symbolizer.findall('CssParameter')[0].get('name'))
+        self.assertEqual('#ffffff', line_symbolizer.findall('CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_symbolizer.findall('CssParameter')[1].get('name'))
+        self.assertEqual('3.0', line_symbolizer.findall('CssParameter')[1].text)
+        
+        inline_symbolizer = line_rule_els[2].findall('LineSymbolizer')[1]
+        self.assertEqual('stroke', inline_symbolizer.findall('CssParameter')[0].get('name'))
+        self.assertEqual('#999999', inline_symbolizer.findall('CssParameter')[0].text)
+        self.assertEqual('stroke-width', inline_symbolizer.findall('CssParameter')[1].get('name'))
+        self.assertEqual('1.0', inline_symbolizer.findall('CssParameter')[1].text)
+        
+    
+        assert line_rule_els[3].find('MinScaleDenominator') is None
+        assert line_rule_els[3].find('MaxScaleDenominator') is None
+        self.assertEqual("[bar] = 1 and [foo] = 1", line_rule_els[3].find('Filter').text)
+        self.assertEqual(3, len(line_rule_els[3].findall('LineSymbolizer')))
+        
+        outline_symbolizer = line_rule_els[3].findall('LineSymbolizer')[0]
+        self.assertEqual('stroke', outline_symbolizer.findall('CssParameter')[0].get('name'))
+        self.assertEqual('#000000', outline_symbolizer.findall('CssParameter')[0].text)
+        self.assertEqual('stroke-width', outline_symbolizer.findall('CssParameter')[1].get('name'))
+        self.assertEqual('5.0', outline_symbolizer.findall('CssParameter')[1].text)
+        
+        line_symbolizer = line_rule_els[3].findall('LineSymbolizer')[1]
+        self.assertEqual('stroke', line_symbolizer.findall('CssParameter')[0].get('name'))
+        self.assertEqual('#ffffff', line_symbolizer.findall('CssParameter')[0].text)
+        self.assertEqual('stroke-width', line_symbolizer.findall('CssParameter')[1].get('name'))
+        self.assertEqual('3.0', line_symbolizer.findall('CssParameter')[1].text)
+        
+        inline_symbolizer = line_rule_els[3].findall('LineSymbolizer')[2]
+        self.assertEqual('stroke', inline_symbolizer.findall('CssParameter')[0].get('name'))
+        self.assertEqual('#999999', inline_symbolizer.findall('CssParameter')[0].text)
+        self.assertEqual('stroke-width', inline_symbolizer.findall('CssParameter')[1].get('name'))
+        self.assertEqual('1.0', inline_symbolizer.findall('CssParameter')[1].text)
 
 if __name__ == '__main__':
     unittest.main()

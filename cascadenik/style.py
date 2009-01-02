@@ -121,6 +121,26 @@ properties = {
     # d0,d1, ... (default none)
     'outline-dasharray': None, # Number(s)
 
+    #--------------- line symbolizer for inlines
+
+    # CSS colour (default "black")
+    'inline-color': color,
+
+    # 0.0 - n (default 1.0)
+    'inline-width': float,
+
+    # 0.0 - 1.0 (default 1.0)
+    'inline-opacity': float,
+
+    # miter, round, bevel (default miter)
+    'inline-join': ('miter', 'round', 'bevel'),
+
+    # round, butt, square (default butt)
+    'inline-cap': ('butt', 'round', 'square'),
+
+    # d0,d1, ... (default none)
+    'inline-dasharray': None, # Number(s)
+
     #--------------- text symbolizer
 
     # Font name
