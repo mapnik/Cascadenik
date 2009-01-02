@@ -119,7 +119,7 @@ properties = {
     'outline-cap': ('butt', 'round', 'square'),
 
     # d0,d1, ... (default none)
-    'outline-dasharray': None, # Number(s)
+    'outline-dasharray': numbers, # Number(s)
 
     #--------------- line symbolizer for inlines
 
@@ -139,7 +139,7 @@ properties = {
     'inline-cap': ('butt', 'round', 'square'),
 
     # d0,d1, ... (default none)
-    'inline-dasharray': None, # Number(s)
+    'inline-dasharray': numbers, # Number(s)
 
     #--------------- text symbolizer
 
