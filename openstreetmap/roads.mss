@@ -104,21 +104,21 @@
     line-pattern-file: url('img/oneway-arrow.png');
 }
 
-.motorway.inline[highway=motorway][zoom>=15]
+.road.inline[highway=motorway][zoom>=15]
 {
-    line-width: 1;
-    line-color: #ff9460;
-    line-dasharray: 12, 12;
+    inline-width: 1;
+    inline-color: #ff9460;
+    inline-dasharray: 12, 12;
 }
 
-.motorway.inline[highway=motorway][zoom=16]
+.road.inline[highway=motorway][zoom=16]
 {
-    line-color: #ffad78;
+    inline-color: #ffad78;
 }
 
-.motorway.inline[highway=motorway][zoom>=17]
+.road.inline[highway=motorway][zoom>=17]
 {
-    line-color: #f9c38d;
+    inline-color: #f9c38d;
 }
 
 
