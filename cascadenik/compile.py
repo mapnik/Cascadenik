@@ -498,17 +498,28 @@ def make_rule_element(filter, *symbolizer_els):
     
     return rule_el
 
-def insert_layer_style(map_el, layer_el, style_el):
-    """ Given a Map element, a Layer element, and a Style element, insert the
-        Style element into the flow and point to it from the Layer element.
+def insert_layer_style(map_el, layer_el, style_name, rule_els):
+    """ Given a Map element, a Layer element, a style name and a list of Rule
+        elements, create a new Style element and insert it into the flow and
+        point to it from the Layer element.
     """
+    if not rule_els:
+        return
+    
+    style_el = Element('Style', {'name': style_name})
+    style_el.text = '\n        '
+    
+    for rule_el in rule_els:
+        style_el.append(rule_el)
+    
     style_el.tail = '\n    '
     map_el.insert(map_el._children.index(layer_el), style_el)
     
-    stylename = Element('StyleName')
-    stylename.text = style_el.get('name')
-    stylename.tail = '\n        '
-    layer_el.insert(layer_el._children.index(layer_el.find('Datasource')), stylename)
+    stylename_el = Element('StyleName')
+    stylename_el.text = style_name
+    stylename_el.tail = '\n        '
+
+    layer_el.insert(layer_el._children.index(layer_el.find('Datasource')), stylename_el)
     layer_el.set('status', 'on')
 
 def is_applicable_selector(selector, filter):
@@ -554,7 +565,7 @@ def filtered_property_declarations(declarations, property_map):
 
     return rules
 
-def add_polygon_style(map_el, layer_el, declarations):
+def get_polygon_rules(declarations):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PolygonSymbolizer, add it to Map
         and refer to it in Layer.
@@ -575,16 +586,9 @@ def add_polygon_style(map_el, layer_el, declarations):
         rule_el = make_rule_element(filter, symbolizer_el)
         rule_els.append(rule_el)
     
-    if rule_els:
-        style_el = Element('Style', {'name': 'polygon style %d' % next_counter()})
-        style_el.text = '\n        '
-        
-        for rule_el in rule_els:
-            style_el.append(rule_el)
-        
-        insert_layer_style(map_el, layer_el, style_el)
+    return rule_els
 
-def add_line_style(map_el, layer_el, declarations):
+def get_line_rules(declarations):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a LineSymbolizer, add it to Map
         and refer to it in Layer.
@@ -651,16 +655,9 @@ def add_line_style(map_el, layer_el, declarations):
         rule_el = make_rule_element(filter, outline_symbolizer_el, line_symbolizer_el, inline_symbolizer_el)
         rule_els.append(rule_el)
     
-    if rule_els:
-        style_el = Element('Style', {'name': 'line style %d' % next_counter()})
-        style_el.text = '\n        '
-        
-        for rule_el in rule_els:
-            style_el.append(rule_el)
-        
-        insert_layer_style(map_el, layer_el, style_el)
+    return rule_els
 
-def add_text_styles(map_el, layer_el, declarations):
+def get_text_rule_groups(declarations):
     """ Given a Map element, a Layer element, and a list of declarations,
         create new Style elements with a TextSymbolizer, add them to Map
         and refer to them in Layer.
@@ -679,6 +676,8 @@ def add_text_styles(map_el, layer_el, declarations):
                   for dec in declarations
                   if len(dec.selector.elements) is 2 and len(dec.selector.elements[1].names) is 1]
 
+    rule_el_groups = []
+    
     # a separate style element for each text name
     for text_name in set(text_names):
     
@@ -709,14 +708,9 @@ def add_text_styles(map_el, layer_el, declarations):
             rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
         
-        if rule_els:
-            style_el = Element('Style', {'name': 'text style %d (%s)' % (next_counter(), text_name)})
-            style_el.text = '\n        '
-            
-            for rule_el in rule_els:
-                style_el.append(rule_el)
-            
-            insert_layer_style(map_el, layer_el, style_el)
+        rule_el_groups.append((text_name, rule_els))
+
+    return rule_el_groups
 
 def postprocess_symbolizer_image_file(symbolizer_el, out, temp_name):
     """ Given a sumbolizer element, output directory name, and temporary
@@ -744,7 +738,7 @@ def postprocess_symbolizer_image_file(symbolizer_el, out, temp_name):
         symbolizer_el.set('width', str(img.size[0]))
         symbolizer_el.set('height', str(img.size[1]))
 
-def add_shield_styles(map_el, layer_el, declarations, out=None):
+def get_shield_rule_groups(declarations, out=None):
     """ Given a Map element, a Layer element, and a list of declarations,
         create new Style elements with a TextSymbolizer, add them to Map
         and refer to them in Layer.
@@ -758,6 +752,8 @@ def add_shield_styles(map_el, layer_el, declarations, out=None):
                   for dec in declarations
                   if len(dec.selector.elements) is 2 and len(dec.selector.elements[1].names) is 1]
 
+    rule_el_groups = []
+    
     # a separate style element for each text name
     for text_name in set(text_names):
     
@@ -791,16 +787,11 @@ def add_shield_styles(map_el, layer_el, declarations, out=None):
                 rule_el = make_rule_element(filter, symbolizer_el)
                 rule_els.append(rule_el)
         
-        if rule_els:
-            style_el = Element('Style', {'name': 'shield style %d (%s)' % (next_counter(), text_name)})
-            style_el.text = '\n        '
-            
-            for rule_el in rule_els:
-                style_el.append(rule_el)
-            
-            insert_layer_style(map_el, layer_el, style_el)
+        rule_el_groups.append((text_name, rule_els))
 
-def add_point_style(map_el, layer_el, declarations, out=None):
+    return rule_el_groups
+
+def get_point_rules(declarations, out=None):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PointSymbolizer, add it to Map
         and refer to it in Layer.
@@ -827,16 +818,9 @@ def add_point_style(map_el, layer_el, declarations, out=None):
             rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
     
-    if rule_els:
-        style_el = Element('Style', {'name': 'point style %d' % next_counter()})
-        style_el.text = '\n        '
-        
-        for rule_el in rule_els:
-            style_el.append(rule_el)
-        
-        insert_layer_style(map_el, layer_el, style_el)
+    return rule_els
 
-def add_polygon_pattern_style(map_el, layer_el, declarations, out=None):
+def get_polygon_pattern_rules(declarations, out=None):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PolygonPatternSymbolizer, add it to Map
         and refer to it in Layer.
@@ -862,16 +846,9 @@ def add_polygon_pattern_style(map_el, layer_el, declarations, out=None):
             rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
     
-    if rule_els:
-        style_el = Element('Style', {'name': 'polygon pattern style %d' % next_counter()})
-        style_el.text = '\n        '
-        
-        for rule_el in rule_els:
-            style_el.append(rule_el)
-        
-        insert_layer_style(map_el, layer_el, style_el)
+    return rule_els
 
-def add_line_pattern_style(map_el, layer_el, declarations, out=None):
+def get_line_pattern_rules(declarations, out=None):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a LinePatternSymbolizer, add it to Map
         and refer to it in Layer.
@@ -897,14 +874,7 @@ def add_line_pattern_style(map_el, layer_el, declarations, out=None):
             rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
     
-    if rule_els:
-        style_el = Element('Style', {'name': 'line pattern style %d' % next_counter()})
-        style_el.text = '\n        '
-        
-        for rule_el in rule_els:
-            style_el.append(rule_el)
-        
-        insert_layer_style(map_el, layer_el, style_el)
+    return rule_els
 
 def get_applicable_declarations(element, declarations):
     """ Given an XML element and a list of declarations, return the ones
@@ -993,13 +963,19 @@ def compile(src, dir=None):
         
         #pprint.PrettyPrinter().pprint(layer_declarations)
         
-        add_polygon_style(map, layer, layer_declarations)
-        add_polygon_pattern_style(map, layer, layer_declarations, dir)
-        add_line_style(map, layer, layer_declarations)
-        add_line_pattern_style(map, layer, layer_declarations, dir)
-        add_shield_styles(map, layer, layer_declarations, dir)
-        add_text_styles(map, layer, layer_declarations)
-        add_point_style(map, layer, layer_declarations, dir)
+        insert_layer_style(map, layer, 'polygon style %d' % next_counter(),
+                           get_polygon_rules(layer_declarations) + get_polygon_pattern_rules(layer_declarations, dir))
+        
+        insert_layer_style(map, layer, 'line style %d' % next_counter(),
+                           get_line_rules(layer_declarations) + get_line_pattern_rules(layer_declarations, dir))
+
+        for (shield_name, shield_rule_els) in get_shield_rule_groups(layer_declarations):
+            insert_layer_style(map, layer, 'shield style %d (%s)' % (next_counter(), shield_name), shield_rule_els)
+
+        for (text_name, text_rule_els) in get_text_rule_groups(layer_declarations):
+            insert_layer_style(map, layer, 'text style %d (%s)' % (next_counter(), text_name), text_rule_els)
+
+        insert_layer_style(map, layer, 'point style %d' % next_counter(), get_point_rules(layer_declarations, dir))
         
         layer.set('name', 'layer %d' % next_counter())
         

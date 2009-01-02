@@ -9,8 +9,9 @@ from cascadenik.style import Selector, SelectorElement, SelectorAttributeTest
 from cascadenik.style import postprocess_property, postprocess_value, Property
 from cascadenik.compile import tests_filter_combinations, Filter, selectors_tests
 from cascadenik.compile import filtered_property_declarations, is_applicable_selector
-from cascadenik.compile import add_polygon_style, add_line_style, add_text_styles, add_shield_styles
-from cascadenik.compile import add_point_style, add_polygon_pattern_style, add_line_pattern_style
+from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
+from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
+from cascadenik.compile import insert_layer_style
 
 class ParseTests(unittest.TestCase):
     
@@ -660,7 +661,7 @@ class StyleRuleTests(unittest.TestCase):
         map = xml.etree.ElementTree.Element('Map')
         map.append(layer)
         
-        add_polygon_style(map, layer, declarations)
+        insert_layer_style(map, layer, 'test polygon style', get_polygon_rules(declarations))
         
         assert map.find('Layer/StyleName') is not None
         
@@ -709,7 +710,7 @@ class StyleRuleTests(unittest.TestCase):
         map = xml.etree.ElementTree.Element('Map')
         map.append(layer)
         
-        add_polygon_style(map, layer, declarations)
+        insert_layer_style(map, layer, 'test polygon style', get_polygon_rules(declarations))
         
         assert map.find('Layer/StyleName') is not None
         
@@ -764,8 +765,8 @@ class StyleRuleTests(unittest.TestCase):
         map = xml.etree.ElementTree.Element('Map')
         map.append(layer)
         
-        add_polygon_style(map, layer, declarations)
-        add_line_style(map, layer, declarations)
+        insert_layer_style(map, layer, 'test polygon style', get_polygon_rules(declarations))
+        insert_layer_style(map, layer, 'test line style', get_line_rules(declarations))
 
         self.assertEqual(2, len(map.findall('Layer/StyleName')))
         
@@ -864,8 +865,10 @@ class StyleRuleTests(unittest.TestCase):
         map = xml.etree.ElementTree.Element('Map')
         map.append(layer)
         
-        add_line_style(map, layer, declarations)
-        add_text_styles(map, layer, declarations)
+        insert_layer_style(map, layer, 'test line style', get_line_rules(declarations))
+        
+        for (text_name, text_rule_els) in get_text_rule_groups(declarations):
+            insert_layer_style(map, layer, 'test text style (%s)' % text_name, text_rule_els)
         
         self.assertEqual(2, len(map.findall('Layer/StyleName')))
         
@@ -967,8 +970,11 @@ class StyleRuleTests(unittest.TestCase):
         map = xml.etree.ElementTree.Element('Map')
         map.append(layer)
         
-        add_text_styles(map, layer, declarations)
-        add_shield_styles(map, layer, declarations, self.tmpdir)
+        for (text_name, text_rule_els) in get_text_rule_groups(declarations):
+            insert_layer_style(map, layer, 'test text style (%s)' % text_name, text_rule_els)
+
+        for (shield_name, shield_rule_els) in get_shield_rule_groups(declarations):
+            insert_layer_style(map, layer, 'test shield style (%s)' % shield_name, shield_rule_els)
         
         self.assertEqual(2, len(map.findall('Layer/StyleName')))
         
@@ -1080,8 +1086,10 @@ class StyleRuleTests(unittest.TestCase):
         map = xml.etree.ElementTree.Element('Map')
         map.append(layer)
         
-        add_shield_styles(map, layer, declarations, self.tmpdir)
-        add_point_style(map, layer, declarations, self.tmpdir)
+        for (shield_name, shield_rule_els) in get_shield_rule_groups(declarations):
+            insert_layer_style(map, layer, 'test shield style (%s)' % shield_name, shield_rule_els)
+
+        insert_layer_style(map, layer, 'test point style', get_point_rules(declarations, self.tmpdir))
         
         self.assertEqual(2, len(map.findall('Layer/StyleName')))
         
@@ -1173,9 +1181,9 @@ class StyleRuleTests(unittest.TestCase):
         map = xml.etree.ElementTree.Element('Map')
         map.append(layer)
         
-        add_point_style(map, layer, declarations, self.tmpdir)
-        add_polygon_pattern_style(map, layer, declarations, self.tmpdir)
-        add_line_pattern_style(map, layer, declarations, self.tmpdir)
+        insert_layer_style(map, layer, 'test point style', get_point_rules(declarations, self.tmpdir))
+        insert_layer_style(map, layer, 'test polygon pattern style', get_polygon_pattern_rules(declarations, self.tmpdir))
+        insert_layer_style(map, layer, 'test line pattern style', get_line_pattern_rules(declarations, self.tmpdir))
         
         self.assertEqual(3, len(map.findall('Layer/StyleName')))
         
@@ -1230,7 +1238,7 @@ class StyleRuleTests(unittest.TestCase):
         map = xml.etree.ElementTree.Element('Map')
         map.append(layer)
         
-        add_line_style(map, layer, declarations)
+        insert_layer_style(map, layer, 'test line style', get_line_rules(declarations))
         
         self.assertEqual(1, len(map.findall('Layer/StyleName')))
         
