@@ -1,7 +1,7 @@
-Index: style.mml
+Index: serverside/cascadenik/openstreetmap/style.mml
 ===================================================================
---- style.mml	(revision 448)
-+++ style.mml	(working copy)
+--- serverside/cascadenik/openstreetmap/style.mml	(revision 448)
++++ serverside/cascadenik/openstreetmap/style.mml	(working copy)
 @@ -4,14 +4,14 @@
  
  <!DOCTYPE Map[
