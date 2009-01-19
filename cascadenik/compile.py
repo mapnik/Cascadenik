@@ -8,12 +8,17 @@ import tempfile
 import StringIO
 import operator
 from operator import lt, le, eq, ge, gt
-import xml.etree.ElementTree
-from xml.etree.ElementTree import Element
 import style
 import PIL.Image
 import os.path
 import zipfile
+
+try:
+    import xml.etree.ElementTree as ElementTree
+    from xml.etree.ElementTree import Element
+except ImportError:
+    import elementtree.ElementTree as ElementTree
+    from elementtree.ElementTree import Element
 
 opsort = {lt: 1, le: 2, eq: 3, ge: 4, gt: 5}
 opstr = {lt: '<', le: '<=', eq: '==', ge: '>=', gt: '>'}
@@ -934,7 +939,7 @@ def localize_shapefile(src, shapefile, dir=None):
 def compile(src, dir=None):
     """
     """
-    doc = xml.etree.ElementTree.parse(urllib.urlopen(src))
+    doc = ElementTree.parse(urllib.urlopen(src))
     map = doc.getroot()
     
     declarations = extract_declarations(map, src)
