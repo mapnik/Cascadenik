@@ -435,6 +435,36 @@ class SelectorParseTests(unittest.TestCase):
         
         self.assertEqual("[landuse] = 'military'", test2str(filters[1].tests[0]))
 
+    def testFilters4(self):
+        s = """
+            Layer[foo=1] { polygon-fill: #000; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual("[foo] = 1", test2str(filters[1].tests[0]))
+
+    def testFilters5(self):
+        s = """
+            Layer[foo=1.1] { polygon-fill: #000; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual("[foo] = 1.1", test2str(filters[1].tests[0]))
+
+    def testFilters6(self):
+        s = """
+            Layer[foo="1.1"] { polygon-fill: #000; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual("[foo] = '1.1'", test2str(filters[1].tests[0]))
+
 class FilterCombinationTests(unittest.TestCase):
 
     def testFilters1(self):
