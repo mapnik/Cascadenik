@@ -11,7 +11,7 @@ from cascadenik.compile import tests_filter_combinations, Filter, selectors_test
 from cascadenik.compile import filtered_property_declarations, is_applicable_selector
 from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
 from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
-from cascadenik.compile import insert_layer_style
+from cascadenik.compile import insert_layer_style, test2str
 
 class ParseTests(unittest.TestCase):
     
@@ -402,6 +402,38 @@ class CascadeTests(unittest.TestCase):
         self.assertEqual('*', str(declarations[14].selector))
         self.assertEqual('text-fill', declarations[14].property.name)
         self.assertEqual('#ff9900', str(declarations[14].value))
+
+class SelectorParseTests(unittest.TestCase):
+
+    def testFilters1(self):
+        s = """
+            Layer[landuse=military] { polygon-fill: #000; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual("[landuse] = 'military'", test2str(filters[1].tests[0]))
+
+    def testFilters2(self):
+        s = """
+            Layer[landuse='military'] { polygon-fill: #000; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual("[landuse] = 'military'", test2str(filters[1].tests[0]))
+
+    def testFilters3(self):
+        s = """
+            Layer[landuse="military"] { polygon-fill: #000; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual("[landuse] = 'military'", test2str(filters[1].tests[0]))
 
 class FilterCombinationTests(unittest.TestCase):
 

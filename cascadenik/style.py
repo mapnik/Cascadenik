@@ -842,7 +842,7 @@ def postprocess_selector(tokens, is_gym, line=0, col=0):
                 in_element = False
                 
         elif in_attribute:
-            if nname in ('IDENT', 'NUMBER'):
+            if nname in ('IDENT', 'NUMBER', 'STRING'):
                 parts.append(value)
                 
             elif nname == 'CHAR' and value in ('<', '=', '>', '!'):
@@ -869,6 +869,10 @@ def postprocess_selector(tokens, is_gym, line=0, col=0):
                     except ValueError:
                         if args[1] in ('<', '<=', '=>', '>'):
                             raise ParseException('Selector attribute must use a number for comparison tests', line, col)
+                        elif args[2].startswith('"') and args[2].endswith('"'):
+                            args[2] = args[2][1:-1]
+                        elif args[2].startswith("'") and args[2].endswith("'"):
+                            args[2] = args[2][1:-1]
                         else:
                             pass
                 
