@@ -1,5 +1,4 @@
 import os, sys
-import re
 import math
 import pprint
 import urllib
@@ -192,7 +191,14 @@ class Filter:
     def __cmp__(self, other):
         """
         """
-        return cmp(repr(self), repr(other))
+        # get the scale tests to the front of the line, followed by regular alphabetical
+        key_func = lambda t: (not t.isMapScaled(), t.property, t.op, t.value)
+
+        # extract tests into cleanly-sortable tuples
+        self_tuples = [(t.property, t.op, t.value) for t in sorted(self.tests, key=key_func)]
+        other_tuples = [(t.property, t.op, t.value) for t in sorted(other.tests, key=key_func)]
+        
+        return cmp(self_tuples, other_tuples)
 
 def test_ranges(tests):
     """ Given a list of tests, return a list of Ranges that fully describes
@@ -398,7 +404,7 @@ def tests_filter_combinations(tests):
         filters.append(filter)
 
     if len(filters):
-        return filters
+        return sorted(filters)
 
     # if no filters have been defined, return a blank one that matches anything
     return [Filter()]
@@ -449,13 +455,17 @@ def extract_declarations(map_el, base):
 def test2str(test):
     """ Return a mapnik-happy Filter expression atom for a single test
     """
-    # for unquoting numbers
-    unquoter = re.compile(r'^\'(\d+)\'$')
+    if type(test.value) in (int, float):
+        value = str(test.value)
+    elif type(test.value) is str:
+        value = "'%s'" % test.value
+    else:
+        raise Exception("test2str doesn't know what to do with a %s" % type(test.value))
     
     if test.op == '!=':
-        return "not [%s] = %s" % (test.property, unquoter.sub(r'\1', ("'%s'" % test.value)))
+        return "not [%s] = %s" % (test.property, value)
     elif test.op in ('<', '<=', '=', '>=', '>'):
-        return "[%s] %s %s" % (test.property, test.op, unquoter.sub(r'\1', ("'%s'" % test.value)))
+        return "[%s] %s %s" % (test.property, test.op, value)
     else:
         raise Exception('"%s" is not a valid filter operation' % test.op)
 
