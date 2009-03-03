@@ -1,5 +1,5 @@
 import os, tempfile
-import compile, style
+import compile, style, output
 from compile import compile
 from style import stylesheet_rulesets, rulesets_declarations, stylesheet_declarations
 

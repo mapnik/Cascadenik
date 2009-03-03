@@ -7,10 +7,12 @@ import tempfile
 import StringIO
 import operator
 from operator import lt, le, eq, ge, gt
-import style
 import PIL.Image
 import os.path
 import zipfile
+
+import style
+import output
 
 try:
     import xml.etree.ElementTree as ElementTree
@@ -220,7 +222,7 @@ def test_ranges(tests):
     # start by getting all the range edges from the selectors into a list of break points
     for test in tests:
         repeated_breaks.append(test.rangeOpEdge())
-    
+
     # from here on out, *order will matter*
     # it's expected that the breaks will be sorted from minimum to maximum,
     # with greater/lesser/equal operators accounted for.
