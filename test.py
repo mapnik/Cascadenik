@@ -1387,5 +1387,53 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('stroke-width', inline_symbolizer.findall('CssParameter')[1].get('name'))
         self.assertEqual('1.0', inline_symbolizer.findall('CssParameter')[1].text)
 
+    def testStyleRules9(self):
+        s = """
+            Layer { line-color: #000; }
+            
+            Layer[ELEVATION=0] { line-width: 1; }
+            Layer[ELEVATION=50] { line-width: 2; }
+            Layer[ELEVATION>900] { line-width: 3; line-color: #fff; }
+        """
+    
+        declarations = stylesheet_declarations(s, is_gym=True)
+        
+        layer = xml.etree.ElementTree.Element('Layer')
+        layer.append(xml.etree.ElementTree.Element('Datasource'))
+    
+        map = xml.etree.ElementTree.Element('Map')
+        map.append(layer)
+        
+        insert_layer_style(map, layer, 'test line style', get_line_rules(declarations))
+        
+        assert map.find('Layer/StyleName') is not None
+        
+        stylename = map.find('Layer/StyleName').text
+        
+        style_el = map.find('Style')
+        
+        assert style_el is not None
+        self.assertEqual(stylename, style_el.get('name'))
+        
+        rule_els = style_el.findall('Rule')
+        
+        self.assertEqual('[ELEVATION] = 0', rule_els[0].find('Filter').text)
+        self.assertEqual('stroke', rule_els[0].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#000000', rule_els[0].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', rule_els[0].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('1.0', rule_els[0].findall('LineSymbolizer/CssParameter')[1].text)
+    
+        self.assertEqual('[ELEVATION] = 50', rule_els[1].find('Filter').text)
+        self.assertEqual('stroke', rule_els[1].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#000000', rule_els[1].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', rule_els[1].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('2.0', rule_els[1].findall('LineSymbolizer/CssParameter')[1].text)
+    
+        self.assertEqual('[ELEVATION] > 900', rule_els[2].find('Filter').text)
+        self.assertEqual('stroke', rule_els[2].findall('LineSymbolizer/CssParameter')[0].get('name'))
+        self.assertEqual('#ffffff', rule_els[2].findall('LineSymbolizer/CssParameter')[0].text)
+        self.assertEqual('stroke-width', rule_els[2].findall('LineSymbolizer/CssParameter')[1].get('name'))
+        self.assertEqual('3.0', rule_els[2].findall('LineSymbolizer/CssParameter')[1].text)
+
 if __name__ == '__main__':
     unittest.main()

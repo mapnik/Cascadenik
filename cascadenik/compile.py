@@ -244,10 +244,14 @@ def test_ranges(tests):
             # get a right-boundary for the first range
             if op in (lt, le):
                 ranges.append(Range(None, None, op, edge))
-            elif op in (eq, ge):
+            elif op is ge:
                 ranges.append(Range(None, None, lt, edge))
             elif op is gt:
                 ranges.append(Range(None, None, le, edge))
+            elif op is eq:
+                # edge case
+                ranges.append(Range(None, None, lt, edge))
+                ranges.append(Range(ge, edge, le, edge))
 
         elif i > 0:
             # get a left-boundary based on the previous right-boundary
