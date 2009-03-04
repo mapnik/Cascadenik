@@ -299,29 +299,62 @@ def test_ranges(tests):
         # if all else fails, return a Range that covers everything
         return [Range()]
 
-def test_combinations(tests):
+def test_combinations(tests, filter=None):
     """ Given a list of simple =/!= tests, return a list of possible combinations.
+    
+        The filter argument is used to call test_combinations() recursively;
+        this cuts down on the potential tests^2 number of combinations by
+        identifying closed filters early and culling them from consideration.
     """
-    assert len(set([test.property for test in tests])) in (0, 1), 'All tests must share the same property'
-    assert False not in ([test.isSimple() for test in tests]), 'All tests must be simple, i.e. = or !='
-    assert len(tests) <= 15, 'Number of tests must be 15 or less, a crude way to prevent memory overload'
+    # is the first one simple? it should be
+    if len(tests) >= 1:
+        assert tests[0].isSimple(), 'All tests must be simple, i.e. = or !='
     
-    filters = []
+    # does it share a property with the next one? it should
+    if len(tests) >= 2:
+        assert tests[0].property == tests[1].property, 'All tests must share the same property'
+
+    # -------- remaining tests will be checked in subsequent calls --------
     
-    for i in xrange(int(math.pow(2, len(tests)))):
+    # bail early
+    if len(tests) == 0:
+        return []
+
+    # base case where no filter has been passed
+    if filter is None:
         filter = Filter()
+
+    # knock one off the front
+    first_test, remaining_tests = tests[0], tests[1:]
     
-        for (j, test) in enumerate(tests):
-            # we are treating i like a bitfield here
-            if bool(i & (0x01 << j)):
-                filter.tests.append(test)
+    # one filter with the front test on it
+    this_filter = filter.clone()
+    this_filter.tests.append(first_test)
+    
+    # another filter with the inverse of the front test on it
+    that_filter = filter.clone()
+    that_filter.tests.append(first_test.inverse())
+    
+    # return value
+    test_sets = []
+    
+    for new_filter in (this_filter, that_filter):
+        if new_filter.isOpen():
+            if len(remaining_tests) > 0:
+                # keep diving deeper
+                test_sets += test_combinations(remaining_tests, new_filter)
+            
             else:
-                filter.tests.append(test.inverse())
+                # only append once the list has been exhausted
+                new_set = []
+                
+                for test in new_filter.minusExtras().tests:
+                    if test not in new_set:
+                        new_set.append(test)
+    
+                test_sets.append(new_set)
 
-        if filter.isOpen():
-            filters.append(filter.minusExtras())
-
-    return [filter.tests for filter in filters]
+    return test_sets
 
 def xindexes(slots):
     """ Generate list of possible indexes into a list of slots.

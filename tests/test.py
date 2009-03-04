@@ -1435,5 +1435,42 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('stroke-width', rule_els[2].findall('LineSymbolizer/CssParameter')[1].get('name'))
         self.assertEqual('3.0', rule_els[2].findall('LineSymbolizer/CssParameter')[1].text)
 
+    def testStyleRules10(self):
+        s = """
+            Layer[landuse!=desert] { polygon-fill: #006; }
+            Layer[landuse=field] { polygon-fill: #001; }
+            Layer[landuse=meadow] { polygon-fill: #002; }
+            Layer[landuse=forest] { polygon-fill: #003; }
+            Layer[landuse=woods] { polygon-fill: #004; }
+            Layer { polygon-fill: #000; }
+        """
+    
+        declarations = stylesheet_declarations(s, is_gym=True)
+        rule_els = get_polygon_rules(declarations)
+        
+        self.assertEqual("not [landuse] = 'field' and not [landuse] = 'woods' and not [landuse] = 'desert' and not [landuse] = 'forest' and not [landuse] = 'meadow'", rule_els[0].find('Filter').text)
+        self.assertEqual('fill', rule_els[0].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#000066', rule_els[0].find('PolygonSymbolizer/CssParameter').text)
+        
+        self.assertEqual("[landuse] = 'desert'", rule_els[1].find('Filter').text)
+        self.assertEqual('fill', rule_els[1].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#000000', rule_els[1].find('PolygonSymbolizer/CssParameter').text)
+        
+        self.assertEqual("[landuse] = 'field'", rule_els[2].find('Filter').text)
+        self.assertEqual('fill', rule_els[2].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#000011', rule_els[2].find('PolygonSymbolizer/CssParameter').text)
+        
+        self.assertEqual("[landuse] = 'forest'", rule_els[3].find('Filter').text)
+        self.assertEqual('fill', rule_els[3].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#000033', rule_els[3].find('PolygonSymbolizer/CssParameter').text)
+        
+        self.assertEqual("[landuse] = 'meadow'", rule_els[4].find('Filter').text)
+        self.assertEqual('fill', rule_els[4].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#000022', rule_els[4].find('PolygonSymbolizer/CssParameter').text)
+        
+        self.assertEqual("[landuse] = 'woods'", rule_els[5].find('Filter').text)
+        self.assertEqual('fill', rule_els[5].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#000044', rule_els[5].find('PolygonSymbolizer/CssParameter').text)
+
 if __name__ == '__main__':
     unittest.main()
