@@ -12,7 +12,6 @@ import os.path
 import zipfile
 
 import style
-import output
 
 try:
     import xml.etree.ElementTree as ElementTree
