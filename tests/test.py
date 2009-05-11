@@ -465,6 +465,36 @@ class SelectorParseTests(unittest.TestCase):
         
         self.assertEqual("[foo] = '1.1'", test2str(filters[1].tests[0]))
 
+    def testFilters7(self):
+        s = """
+            Layer[landuse= "military"] { polygon-fill: #000; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual("[landuse] = 'military'", test2str(filters[1].tests[0]))
+
+    def testFilters8(self):
+        s = """
+            Layer[foo =1] { polygon-fill: #000; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual("[foo] = 1", test2str(filters[1].tests[0]))
+
+    def testFilters9(self):
+        s = """
+            Layer[foo = "1.1"] { polygon-fill: #000; }
+        """
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual("[foo] = '1.1'", test2str(filters[1].tests[0]))
+
 class FilterCombinationTests(unittest.TestCase):
 
     def testFilters1(self):
@@ -1471,6 +1501,30 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual("[landuse] = 'woods'", rule_els[5].find('Filter').text)
         self.assertEqual('fill', rule_els[5].find('PolygonSymbolizer/CssParameter').get('name'))
         self.assertEqual('#000044', rule_els[5].find('PolygonSymbolizer/CssParameter').text)
+
+    def testStyleRules11(self):
+        """ Spaces in attribute selectors need to be acceptable
+        """
+        s = """
+            Layer[PERSONS < 2000000] { polygon-fill: #6CAE4C; }
+            Layer[PERSONS >= 2000000][PERSONS < 4000000] { polygon-fill: #3B7AB3; }
+            Layer[PERSONS > 4000000] { polygon-fill: #88000F; }
+        """
+    
+        declarations = stylesheet_declarations(s)
+        rule_els = get_polygon_rules(declarations)
+        
+        self.assertEqual("[PERSONS] < 2000000", rule_els[0].find('Filter').text)
+        self.assertEqual('fill', rule_els[0].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#6cae4c', rule_els[0].find('PolygonSymbolizer/CssParameter').text)
+        
+        self.assertEqual("[PERSONS] >= 2000000 and [PERSONS] < 4000000", rule_els[1].find('Filter').text)
+        self.assertEqual('fill', rule_els[1].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#3b7ab3', rule_els[1].find('PolygonSymbolizer/CssParameter').text)
+        
+        self.assertEqual("[PERSONS] > 4000000", rule_els[2].find('Filter').text)
+        self.assertEqual('fill', rule_els[2].find('PolygonSymbolizer/CssParameter').get('name'))
+        self.assertEqual('#88000f', rule_els[2].find('PolygonSymbolizer/CssParameter').text)
 
 if __name__ == '__main__':
     unittest.main()

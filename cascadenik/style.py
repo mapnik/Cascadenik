@@ -879,8 +879,8 @@ def postprocess_selector(tokens, is_gym, line=0, col=0):
                 elements[-1].addTest(SelectorAttributeTest(*args))
                 in_attribute = False
 
-            elif nname == 'S':
-                in_element = False
+            elif nname == 'CHAR' and value == ']':
+                in_attribute = False
     
     if len(elements) > 2:
         raise ParseException('Only two-element selectors are supported for Mapnik styles', line, col)
