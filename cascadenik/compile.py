@@ -766,9 +766,9 @@ def get_text_rule_groups(declarations):
     return rule_el_groups
 
 def postprocess_symbolizer_image_file(symbolizer_el, out, temp_name):
-    """ Given a sumbolizer element, output directory name, and temporary
+    """ Given a symbolizer element, output directory name, and temporary
         file name, find the "file" attribute in the symbolizer and save it
-        to a temporary location as a PING while noting its dimensions.
+        to a temporary location as a PNG while noting its dimensions.
     """
     # read the image to get some more details
     img_path = symbolizer_el.get('file')
@@ -797,7 +797,8 @@ def get_shield_rule_groups(declarations, out=None):
         and refer to them in Layer.
     """
     property_map = {'shield-face-name': 'face_name', 'shield-size': 'size', 
-                    'shield-fill': 'fill', 'shield-min-distance': 'min_distance',
+                    'shield-fill': 'fill', 
+                    'shield-spacing': 'spacing', 'shield-min-distance': 'min_distance',
                     'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height' }
 
     # pull out all the names

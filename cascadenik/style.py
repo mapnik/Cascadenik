@@ -245,6 +245,9 @@ properties = {
     # Minimum distance between repeated labels such as street names or shield symbols
     'shield-min-distance': int,
 
+    # Spacing between repeated labels such as street names or shield symbols
+    'shield-spacing': int,
+
     # path to image file (default none)
     'shield-file': uri,
 
