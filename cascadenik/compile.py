@@ -831,6 +831,7 @@ def get_shield_rule_groups(declarations, out=None):
                 continue
 
             symbolizer_el.set('name', text_name)
+            symbolizer_el.set('placement', 'line')
             
             for (parameter, value) in parameter_values.items():
                 symbolizer_el.set(parameter, str(value))
