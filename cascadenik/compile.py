@@ -1024,7 +1024,7 @@ def compile(src, dir=None):
         insert_layer_style(map, layer, 'line style %d' % next_counter(),
                            get_line_rules(layer_declarations) + get_line_pattern_rules(layer_declarations, dir))
 
-        for (shield_name, shield_rule_els) in get_shield_rule_groups(layer_declarations):
+        for (shield_name, shield_rule_els) in get_shield_rule_groups(layer_declarations, dir):
             insert_layer_style(map, layer, 'shield style %d (%s)' % (next_counter(), shield_name), shield_rule_els)
 
         for (text_name, text_rule_els) in get_text_rule_groups(layer_declarations):
