@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import shutil
@@ -494,6 +496,16 @@ class SelectorParseTests(unittest.TestCase):
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual("[foo] = '1.1'", test2str(filters[1].tests[0]))
+
+    def testFilters10(self):
+        s = u'''
+        Layer[name="Grüner Strich"] { polygon-fill: #000; }
+        '''
+        rulesets = stylesheet_rulesets(s)
+        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        filters = tests_filter_combinations(selectors_tests(selectors))
+        
+        self.assertEqual(u"[name] = 'Grüner Strich'", test2str(filters[1].tests[0]))
 
 class FilterCombinationTests(unittest.TestCase):
 

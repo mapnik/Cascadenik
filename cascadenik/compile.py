@@ -13,6 +13,8 @@ import zipfile
 
 import style
 
+DEFAULT_ENCODING = 'utf-8'
+
 try:
     import xml.etree.ElementTree as ElementTree
     from xml.etree.ElementTree import Element
@@ -392,7 +394,7 @@ def selectors_tests(selectors, property=None):
     for selector in selectors:
         for test in selector.allTests():
             if property is None or test.property == property:
-                tests[str(test)] = test
+                tests[unicode(test)] = test
 
     return tests.values()
 
@@ -477,7 +479,7 @@ def extract_declarations(map_el, base):
     
         if 'src' in stylesheet.attrib:
             url = urlparse.urljoin(base, stylesheet.attrib['src'])
-            styles, local_base = urllib.urlopen(url).read(), url
+            styles, local_base = urllib.urlopen(url).read().decode(DEFAULT_ENCODING), url
 
         elif stylesheet.text:
             styles, local_base = stylesheet.text, base
@@ -495,7 +497,7 @@ def test2str(test):
     """
     if type(test.value) in (int, float):
         value = str(test.value)
-    elif type(test.value) is str:
+    elif type(test.value) in (str, unicode):
         value = "'%s'" % test.value
     else:
         raise Exception("test2str doesn't know what to do with a %s" % type(test.value))

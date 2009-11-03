@@ -459,7 +459,7 @@ class SelectorAttributeTest:
     def __cmp__(self, other):
         """
         """
-        return cmp(repr(self), repr(other))
+        return cmp(unicode(self), unicode(other))
 
     def isSimple(self):
         """
@@ -678,7 +678,7 @@ class Value:
         return repr(self.value)
 
     def __str__(self):
-        return str(self.value)
+        return unicode(self.value)
 
 def stylesheet_declarations(string, base=None, is_gym=False):
     """
@@ -849,7 +849,7 @@ def postprocess_selector(tokens, is_gym, line=0, col=0):
                 parts.append(value)
                 
             elif nname == 'CHAR' and value in ('<', '=', '>', '!'):
-                if value is '=' and parts[-1] in ('<', '>', '!'):
+                if value == '=' and parts[-1] in ('<', '>', '!'):
                     parts[-1] += value
                 else:
                     if len(parts) != 1:
