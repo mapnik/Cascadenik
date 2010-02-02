@@ -7,11 +7,38 @@ import tempfile
 import StringIO
 import operator
 from operator import lt, le, eq, ge, gt
-import PIL.Image
 import os.path
 import zipfile
-
 import style
+
+try:
+    import PIL.Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
+try:
+    import mapnik
+    HAS_MAPNIK = True
+except ImportError:
+    HAS_MAPNIK = False
+
+MAPNIK_AUTO_IMAGE_SUPPORT = None
+MAPNIK_VERSION = None
+
+# if mapnik is actually installed we attempt
+# to  benefit from knowing its version
+if HAS_MAPNIK:
+    if hasattr(mapnik,'mapnik_version'):
+        MAPNIK_VERSION = mapnik.mapnik_version()
+        # note, bugs in 0.7.0 require *_pattern_symbolizer image type,width,height to be specified
+        # this is fixed in 0.8.0, but we may release 701 to fix this problem, hence 701
+        if MAPNIK_VERSION >= 701:
+            MAPNIK_AUTO_IMAGE_SUPPORT = True
+
+if not HAS_PIL:
+    warn = 'Warning: PIL (Python Imaging Library) is required for proper handling of image symbolizers when using JPEG format images or not running Mapnik >=0.7.0'
+    sys.stderr.write(warn)
 
 DEFAULT_ENCODING = 'utf-8'
 
@@ -767,7 +794,7 @@ def get_text_rule_groups(declarations):
 
     return rule_el_groups
 
-def postprocess_symbolizer_image_file(symbolizer_el, out, temp_name):
+def postprocess_symbolizer_image_file(symbolizer_el, dir, temp_name):
     """ Given a symbolizer element, output directory name, and temporary
         file name, find the "file" attribute in the symbolizer and save it
         to a temporary location as a PNG while noting its dimensions.
@@ -775,25 +802,43 @@ def postprocess_symbolizer_image_file(symbolizer_el, out, temp_name):
     # read the image to get some more details
     img_path = symbolizer_el.get('file')
     img_data = urllib.urlopen(img_path).read()
-    img_file = StringIO.StringIO(img_data)
-    img = PIL.Image.open(img_file)
     
-    # save the image to a tempfile, making it a PNG no matter what
-    (handle, path) = tempfile.mkstemp(suffix='.png', prefix='cascadenik-%s-' % temp_name, dir=out)
-    os.close(handle)
+    ext = os.path.splitext(img_path)[1]
     
-    img.save(path)
-    os.chmod(path, 0644);
+    if dir:
+        path = os.path.join(dir,os.path.basename(img_path))
+    else:
+        # save the image to a tempfile
+        (handle, path) = tempfile.mkstemp(suffix=ext, prefix='cascadenik-%s-' % temp_name)
+        os.close(handle)
+
+    
+
+    if MAPNIK_AUTO_IMAGE_SUPPORT and 'png' in ext.lower():
+        file = open(path,'wb')
+        file.write(img_data)
+        file.close()
+    else:
+        if not HAS_PIL:
+            raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
+        img_file = StringIO.StringIO(img_data)
+        img = PIL.Image.open(img_file)
+        # Force PNG
+        path = path.replace(ext,'.png')
+        img.save(path,format='PNG')
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            symbolizer_el.set('type', 'png')
+            # if no width/height have been provided, set them
+            if not (symbolizer_el.get('width', False) and symbolizer_el.get('height', False)):
+                symbolizer_el.set('width', str(img.size[0]))
+                symbolizer_el.set('height', str(img.size[1]))
 
     symbolizer_el.set('file', path)
-    symbolizer_el.set('type', 'png')
-    
-    # if no width/height have been provided, set them
-    if not (symbolizer_el.get('width', False) and symbolizer_el.get('height', False)):
-        symbolizer_el.set('width', str(img.size[0]))
-        symbolizer_el.set('height', str(img.size[1]))
+    os.chmod(path, 0644)
 
-def get_shield_rule_groups(declarations, out=None):
+    
+
+def get_shield_rule_groups(declarations, dir=None):
     """ Given a Map element, a Layer element, and a list of declarations,
         create new Style elements with a TextSymbolizer, add them to Map
         and refer to them in Layer.
@@ -839,7 +884,7 @@ def get_shield_rule_groups(declarations, out=None):
                 symbolizer_el.set(parameter, str(value))
     
             if symbolizer_el.get('file', False):
-                postprocess_symbolizer_image_file(symbolizer_el, out, 'shield')
+                postprocess_symbolizer_image_file(symbolizer_el, dir, 'shield')
     
                 rule_el = make_rule_element(filter, symbolizer_el)
                 rule_els.append(rule_el)
@@ -848,7 +893,7 @@ def get_shield_rule_groups(declarations, out=None):
 
     return rule_el_groups
 
-def get_point_rules(declarations, out=None):
+def get_point_rules(declarations, dir=None):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PointSymbolizer, add it to Map
         and refer to it in Layer.
@@ -870,14 +915,14 @@ def get_point_rules(declarations, out=None):
             symbolizer_el.set(parameter, str(value))
     
         if symbolizer_el.get('file', False):
-            postprocess_symbolizer_image_file(symbolizer_el, out, 'point')
+            postprocess_symbolizer_image_file(symbolizer_el, dir, 'point')
             
             rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
     
     return rule_els
 
-def get_polygon_pattern_rules(declarations, out=None):
+def get_polygon_pattern_rules(declarations, dir=None):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PolygonPatternSymbolizer, add it to Map
         and refer to it in Layer.
@@ -898,14 +943,14 @@ def get_polygon_pattern_rules(declarations, out=None):
             symbolizer_el.set(parameter, str(value))
     
         if symbolizer_el.get('file', False):
-            postprocess_symbolizer_image_file(symbolizer_el, out, 'polygon-pattern')
+            postprocess_symbolizer_image_file(symbolizer_el, dir, 'polygon-pattern')
             
             rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
     
     return rule_els
 
-def get_line_pattern_rules(declarations, out=None):
+def get_line_pattern_rules(declarations, dir=None):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a LinePatternSymbolizer, add it to Map
         and refer to it in Layer.
@@ -926,7 +971,7 @@ def get_line_pattern_rules(declarations, out=None):
             symbolizer_el.set(parameter, str(value))
     
         if symbolizer_el.get('file', False):
-            postprocess_symbolizer_image_file(symbolizer_el, out, 'line-pattern')
+            postprocess_symbolizer_image_file(symbolizer_el, dir, 'line-pattern')
             
             rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
@@ -956,7 +1001,13 @@ def localize_shapefile(src, shapefile, dir=None):
     
     if scheme == '':
         # assumed to be local
-        return os.path.realpath(urlparse.urljoin(src, shapefile))
+        if MAPNIK_VERSION >= 601:
+            # Mapnik 0.6.1 accepts relative paths, so we leave it unchanged
+            # but compiled file must maintain same relativity to the files
+            # as the stylesheet, which needs to be addressed separately
+            return shapefile
+        else:
+            return os.path.realpath(urlparse.urljoin(src, shapefile))
 
     # assumed to be a remote zip archive with .shp, .shx, and .dbf files
     zip_data = urllib.urlopen(shapefile).read()
@@ -966,7 +1017,10 @@ def localize_shapefile(src, shapefile, dir=None):
     extensions = [os.path.splitext(info.filename)[1] for info in infos]
     basenames = [os.path.basename(info.filename) for info in infos]
     
-    tmp_dir = tempfile.mkdtemp(prefix='cascadenik-shapefile-', dir=dir)
+    if dir:
+        base_dir = dir
+    else:
+        base_dir = tempfile.mkdtemp(prefix='cascadenik-shapefile-')
     
     for (expected, required) in (('.shp', True), ('.shx', True), ('.dbf', True), ('.prj', False)):
         if required and expected not in extensions:
@@ -975,7 +1029,7 @@ def localize_shapefile(src, shapefile, dir=None):
         for (info, extension, basename) in zip(infos, extensions, basenames):
             if extension == expected:
                 file_data = zip_file.read(info.filename)
-                file_name = '%(tmp_dir)s/%(basename)s' % locals()
+                file_name = os.path.normpath('%(base_dir)s/%(basename)s' % locals())
                 
                 file = open(file_name, 'wb')
                 file.write(file_data)
@@ -991,6 +1045,20 @@ def localize_shapefile(src, shapefile, dir=None):
 def compile(src, dir=None):
     """
     """
+
+    if os.path.exists(src): # local file
+        # using 'file:' enables support on win32
+        # for opening local files with urllib.urlopen
+        # Note: this must only be used with abs paths to local files
+        # otherwise urllib will think they are absolute, 
+        # therefore in the future it will likely be
+        # wiser to just open local files with open()
+        if os.path.isabs(src) and sys.platform == "win32":
+            src = 'file:%s' % src
+    
+    if dir and not os.path.exists(dir):
+        os.mkdir(dir)
+
     doc = ElementTree.parse(urllib.urlopen(src))
     map = doc.getroot()
     
@@ -1042,7 +1110,7 @@ def compile(src, dir=None):
         if 'class' in layer.attrib:
             del layer.attrib['class']
 
-    out = StringIO.StringIO()
-    doc.write(out)
+    xml_out = StringIO.StringIO()
+    doc.write(xml_out)
     
-    return out.getvalue()
+    return xml_out.getvalue()

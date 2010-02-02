@@ -14,6 +14,7 @@ from cascadenik.compile import filtered_property_declarations, is_applicable_sel
 from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
 from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
 from cascadenik.compile import insert_layer_style, test2str
+from cascadenik.compile import MAPNIK_AUTO_IMAGE_SUPPORT
 
 class ParseTests(unittest.TestCase):
     
@@ -1123,8 +1124,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[0].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[0].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('12', shield_rule_els[0].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('width'))
         self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] <= 1", shield_rule_els[0].find('Filter').text)
         
         assert shield_rule_els[1].find('MinScaleDenominator') is None
@@ -1132,8 +1134,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[1].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[1].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('10', shield_rule_els[1].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('width'))
         self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] > 1", shield_rule_els[1].find('Filter').text)
         
         assert shield_rule_els[2].find('MinScaleDenominator') is None
@@ -1141,8 +1144,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[2].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[2].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('14', shield_rule_els[2].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('width'))
         self.assertEqual("[bar] = 'baz' and [foo] <= 1", shield_rule_els[2].find('Filter').text)
         
         assert shield_rule_els[3].find('MinScaleDenominator') is None
@@ -1150,8 +1154,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[3].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[3].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('14', shield_rule_els[3].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('width'))
         self.assertEqual("[bar] = 'baz' and [foo] > 1", shield_rule_els[3].find('Filter').text)
         
         assert shield_rule_els[4].find('MinScaleDenominator') is None
@@ -1159,8 +1164,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[4].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[4].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('16', shield_rule_els[4].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('width'))
         self.assertEqual("[bar] = 'quux' and [foo] <= 1", shield_rule_els[4].find('Filter').text)
         
         assert shield_rule_els[5].find('MinScaleDenominator') is None
@@ -1168,8 +1174,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[5].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[5].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('16', shield_rule_els[5].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('width'))
         self.assertEqual("[bar] = 'quux' and [foo] > 1", shield_rule_els[5].find('Filter').text)
 
     def testStyleRules6(self):
@@ -1211,8 +1218,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[0].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[0].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('12', shield_rule_els[0].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[0].find('ShieldSymbolizer').get('width'))
         self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] <= 1", shield_rule_els[0].find('Filter').text)
         
         assert shield_rule_els[1].find('MinScaleDenominator') is None
@@ -1220,8 +1228,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[1].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[1].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('10', shield_rule_els[1].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[1].find('ShieldSymbolizer').get('width'))
         self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] > 1", shield_rule_els[1].find('Filter').text)
         
         assert shield_rule_els[2].find('MinScaleDenominator') is None
@@ -1229,8 +1238,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[2].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[2].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('14', shield_rule_els[2].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[2].find('ShieldSymbolizer').get('width'))
         self.assertEqual("[bar] = 'baz' and [foo] <= 1", shield_rule_els[2].find('Filter').text)
         
         assert shield_rule_els[3].find('MinScaleDenominator') is None
@@ -1238,8 +1248,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[3].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[3].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('14', shield_rule_els[3].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[3].find('ShieldSymbolizer').get('width'))
         self.assertEqual("[bar] = 'baz' and [foo] > 1", shield_rule_els[3].find('Filter').text)
         
         assert shield_rule_els[4].find('MinScaleDenominator') is None
@@ -1247,8 +1258,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[4].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[4].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('16', shield_rule_els[4].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[4].find('ShieldSymbolizer').get('width'))
         self.assertEqual("[bar] = 'quux' and [foo] <= 1", shield_rule_els[4].find('Filter').text)
         
         assert shield_rule_els[5].find('MinScaleDenominator') is None
@@ -1256,8 +1268,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual('label', shield_rule_els[5].find('ShieldSymbolizer').get('name'))
         self.assertEqual('Helvetica', shield_rule_els[5].find('ShieldSymbolizer').get('face_name'))
         self.assertEqual('16', shield_rule_els[5].find('ShieldSymbolizer').get('size'))
-        self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('height'))
-        self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('height'))
+            self.assertEqual('8', shield_rule_els[5].find('ShieldSymbolizer').get('width'))
         self.assertEqual("[bar] = 'quux' and [foo] > 1", shield_rule_els[5].find('Filter').text)
     
         assert style_els[1].get('name') in (stylenames)
@@ -1266,9 +1279,10 @@ class StyleRuleTests(unittest.TestCase):
         assert point_rule_els[0].find('Filter') is None
         assert point_rule_els[0].find('MinScaleDenominator') is None
         assert point_rule_els[0].find('MaxScaleDenominator') is None
-        self.assertEqual('png', point_rule_els[0].find('PointSymbolizer').get('type'))
-        self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('height'))
-        self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('png', point_rule_els[0].find('PointSymbolizer').get('type'))
+            self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('height'))
+            self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('width'))
 
     def testStyleRules7(self):
         s = """
@@ -1303,9 +1317,10 @@ class StyleRuleTests(unittest.TestCase):
         assert point_rule_els[0].find('Filter') is None
         assert point_rule_els[0].find('MinScaleDenominator') is None
         assert point_rule_els[0].find('MaxScaleDenominator') is None
-        self.assertEqual('png', point_rule_els[0].find('PointSymbolizer').get('type'))
-        self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('height'))
-        self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('png', point_rule_els[0].find('PointSymbolizer').get('type'))
+            self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('height'))
+            self.assertEqual('8', point_rule_els[0].find('PointSymbolizer').get('width'))
     
         assert style_els[1].get('name') in (stylenames)
         point_rule_els = style_els[1].findall('Rule')
@@ -1313,9 +1328,10 @@ class StyleRuleTests(unittest.TestCase):
         assert point_rule_els[0].find('Filter') is None
         assert point_rule_els[0].find('MinScaleDenominator') is None
         assert point_rule_els[0].find('MaxScaleDenominator') is None
-        self.assertEqual('png', point_rule_els[0].find('PolygonPatternSymbolizer').get('type'))
-        self.assertEqual('8', point_rule_els[0].find('PolygonPatternSymbolizer').get('height'))
-        self.assertEqual('8', point_rule_els[0].find('PolygonPatternSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:        
+            self.assertEqual('png', point_rule_els[0].find('PolygonPatternSymbolizer').get('type'))
+            self.assertEqual('8', point_rule_els[0].find('PolygonPatternSymbolizer').get('height'))
+            self.assertEqual('8', point_rule_els[0].find('PolygonPatternSymbolizer').get('width'))
     
         assert style_els[2].get('name') in (stylenames)
         point_rule_els = style_els[2].findall('Rule')
@@ -1323,9 +1339,10 @@ class StyleRuleTests(unittest.TestCase):
         assert point_rule_els[0].find('Filter') is None
         assert point_rule_els[0].find('MinScaleDenominator') is None
         assert point_rule_els[0].find('MaxScaleDenominator') is None
-        self.assertEqual('png', point_rule_els[0].find('LinePatternSymbolizer').get('type'))
-        self.assertEqual('8', point_rule_els[0].find('LinePatternSymbolizer').get('height'))
-        self.assertEqual('8', point_rule_els[0].find('LinePatternSymbolizer').get('width'))
+        if not MAPNIK_AUTO_IMAGE_SUPPORT:
+            self.assertEqual('png', point_rule_els[0].find('LinePatternSymbolizer').get('type'))
+            self.assertEqual('8', point_rule_els[0].find('LinePatternSymbolizer').get('height'))
+            self.assertEqual('8', point_rule_els[0].find('LinePatternSymbolizer').get('width'))
 
     def testStyleRules8(self):
         s = """
