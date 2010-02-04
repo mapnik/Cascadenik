@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
-# Learned it all here: http://ianbicking.org/docs/setuptools-presentation/
-# and here: http://peak.telecommunity.com/DevCenter/setuptools
-
-try:
-    from setuptools import setup, find_packages
-except:
-    from ez_setup import use_setuptools
-    use_setuptools()
-    from setuptools import setup, find_packages
+from distutils.core import setup
 
 readme = file('README.txt','rb').read()
 
@@ -20,12 +12,7 @@ setup(name='cascadenik',
         author_email='mike@teczno.com',
         platforms='OS Independent',
         license='todo',
-        requires=['Mapnik','cssutils'],
-        install_requires = ['cssutils>0.9.0'],
-        # Installation of PIL recommended before installing Cascadenik
-        #install_requires = ['cssutils>0.9.0','Imaging'],
-        #dependency_links = ['http://effbot.org/downloads/#Imaging'],
-        test_suite = 'tests.test',
+        requires=['Mapnik','cssutils','PIL'],
         keywords='Mapnik,xml,css,mapping',
         url='http://mapnik-utils.googlecode.com/',
         classifiers=[
@@ -38,9 +25,6 @@ setup(name='cascadenik',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Utilities'
         ],
-        #scripts=['cascadenik/compile.py','cascadenik/style.py'],
-        # grab the script that just call main...
         scripts=['cascadenik-compile.py','cascadenik-style.py'],
-        packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
-        zip_safe=False, # not sure what this does...
+        packages=['cascadenik'],
         )
