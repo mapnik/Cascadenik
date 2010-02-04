@@ -161,6 +161,9 @@ properties = {
     # space between repeated labels
     'text-spacing': int,
 
+    # Horizontal spacing between characters (in pixels).
+    'text-character-spacing': int,
+
     # allow labels to be moved from their point
     'text-label-position-tolerance': None, # ?
 
@@ -250,6 +253,9 @@ properties = {
 
     # Spacing between repeated labels such as street names or shield symbols
     'shield-spacing': int,
+
+    # Horizontal spacing between characters (in pixels).
+    'shield-character-spacing': int,
 
     # path to image file (default none)
     'shield-file': uri,

@@ -750,7 +750,7 @@ def get_text_rule_groups(declarations):
                     'text-label-position-tolerance': 'label_position_tolerance',
                     'text-max-char-angle-delta': 'max_char_angle_delta', 'text-fill': 'fill',
                     'text-halo-fill': 'halo_fill', 'text-halo-radius': 'halo_radius',
-                    'text-dx': 'dx', 'text-dy': 'dy',
+                    'text-dx': 'dx', 'text-dy': 'dy', 'text-character-spacing': 'character_spacing',
                     'text-avoid-edges': 'avoid_edges', 'text-min-distance': 'min_distance',
                     'text-allow-overlap': 'allow_overlap', 'text-placement': 'placement'}
 
@@ -852,7 +852,7 @@ def get_shield_rule_groups(declarations, dir=None, move_local_files=False):
         and refer to them in Layer.
     """
     property_map = {'shield-face-name': 'face_name', 'shield-size': 'size', 
-                    'shield-fill': 'fill', 
+                    'shield-fill': 'fill', 'shield-character-spacing': 'character_spacing',
                     'shield-spacing': 'spacing', 'shield-min-distance': 'min_distance',
                     'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height' }
 
