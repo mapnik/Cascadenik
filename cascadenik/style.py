@@ -164,6 +164,9 @@ properties = {
     # Horizontal spacing between characters (in pixels).
     'text-character-spacing': int,
 
+    # Vertical spacing between lines of multiline labels (in pixels)
+    'text-line-spacing': int,
+
     # allow labels to be moved from their point
     'text-label-position-tolerance': None, # ?
 
@@ -256,6 +259,9 @@ properties = {
 
     # Horizontal spacing between characters (in pixels).
     'shield-character-spacing': int,
+    
+    # Vertical spacing between lines of multiline shields (in pixels)
+    'shield-line-spacing': int,
 
     # path to image file (default none)
     'shield-file': uri,

@@ -303,6 +303,13 @@ class ValueTests(unittest.TestCase):
     def testValue13(self):
         self.assertEqual(14, postprocess_value([('NUMBER', '14')], Property('shield-character-spacing')).value)
 
+    def testValue14(self):
+        self.assertEqual(12, postprocess_value([('NUMBER', '12')], Property('text-line-spacing')).value)
+
+    def testValue15(self):
+        self.assertEqual(14, postprocess_value([('NUMBER', '14')], Property('shield-line-spacing')).value)
+
+
 
 class CascadeTests(unittest.TestCase):
 
