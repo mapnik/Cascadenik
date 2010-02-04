@@ -231,6 +231,9 @@ class ValueTests(unittest.TestCase):
     def testBadValue3(self):
         self.assertRaises(ParseException, postprocess_value, [('IDENT', 'non-number')], Property('polygon-opacity'))
 
+    def testBadValue3b(self):
+        self.assertRaises(ParseException, postprocess_value, [('IDENT', 'non-number')], Property('polygon-gamma'))
+
     def testBadValue4(self):
         self.assertRaises(ParseException, postprocess_value, [('IDENT', 'non-string')], Property('text-face-name'))
 
@@ -258,6 +261,9 @@ class ValueTests(unittest.TestCase):
     def testValue1(self):
         self.assertEqual(1.0, postprocess_value([('NUMBER', '1.0')], Property('polygon-opacity')).value)
 
+    def testValue1b(self):
+        self.assertEqual(1.0, postprocess_value([('NUMBER', '1.0')], Property('polygon-gamma')).value)
+        
     def testValue2(self):
         self.assertEqual(10, postprocess_value([('NUMBER', '10')], Property('line-width')).value)
 
@@ -331,6 +337,7 @@ class CascadeTests(unittest.TestCase):
                 line-cap: square;
                 text-allow-overlap: false;
                 text-dx: -10;
+                polygon-gamma: /* value between 0 and 1 */ .65;
             }
         """
         rulesets = stylesheet_rulesets(s)
@@ -344,7 +351,7 @@ class CascadeTests(unittest.TestCase):
         
         declarations = rulesets_declarations(rulesets)
 
-        self.assertEqual(15, len(declarations))
+        self.assertEqual(17, len(declarations))
 
         self.assertEqual('*', str(declarations[0].selector))
         self.assertEqual('polygon-fill', declarations[0].property.name)
@@ -374,37 +381,45 @@ class CascadeTests(unittest.TestCase):
         self.assertEqual('text-dx', declarations[6].property.name)
         self.assertEqual('-10', str(declarations[6].value))
 
-        self.assertEqual('Layer#foo.foo[baz>10] bar', str(declarations[7].selector))
-        self.assertEqual('polygon-fill', declarations[7].property.name)
-        self.assertEqual('#ff9900', str(declarations[7].value))
-
+        self.assertEqual('*', str(declarations[7].selector))
+        self.assertEqual('polygon-gamma', declarations[7].property.name)
+        self.assertEqual('0.65', str(declarations[7].value))
+        
         self.assertEqual('Layer#foo.foo[baz>10] bar', str(declarations[8].selector))
-        self.assertEqual('text-face-name', declarations[8].property.name)
-        self.assertEqual('Helvetica Bold', str(declarations[8].value))
+        self.assertEqual('polygon-fill', declarations[8].property.name)
+        self.assertEqual('#ff9900', str(declarations[8].value))
 
         self.assertEqual('Layer#foo.foo[baz>10] bar', str(declarations[9].selector))
-        self.assertEqual('text-size', declarations[9].property.name)
-        self.assertEqual('10', str(declarations[9].value))
+        self.assertEqual('text-face-name', declarations[9].property.name)
+        self.assertEqual('Helvetica Bold', str(declarations[9].value))
 
         self.assertEqual('Layer#foo.foo[baz>10] bar', str(declarations[10].selector))
-        self.assertEqual('polygon-pattern-file', declarations[10].property.name)
-        self.assertEqual('http://example.com', str(declarations[10].value))
+        self.assertEqual('text-size', declarations[10].property.name)
+        self.assertEqual('10', str(declarations[10].value))
 
         self.assertEqual('Layer#foo.foo[baz>10] bar', str(declarations[11].selector))
-        self.assertEqual('line-cap', declarations[11].property.name)
-        self.assertEqual('square', str(declarations[11].value))
+        self.assertEqual('polygon-pattern-file', declarations[11].property.name)
+        self.assertEqual('http://example.com', str(declarations[11].value))
 
         self.assertEqual('Layer#foo.foo[baz>10] bar', str(declarations[12].selector))
-        self.assertEqual('text-allow-overlap', declarations[12].property.name)
-        self.assertEqual('false', str(declarations[12].value))
+        self.assertEqual('line-cap', declarations[12].property.name)
+        self.assertEqual('square', str(declarations[12].value))
 
         self.assertEqual('Layer#foo.foo[baz>10] bar', str(declarations[13].selector))
-        self.assertEqual('text-dx', declarations[13].property.name)
-        self.assertEqual('-10', str(declarations[13].value))
+        self.assertEqual('text-allow-overlap', declarations[13].property.name)
+        self.assertEqual('false', str(declarations[13].value))
 
-        self.assertEqual('*', str(declarations[14].selector))
-        self.assertEqual('text-fill', declarations[14].property.name)
-        self.assertEqual('#ff9900', str(declarations[14].value))
+        self.assertEqual('Layer#foo.foo[baz>10] bar', str(declarations[14].selector))
+        self.assertEqual('text-dx', declarations[14].property.name)
+        self.assertEqual('-10', str(declarations[14].value))
+
+        self.assertEqual('Layer#foo.foo[baz>10] bar', str(declarations[15].selector))
+        self.assertEqual('polygon-gamma', declarations[15].property.name)
+        self.assertEqual('0.65', str(declarations[15].value))
+        
+        self.assertEqual('*', str(declarations[16].selector))
+        self.assertEqual('text-fill', declarations[16].property.name)
+        self.assertEqual('#ff9900', str(declarations[16].value))
 
 class SelectorParseTests(unittest.TestCase):
 

@@ -652,7 +652,8 @@ def get_polygon_rules(declarations):
         create a new Style element with a PolygonSymbolizer, add it to Map
         and refer to it in Layer.
     """
-    property_map = {'polygon-fill': 'fill', 'polygon-opacity': 'fill-opacity'}
+    property_map = {'polygon-fill': 'fill', 'polygon-opacity': 'fill-opacity',
+                    'polygon-gamma': 'gamma'}
     
     # a place to put rule elements
     rule_els = []

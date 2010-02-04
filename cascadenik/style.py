@@ -79,6 +79,9 @@ properties = {
     'polygon-fill': color,
 
     # 
+    'polygon-gamma': float,
+
+    # 
     'polygon-opacity': float,
 
     #--------------- line symbolizer
