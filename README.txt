@@ -6,10 +6,14 @@ Run `make` to download a copy of cssutils, or get it directly from the source:
 
 Unroll the rules in example.mss and show their cascade order:
 
-    % python style.py example.mss > example-ordered-unrolled.mss
+    % python cascadenik-style.py example.mss > example-ordered-unrolled.mss
 
 Compile example.mml into a Mapnik-suitable XML file:
 
-    % python compile.py example.mml > example-compiled.xml
+    % python cascadenik-compile.py example.mml > example-compiled.xml
+
+Render a MML file directly to an image using nik2img.py:
+
+    % nik2img.py example.mml example.png
 
 Will write more here later.
