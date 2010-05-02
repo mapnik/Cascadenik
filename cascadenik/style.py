@@ -332,8 +332,9 @@ class Selector:
         
         for test in self.elements[0].tests:
             if test.property == 'zoom':
-                # TODO - should we instead warn that values may not be appropriate?
-                raise NotImplementedError('Map srs is not web mercator, so zoom level shorthand cannot be propertly converted to Min/Max scaledenominators')
+                if not is_gym:
+                    # TODO - should we warn instead that values may not be appropriate?
+                    raise NotImplementedError('Map srs is not web mercator, so zoom level shorthand cannot be propertly converted to Min/Max scaledenominators')
 
                 test.property = 'scale-denominator'
 

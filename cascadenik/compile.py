@@ -832,11 +832,10 @@ def postprocess_symbolizer_image_file(symbolizer_el, dir, temp_name, move_local_
     
     ext = os.path.splitext(img_path)[1]
     
-    if dir:
-        if os.path.exists(img_path) and not move_local_files:
-            path = img_path
-        else:
-            path = os.path.join(dir,os.path.basename(img_path))
+    if os.path.exists(img_path) and not move_local_files:
+        path = img_path
+    elif dir:
+        path = os.path.join(dir,os.path.basename(img_path))
     else:
         # save the image to a tempfile
         (handle, path) = tempfile.mkstemp(suffix=ext, prefix='cascadenik-%s-' % temp_name)
@@ -1106,11 +1105,12 @@ def compile(src,**kwargs):
     
         for parameter in layer.find('Datasource').findall('Parameter'):
             if parameter.get('name', None) == 'file':
-                # fetch a remove zipped shapefile or read a local one
+                # fetch a remote zipped shapefile or read a local one
                 parameter.text = localize_shapefile(src, parameter.text, dir, move_local_files)
 
             elif parameter.get('name', None) == 'table':
                 # remove line breaks from possible SQL
+                # http://trac.mapnik.org/ticket/173
                 if not MAPNIK_VERSION >= 601:
                     parameter.text = parameter.text.replace('\r', ' ').replace('\n', ' ')
 
