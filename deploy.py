@@ -3,14 +3,21 @@
 """
 Release Steps
 -------------
- * create ~./pypirc file with pypi user:pass
- * Edit CHANGELOG.txt
- * rebuild MANIFEST 'python setup.py sdist --manifest-only'
- * Increment '__version__' in main script and 'version' in setup.py
- * Commit changes to SVN - confirm correct r# in CHANGELOG
- * Run `deploy.py` to create sdist, upload, and create tag
- * Commit tag
- * Update Google Code wiki
+
+ * do once:
+    * svn mkdir ../../../tags/cascadenik
+    * create ~./pypirc file with pypi user:pass
+    * python setup.py register
+
+ * do each release:
+    * Edit CHANGELOG.txt
+    * rebuild MANIFEST 'python setup.py sdist --manifest-only'
+    * Increment 'version' below and 'version' in setup.py
+    * Commit changes to SVN - confirm correct r# in CHANGELOG
+    * Run `deploy.py` to create sdist, upload, and create tag
+    * Commit tag
+    * Update Google Code wiki
+
 """
 
 import sys
