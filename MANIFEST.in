@@ -1,3 +1,5 @@
 include *.txt
 include setup.py
-include ez_setup.py
+include cascadenik-compile.py
+include cascadenik-style.py
+recursive-include cascadenik  *.py
