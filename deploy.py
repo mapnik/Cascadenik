@@ -28,7 +28,7 @@ DEBUG = False
 
 app = 'cascadenik'
 version = '0.1.0'
-tag_dir= '../../tags/%s' % app
+tag_dir= '../../../tags/%s' % app
 
 def call(cmd):
   if DEBUG:
