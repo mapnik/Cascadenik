@@ -303,7 +303,7 @@ class Selector:
     
         self.elements = elements[:]
 
-    def convertZoomTests(self):
+    def convertZoomTests(self,is_gym=True):
         """ Modify the tests on this selector to use mapnik-friendly
             scale-denominator instead of shorthand zoom.
         """
@@ -332,6 +332,9 @@ class Selector:
         
         for test in self.elements[0].tests:
             if test.property == 'zoom':
+                # TODO - should we instead warn that values may not be appropriate?
+                raise NotImplementedError('Map srs is not web mercator, so zoom level shorthand cannot be propertly converted to Min/Max scaledenominators')
+
                 test.property = 'scale-denominator'
 
                 if test.op == '=':
@@ -920,8 +923,7 @@ def postprocess_selector(tokens, is_gym, line=0, col=0):
 
     selector = Selector(*elements)
     
-    if is_gym:
-        selector.convertZoomTests()
+    selector.convertZoomTests(is_gym=is_gym)
     
     return selector
 
