@@ -1,25 +1,40 @@
 Thanks for downloading Cascadenik.
 
-To install it, first install the Python Imaging Library and Cssutils.
+
+Depedencies
+-----------
+
+To install Cascadenik, first install the Python Imaging Library and Cssutils.
+
+* Note: on linux and osx all command below likely need to have the command 'sudo' in front of them
+
+Cssutils
+========
 
 Install cssutils using easy_install (or grab from http://code.google.com/p/cssutils/)
     
-    % easy_install cssutils
+    $ easy_install cssutils
+
+PIL
+===
 
 Install PIL (python imaging library) using easy_install (or grab from http://www.pythonware.com/products/pil/)
-    
-    % easy_install PIL
-    
-Then run the following command inside this directory:
+        
+    $ easy_install PIL
 
-    % cd cascadenik_sources
-    % python setup.py install
+
+Installing Cascadenik
+---------------------
+    
+Run the following command inside this directory (the directory that also contains the 'setup.py' file):
+
+    $ python setup.py install
 
 Or you can download and install in one step:
 
     $ easy_install cascadenik
     $ easy_install --upgrade cascadenik # to force upgrading
 
-Or if you're using `pip`:
+Or if you're using 'pip':
 
     $ pip install cascadenik
