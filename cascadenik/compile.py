@@ -11,6 +11,7 @@ import os.path
 import zipfile
 import style
 
+
 try:
     import PIL.Image
     HAS_PIL = True
@@ -18,10 +19,14 @@ except ImportError:
     HAS_PIL = False
 
 try:
-    import mapnik
+    import mapnik2 as mapnik
     HAS_MAPNIK = True
 except ImportError:
-    HAS_MAPNIK = False
+    try:
+        import mapnik
+        HAS_MAPNIK = True
+    except ImportError:
+        HAS_MAPNIK = False
 
 MAPNIK_AUTO_IMAGE_SUPPORT = None
 MAPNIK_VERSION = None
@@ -32,7 +37,7 @@ if HAS_MAPNIK:
     if hasattr(mapnik,'mapnik_version'):
         MAPNIK_VERSION = mapnik.mapnik_version()
         # note, bugs in 0.7.0 require *_pattern_symbolizer image type,width,height to be specified
-        # this is fixed in 0.8.0, but we may release 701 to fix this problem, hence 701
+        # fixed in 0.7.1 - http://trac.mapnik.org/ticket/508
         if MAPNIK_VERSION >= 701:
             MAPNIK_AUTO_IMAGE_SUPPORT = True
 
@@ -43,11 +48,15 @@ if not HAS_PIL:
 DEFAULT_ENCODING = 'utf-8'
 
 try:
-    import xml.etree.ElementTree as ElementTree
-    from xml.etree.ElementTree import Element
+    import lxml.etree as ElementTree
+    from lxml.etree import Element
 except ImportError:
-    import elementtree.ElementTree as ElementTree
-    from elementtree.ElementTree import Element
+    try:
+        import xml.etree.ElementTree as ElementTree
+        from xml.etree.ElementTree import Element
+    except ImportError:
+        import elementtree.ElementTree as ElementTree
+        from elementtree.ElementTree import Element
 
 opsort = {lt: 1, le: 2, eq: 3, ge: 4, gt: 5}
 opstr = {lt: '<', le: '<=', eq: '==', ge: '>=', gt: '>'}
@@ -476,19 +485,23 @@ def tests_filter_combinations(tests):
     # if no filters have been defined, return a blank one that matches anything
     return [Filter()]
 
-def is_gym_projection(map_el):
+def is_gym_projection(srs):
     """ Return true if the map projection matches that used by VEarth, Google, OSM, etc.
     
-        Will be useful for a zoom-level shorthand for scale-denominator.
-    """ 
-    # expected
-    gym = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null'
-    gym = dict([p.split('=') for p in gym.split() if '=' in p])
-    
+        Is currently necessary for zoom-level shorthand for scale-denominator.
+    """
+    if srs.lower() == '+init=epsg:900913':
+        return True
+
     # observed
-    srs = map_el.get('srs', '')
     srs = dict([p.split('=') for p in srs.split() if '=' in p])
     
+    # expected
+    # note, common optional modifiers like +no_defs, +over, and +wkt
+    # are not pairs and should not prevent matching
+    gym = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null'
+    gym = dict([p.split('=') for p in gym.split() if '=' in p])
+        
     for p in gym:
         if srs.get(p, None) != gym.get(p, None):
             return False
@@ -513,8 +526,8 @@ def extract_declarations(map_el, base):
 
         else:
             continue
-            
-        rulesets = style.stylesheet_rulesets(styles, base=local_base, is_gym=is_gym_projection(map_el))
+        
+        rulesets = style.stylesheet_rulesets(styles, base=local_base, is_gym=is_gym_projection(map_el.get('srs','')))
         declarations += style.rulesets_declarations(rulesets)
 
     return declarations
@@ -595,13 +608,20 @@ def insert_layer_style(map_el, layer_el, style_name, rule_els):
         style_el.append(rule_el)
     
     style_el.tail = '\n    '
-    map_el.insert(map_el._children.index(layer_el), style_el)
+    if hasattr(map_el,'getchildren'):
+        map_el.insert(map_el.getchildren().index(layer_el), style_el)
+    else:
+        map_el.insert(map_el._children.index(layer_el), style_el)
     
     stylename_el = Element('StyleName')
     stylename_el.text = style_name
     stylename_el.tail = '\n        '
 
-    layer_el.insert(layer_el._children.index(layer_el.find('Datasource')), stylename_el)
+    if hasattr(map_el,'getchildren'):
+        layer_el.insert(layer_el.getchildren().index(layer_el.find('Datasource')), stylename_el)
+    else:
+        layer_el.insert(layer_el._children.index(layer_el.find('Datasource')), stylename_el)
+    
     layer_el.set('status', 'on')
 
 def is_applicable_selector(selector, filter):
