@@ -2,6 +2,7 @@
 
 import sys
 import os.path
+import optparse
 import cascadenik
 
 # monkey with sys.path due to some weirdness inside cssutils
@@ -13,7 +14,7 @@ def main(filename):
         unrolled list of declarations in cascade order.
     """
     input = open(filename, 'r').read()
-    declarations = cascadenik.stylesheet_declarations(input)
+    declarations = cascadenik.stylesheet_declarations(input,is_gym=True)
     
     for dec in declarations:
         print dec.selector,
@@ -36,6 +37,13 @@ def main(filename):
     
     return 0
 
+parser = optparse.OptionParser(usage="""cascadenik-style.py <style file>""")
+
 if __name__ == '__main__':
-    stylefile = sys.argv[1]
+    (options, args) = parser.parse_args()
+    if not args:
+        parser.error('Please specify a .mss file')
+    stylefile = args[0]
+    if not stylefile.endswith('.mss'):
+        parser.error('Only accepts an .mss file')
     sys.exit(main(stylefile))
