@@ -12,7 +12,7 @@ Release Steps
  * do each release:
     * Edit CHANGELOG.txt
     * rebuild MANIFEST 'python setup.py sdist --manifest-only'
-    * Increment 'version' below and 'version' in setup.py
+    * Increment 'version' below, in __init__.py, and in setup.py
     * Commit changes to SVN - confirm correct r# in CHANGELOG
     * Run `deploy.py` to create sdist, upload, and create tag
     * Commit tag
@@ -27,7 +27,7 @@ from subprocess import call as subcall
 DEBUG = False
 
 app = 'cascadenik'
-version = '0.1.0'
+version = '0.2.0'
 tag_dir= '../../../tags/%s' % app
 
 def call(cmd):
