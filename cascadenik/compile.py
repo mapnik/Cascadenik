@@ -1,45 +1,26 @@
 import os, sys
 import math
-import pprint
 import urllib
 import urlparse
 import tempfile
 import StringIO
 import operator
 from operator import lt, le, eq, ge, gt
+import base64
 import os.path
 import zipfile
 import style
 
-
+HAS_PIL = False
 try:
-    import PIL.Image
+    from PIL import Image
     HAS_PIL = True
 except ImportError:
-    HAS_PIL = False
-
-try:
-    import mapnik2 as mapnik
-    HAS_MAPNIK = True
-except ImportError:
     try:
-        import mapnik
-        HAS_MAPNIK = True
+        import Image
+        HAS_PIL = True
     except ImportError:
-        HAS_MAPNIK = False
-
-MAPNIK_AUTO_IMAGE_SUPPORT = None
-MAPNIK_VERSION = None
-
-# if mapnik is actually installed we attempt
-# to  benefit from knowing its version
-if HAS_MAPNIK:
-    if hasattr(mapnik,'mapnik_version'):
-        MAPNIK_VERSION = mapnik.mapnik_version()
-        # note, bugs in 0.7.0 require *_pattern_symbolizer image type,width,height to be specified
-        # fixed in 0.7.1 - http://trac.mapnik.org/ticket/508
-        if MAPNIK_VERSION >= 701:
-            MAPNIK_AUTO_IMAGE_SUPPORT = True
+        pass
 
 if not HAS_PIL:
     warn = 'Warning: PIL (Python Imaging Library) is required for proper handling of image symbolizers when using JPEG format images or not running Mapnik >=0.7.0\n'
@@ -60,13 +41,40 @@ except ImportError:
 
 opsort = {lt: 1, le: 2, eq: 3, ge: 4, gt: 5}
 opstr = {lt: '<', le: '<=', eq: '==', ge: '>=', gt: '>'}
-    
+
+
+VERBOSE = False
+
+def msg(msg):
+    if VERBOSE:
+        sys.stderr.write('Cascadenik debug: %s\n' % msg)
+
 counter = 0
 
 def next_counter():
     global counter
     counter += 1
     return counter
+
+def safe(filename):
+    return base64.urlsafe_b64encode(filename)
+
+def indent(elem, level=0):
+    """ http://infix.se/2007/02/06/gentlemen-indent-your-xml
+    """
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        for e in elem:
+            indent(e, level+1)
+            if not e.tail or not e.tail.strip():
+                e.tail = i + "  "
+        if not e.tail or not e.tail.strip():
+            e.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
 
 class Range:
     """ Represents a range for use in min/max scale denominator.
@@ -634,11 +642,14 @@ def is_applicable_selector(selector, filter):
     
     return True
 
-def add_map_style(map_el, declarations):
+def add_map_style(map_el, declarations,**kwargs):
     """
     """
-    property_map = {'map-bgcolor': 'bgcolor'}
-    
+
+    if kwargs.get('mapnik_version') >= 800:
+        property_map = {'map-bgcolor': 'background-color'}
+    else:
+        property_map = {'map-bgcolor': 'bgcolor'}    
     for dec in declarations:
         if dec.property.name in property_map:
             map_el.set(property_map[dec.property.name], str(dec.value))
@@ -667,7 +678,7 @@ def filtered_property_declarations(declarations, property_map):
 
     return rules
 
-def get_polygon_rules(declarations):
+def get_polygon_rules(declarations,**kwargs):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PolygonSymbolizer, add it to Map
         and refer to it in Layer.
@@ -682,16 +693,19 @@ def get_polygon_rules(declarations):
         symbolizer_el = Element('PolygonSymbolizer')
         
         for (parameter, value) in sorted(parameter_values.items()):
-            parameter = Element('CssParameter', {'name': parameter})
-            parameter.text = str(value)
-            symbolizer_el.append(parameter)
+            if kwargs.get('mapnik_version') >= 800:
+                symbolizer_el.set(parameter, str(value))
+            else:
+                parameter = Element('CssParameter', {'name': parameter})
+                parameter.text = str(value)
+                symbolizer_el.append(parameter)
 
         rule_el = make_rule_element(filter, symbolizer_el)
         rule_els.append(rule_el)
     
     return rule_els
 
-def get_line_rules(declarations):
+def get_line_rules(declarations,**kwargs):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a LineSymbolizer, add it to Map
         and refer to it in Layer.
@@ -734,15 +748,21 @@ def get_line_rules(declarations):
         for (parameter, value) in sorted(parameter_values.items()):
             if parameter.startswith('on:'):
                 # knock off the leading 'on:' from above
-                parameter = Element('CssParameter', {'name': parameter[3:]})
-                parameter.text = str(value)
-                line_symbolizer_el.append(parameter)
+                if kwargs.get('mapnik_version') >= 800:
+                    line_symbolizer_el.set(parameter[3:], str(value))
+                else:
+                    parameter = Element('CssParameter', {'name': parameter[3:]})
+                    parameter.text = str(value)
+                    line_symbolizer_el.append(parameter)
 
             elif parameter.startswith('in:') and inline_symbolizer_el != False:
                 # knock off the leading 'in:' from above
-                parameter = Element('CssParameter', {'name': parameter[3:]})
-                parameter.text = str(value)
-                inline_symbolizer_el.append(parameter)
+                if kwargs.get('mapnik_version') >= 800:
+                    inline_symbolizer_el.set(parameter[3:], str(value))
+                else:
+                    parameter = Element('CssParameter', {'name': parameter[3:]})
+                    parameter.text = str(value)
+                    inline_symbolizer_el.append(parameter)
 
             elif parameter.startswith('out:') and outline_symbolizer_el != False:
                 # for the width...
@@ -751,9 +771,12 @@ def get_line_rules(declarations):
                     value = parameter_values['on:stroke-width'].value + 2 * value.value
             
                 # knock off the leading 'out:' from above
-                parameter = Element('CssParameter', {'name': parameter[4:]})
-                parameter.text = str(value)
-                outline_symbolizer_el.append(parameter)
+                if kwargs.get('mapnik_version') >= 800:
+                    outline_symbolizer_el.set(parameter[4:], str(value))
+                else:
+                    parameter = Element('CssParameter', {'name': parameter[4:]})
+                    parameter.text = str(value)
+                    outline_symbolizer_el.append(parameter)
 
         rule_el = make_rule_element(filter, outline_symbolizer_el, line_symbolizer_el, inline_symbolizer_el)
         rule_els.append(rule_el)
@@ -816,57 +839,97 @@ def get_text_rule_groups(declarations):
 
     return rule_el_groups
 
-def postprocess_symbolizer_image_file(symbolizer_el, dir, temp_name, move_local_files=False):
+def postprocess_symbolizer_image_file(symbolizer_el, temp_name, **kwargs):
     """ Given a symbolizer element, output directory name, and temporary
         file name, find the "file" attribute in the symbolizer and save it
-        to a temporary location as a PNG while noting its dimensions.
+        to a target location as a PNG while noting its dimensions.
     """
     # read the image to get some more details
     img_path = symbolizer_el.get('file')
 
-    if os.path.exists(img_path): # local file
-        if os.path.isabs(img_path) and sys.platform == "win32":
-            img_path = 'file:%s' % img_path
+    msg('reading symbol: %s' % img_path)
+    
+    target_dir = kwargs.get('target_dir')
+    
+    move_local_files = kwargs.get('move_local_files')
 
-    img_data = urllib.urlopen(img_path).read()
+    # todo - use urlparse logic?
+    is_local = os.path.exists(img_path)
+    # if not url throw error?
     
-    ext = os.path.splitext(img_path)[1]
-    
-    if os.path.exists(img_path) and not move_local_files:
-        path = img_path
-    elif dir:
-        path = os.path.join(dir,os.path.basename(img_path))
+    image_name, ext = os.path.splitext(img_path)
+
+    # support latest mapnik features of auto-detection
+    # of image sizes and jpeg reading support...
+    ver = kwargs.get('mapnik_version',None)
+    # http://trac.mapnik.org/ticket/508
+    mapnik_auto_image_support = (ver >= 701) or (ver >= 700 and 'pattern' not in symbolizer_el.tag)
+    mapnik_formats = ['.png','tif','tiff']
+    if ver >= 800:
+        mapnik_formats.extend(['.jpg','.jpeg'])
+    supported_type = ext in mapnik_formats
+    if supported_type:
+        target_ext = ext
     else:
-        # save the image to a tempfile
-        (handle, path) = tempfile.mkstemp(suffix=ext, prefix='cascadenik-%s-' % temp_name)
-        os.close(handle)
+        target_ext = '.png'
 
-    if MAPNIK_AUTO_IMAGE_SUPPORT and 'png' in ext.lower():
-        if not path == img_path:
-            file = open(path,'wb')
-            file.write(img_data)
-            file.close()
+    if move_local_files or not is_local:
+        target_name = os.path.basename('%s%s' % (image_name,target_ext))
+        if not is_local and kwargs.get('safe_urls'):
+            # note we use/encode the raw url 'image_path' here...
+            target_dir = os.path.join(target_dir,safe(img_path))
+        dest_file = os.path.join(target_dir,target_name)
     else:
-        if not HAS_PIL:
-            raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
-        img_file = StringIO.StringIO(img_data)
-        img = PIL.Image.open(img_file)
-        # Force PNG
-        path = path.replace(ext,'.png')
-        img.save(path,format='PNG')
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            symbolizer_el.set('type', 'png')
-            # if no width/height have been provided, set them
-            if not (symbolizer_el.get('width', False) and symbolizer_el.get('height', False)):
-                symbolizer_el.set('width', str(img.size[0]))
-                symbolizer_el.set('height', str(img.size[1]))
+        # local file and we're not moving it
+        dest_file = '%s%s' % (image_name,target_ext)
 
-    symbolizer_el.set('file', path)
-    os.chmod(path, 0644)
+    msg('Destination file: %s' % dest_file)
+        
+    # are we caching, eg pulling from already downloaded files
+    caching = not kwargs.get('no_cache')
+    if not is_local and caching:
+        if os.path.exists(dest_file):
+            img_path = dest_file
+            supported_type = os.path.splitext(img_path)[1] in mapnik_formats
+            is_local = True
+            msg('found locally cached file: %s' %  dest_file)
+
+    # finally, early return if possible
+    if is_local and os.path.exists(dest_file) and mapnik_auto_image_support and supported_type:
+        symbolizer_el.set('file', dest_file)
+        return
+    
+    # throw error if we need to detect image sizes and can't because pil is missing
+    if not mapnik_auto_image_support and not HAS_PIL:
+        raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
+
+    # okay, we actually need read the data into memory now
+    if is_local:
+        img_data = open(img_path,'rb').read()
+    else:
+        #if os.path.isabs(img_path) and sys.platform == "win32":
+        #    img_path = 'file:%s' % img_path
+        img_data = urllib.urlopen(img_path).read()
+    
+    im = Image.open(StringIO.StringIO(img_data))
+
+    if not mapnik_auto_image_support:
+        # todo - providing widths has no effect as we don't resize
+        #if not (symbolizer_el.get('width', False) and symbolizer_el.get('height', False)):
+        symbolizer_el.set('width', str(im.size[0]))
+        symbolizer_el.set('height', str(im.size[1]))
+        symbolizer_el.set('type', target_ext[1:])
+
+    if not os.path.exists(target_dir):
+        os.mkdir(target_dir)
+
+    im.save(dest_file)
+    symbolizer_el.set('file', dest_file)
+    os.chmod(dest_file, 0644)
 
     
 
-def get_shield_rule_groups(declarations, dir=None, move_local_files=False):
+def get_shield_rule_groups(declarations, **kwargs):
     """ Given a Map element, a Layer element, and a list of declarations,
         create new Style elements with a TextSymbolizer, add them to Map
         and refer to them in Layer.
@@ -913,7 +976,7 @@ def get_shield_rule_groups(declarations, dir=None, move_local_files=False):
                 symbolizer_el.set(parameter, str(value))
     
             if symbolizer_el.get('file', False):
-                postprocess_symbolizer_image_file(symbolizer_el, dir, 'shield', move_local_files)
+                postprocess_symbolizer_image_file(symbolizer_el, 'shield', **kwargs)
     
                 rule_el = make_rule_element(filter, symbolizer_el)
                 rule_els.append(rule_el)
@@ -922,7 +985,7 @@ def get_shield_rule_groups(declarations, dir=None, move_local_files=False):
 
     return rule_el_groups
 
-def get_point_rules(declarations, dir=None, move_local_files=False):
+def get_point_rules(declarations, **kwargs):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PointSymbolizer, add it to Map
         and refer to it in Layer.
@@ -944,14 +1007,14 @@ def get_point_rules(declarations, dir=None, move_local_files=False):
             symbolizer_el.set(parameter, str(value))
     
         if symbolizer_el.get('file', False):
-            postprocess_symbolizer_image_file(symbolizer_el, dir, 'point', move_local_files)
+            postprocess_symbolizer_image_file(symbolizer_el, 'point', **kwargs)
             
             rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
     
     return rule_els
 
-def get_polygon_pattern_rules(declarations, dir=None, move_local_files=False):
+def get_polygon_pattern_rules(declarations, **kwargs):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PolygonPatternSymbolizer, add it to Map
         and refer to it in Layer.
@@ -972,14 +1035,14 @@ def get_polygon_pattern_rules(declarations, dir=None, move_local_files=False):
             symbolizer_el.set(parameter, str(value))
     
         if symbolizer_el.get('file', False):
-            postprocess_symbolizer_image_file(symbolizer_el, dir, 'polygon-pattern', move_local_files)
+            postprocess_symbolizer_image_file(symbolizer_el, 'polygon-pattern', **kwargs)
             
             rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
     
     return rule_els
 
-def get_line_pattern_rules(declarations, dir=None, move_local_files=False):
+def get_line_pattern_rules(declarations, **kwargs):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a LinePatternSymbolizer, add it to Map
         and refer to it in Layer.
@@ -1000,7 +1063,7 @@ def get_line_pattern_rules(declarations, dir=None, move_local_files=False):
             symbolizer_el.set(parameter, str(value))
     
         if symbolizer_el.get('file', False):
-            postprocess_symbolizer_image_file(symbolizer_el, dir, 'line-pattern', move_local_files)
+            postprocess_symbolizer_image_file(symbolizer_el, 'line-pattern', **kwargs)
             
             rule_el = make_rule_element(filter, symbolizer_el)
             rule_els.append(rule_el)
@@ -1018,7 +1081,7 @@ def get_applicable_declarations(element, declarations):
     return [dec for dec in declarations
             if dec.selector.matches(element_tag, element_id, element_classes)]
 
-def localize_shapefile(src, shapefile, dir=None, move_local_files=False):
+def localize_shapefile(src, shapefile, **kwargs):
     """ Given a stylesheet path, a shapefile name, and a temp directory,
         modify the shapefile name so it's an absolute path.
     
@@ -1027,19 +1090,67 @@ def localize_shapefile(src, shapefile, dir=None, move_local_files=False):
         to be a remote zip file containing .shp, .shx, and .dbf files.
     """
     (scheme, netloc, path, params, query, fragment) = urlparse.urlparse(shapefile)
-    
+
+    move_local_files = kwargs.get('move_local_files')
     if move_local_files:
         sys.stderr.write('WARNING: moving local shapefiles not yet supported\n')
 
     if scheme == '':
         # assumed to be local
-        if MAPNIK_VERSION >= 601:
+        if kwargs.get('mapnik_version',None) >= 601:
             # Mapnik 0.6.1 accepts relative paths, so we leave it unchanged
             # but compiled file must maintain same relativity to the files
             # as the stylesheet, which needs to be addressed separately
             return shapefile
         else:
+            msg('Warning, your Mapnik version is old and does not support relative paths to datasources')
             return os.path.realpath(urlparse.urljoin(src, shapefile))
+
+    target_dir = kwargs.get('target_dir')
+    
+    # if no-cache is True we avoid caching otherwise
+    # we attempt to pull targets locally without re-downloading
+    caching = not kwargs.get('no_cache',None)
+
+    if kwargs.get('safe_urls'):
+        #todo - make "safe64"
+        target_dir = os.path.join(target_dir,safe(shapefile))
+    
+    if caching:
+        if kwargs.get('safe_urls'):
+            if not os.path.isdir(target_dir):
+                # does not exist yet
+                msg('Downloading shapefile to base64 encoded dir: %s' % target_dir)
+            else:
+                # already downloaded, we can pull shapefile name from cache
+                msg('Shapefile found, pulling from base64 encoded directory cache instead of downloading')
+                for root, dirs, files in os.walk(target_dir):
+                    for file_ in files:
+                        if os.path.splitext(file_)[1] == '.shp':
+                            return os.path.join(root, file_[:-4])
+        else:
+            # only possibility here is to test assumption 
+            # that the shapefile is the same name as the zip.
+            basename = os.path.splitext(os.path.basename(shapefile))[0]
+            possible_names = []
+            possible_names.append(os.path.join(target_dir,'%s.shp' % basename))
+            possible_names.append(os.path.join(target_dir,basename,'%s.shp' % basename))
+            found = False
+            unzipped_path = None
+            for possible in possible_names:
+                if os.path.exists(possible):
+                    found = True
+                    msg('Shapefile found locally, reading from "%s" instead of downloading' % possible)
+                    unzipped_path = possible
+                    break
+            if not found:
+                msg('Remote shapefile could not be found locally, therefore downloading from "%s"' % (shapefile))
+                msg('(searched for %s)' %  possible_names)
+            if unzipped_path:
+               return unzipped_path
+    else:
+        msg('Avoiding searching for cached local files...')
+        msg('Downloading "%s" to "%s"' % (shapefile,target_dir))
 
     # assumed to be a remote zip archive with .shp, .shx, and .dbf files
     zip_data = urllib.urlopen(shapefile).read()
@@ -1049,11 +1160,6 @@ def localize_shapefile(src, shapefile, dir=None, move_local_files=False):
     extensions = [os.path.splitext(info.filename)[1] for info in infos]
     basenames = [os.path.basename(info.filename) for info in infos]
     
-    if dir:
-        base_dir = dir
-    else:
-        base_dir = tempfile.mkdtemp(prefix='cascadenik-shapefile-')
-    
     for (expected, required) in (('.shp', True), ('.shx', True), ('.dbf', True), ('.prj', False)):
         if required and expected not in extensions:
             raise Exception('Zip file %(shapefile)s missing extension "%(expected)s"' % locals())
@@ -1061,11 +1167,13 @@ def localize_shapefile(src, shapefile, dir=None, move_local_files=False):
         for (info, extension, basename) in zip(infos, extensions, basenames):
             if extension == expected:
                 file_data = zip_file.read(info.filename)
-                file_name = os.path.normpath('%(base_dir)s/%(basename)s' % locals())
+                if not os.path.exists(target_dir):
+                    os.mkdir(target_dir)
+                file_name = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
                 
-                file = open(file_name, 'wb')
-                file.write(file_data)
-                file.close()
+                file_ = open(file_name, 'wb')
+                file_.write(file_data)
+                file_.close()
                 
                 if extension == '.shp':
                     local = file_name[:-4]
@@ -1074,13 +1182,108 @@ def localize_shapefile(src, shapefile, dir=None, move_local_files=False):
 
     return local
 
+def auto_detect_mapnik_version():
+    mapnik = None
+    # not quite ready for primetime...
+    #try:
+    #    import mapnik2 as mapnik
+    #except ImportError:
+    try:
+        import mapnik
+    except ImportError:
+        pass
+    if mapnik:
+        if hasattr(mapnik,'mapnik_version'):
+            return mapnik.mapnik_version()
+
+def mapnik_version_string(version):
+    patch_level = version % 100
+    minor_version = version / 100 % 1000
+    major_version = version / 100000
+    return '%s.%s.%s' % ( major_version, minor_version,patch_level)
+            
 def compile(src,**kwargs):
     """
+    Compile a Cascadenik MML file, returning an XML string.
+    
+    Keyword Parameters:
+         
+     verbose:
+       If True, debugging information will be printed to stderr. (default: None)
+     
+     srs:
+       Target srs for the compiled stylesheet. If provided, overrides default map 
+       srs in the mml.
+       
+     safe_urls:
+       If True, paths of any files placed by Cascadenik will be base64 encoded calling
+       base64.urlsafe_b64encode() on the url or filesystem path.
+
+     target_dir:
+       If set, all file-based resources (symbols, shapefiles, etc) will be written to this
+       output directory. If not set, tempfile.gettempdir() will be used.
+     
+     move_local_files:
+       If True, not just remote files but also locally referenced files (currently only
+       symbols) will be move to the 'target_dir'. Support for datasources will be added
+       in the future. (default: None)
+        
+     no_cache:
+       By default remotely downloaded files will be read from the location where they
+       were unpacked ('target_dir'). If 'no_cache' is True, then remote files will be
+       downloaded even if a local copy exists in the output location, effectively
+       overwriting any previously downloaded remote files or moved local files.
+     
+     pretty:
+       If True, XML output will be fully indented (otherwise indenting is haphazard).
+
+     mapnik_version:
+       The Mapnik release to target for optimal stylesheet compatibility.
+       
+       701 (aka '0.7.1') is the assumed default target, unless specified or autodetected.
+              
+       'mapnik_version' must be an integer matching the format of 
+       include/mapnik/version.hpp which follows the Boost method:
+       
+         MAPNIK_VERSION % 100 is the sub-minor version
+         MAPNIK_VERSION / 100 % 1000 is the minor version
+         MAPNIK_VERSION / 100000 is the major version
+       
+       If not provided the mapnik_version will be autodetected by:
+       
+       >>> import mapnik
+       >>> mapnik.mapnik_version()
+       701
+       
+       This is equivalent to:
+       
+       >>> mapnik.mapnik_version_string()
+       '0.7.1'
+       
+       To convert from the string to integer do:
+       >>> n = mapnik.mapnik_version_string().split('.')
+       >>> (int(n[0]) * 100000) + (int(n[1]) * 100) + (int(n[2]))
+       701
+       
     """
+
+    global VERBOSE
+    if kwargs.get('verbose'):
+        VERBOSE = True
+        sys.stderr.write('\n')
     
-    dir = kwargs.get('dir',None)
-    move_local_files = kwargs.get('move_local_files',False)
-    
+    if not kwargs.get('mapnik_version',None):
+        msg('"mapnik_version" not provided, autodetecting...')
+        version = auto_detect_mapnik_version()
+        if version:
+            kwargs['mapnik_version'] = version 
+            msg('Autodetected Mapnik version: %s | %s' % (version,mapnik_version_string(version)))
+        else:
+            default_version = 701 # 0.7.1
+            msg('Failed to autodetect "mapnik_version" falling back to %s | %s' % (default_version,mapnik_version_string(default_version)))
+    else:
+        msg('Targeting mapnik version: %s | %s' % (kwargs['mapnik_version'],mapnik_version_string(kwargs['mapnik_version'])))        
+        
     if os.path.exists(src): # local file
         # using 'file:' enables support on win32
         # for opening local files with urllib.urlopen
@@ -1089,29 +1292,49 @@ def compile(src,**kwargs):
         # therefore in the future it will likely be
         # wiser to just open local files with open()
         if os.path.isabs(src) and sys.platform == "win32":
+            msg('prepending "file:" to %s for windows compatibility with urlopen and absolute paths' % src)
             src = 'file:%s' % src
     
-    if dir and not os.path.exists(dir):
-        os.mkdir(dir)
+    target_dir = kwargs.get('target_dir')
+    if target_dir:
+        msg('Writing all file to "target_dir": %s' % target_dir)
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+            msg('"target_dir" does not exist, creating...')
+    else:
+        tmp_dir = tempfile.gettempdir()
+        kwargs['target_dir'] = tmp_dir
+        msg('Writing all files to temporary directory: %s' % tmp_dir)    
 
     doc = ElementTree.parse(urllib.urlopen(src))
-    map = doc.getroot()
+    map_el = doc.getroot()
     
-    declarations = extract_declarations(map, src)
+    # if a target srs is profiled, override whatever is in mml
+    if kwargs.get('srs'):
+        map_el.set('srs',kwargs.get('srs'))
     
-    add_map_style(map, get_applicable_declarations(map, declarations))
+    declarations = extract_declarations(map_el, src)
+    
+    add_map_style(map_el, get_applicable_declarations(map_el, declarations),**kwargs)
 
-    for layer in map.findall('Layer'):
+    for layer in map_el.findall('Layer'):
     
-        for parameter in layer.find('Datasource').findall('Parameter'):
-            if parameter.get('name', None) == 'file':
-                # fetch a remote zipped shapefile or read a local one
-                parameter.text = localize_shapefile(src, parameter.text, dir, move_local_files)
-
-            elif parameter.get('name', None) == 'table':
+        ds_params = layer.find('Datasource').findall('Parameter')
+        ds_type = [i.text for i in ds_params if i.get('name','') == 'type']
+        if len(ds_type):
+            ds_type = ds_type[0]
+        
+        for parameter in ds_params:
+            # TODO - support other kinds of file-based datasources other than shapefiles
+            if ds_type == 'shape' and parameter.get('name', None) == 'file':
+                # fetch a remote, zipped shapefile or read a local one
+                if parameter.text:
+                    parameter.text = localize_shapefile(src, parameter.text, **kwargs)
+                    # TODO - support datasource reprojection to make map srs
+            elif ds_type == 'postgis' and parameter.get('name', None) == 'table':
                 # remove line breaks from possible SQL
                 # http://trac.mapnik.org/ticket/173
-                if not MAPNIK_VERSION >= 601:
+                if not kwargs.get('mapnik_version',None) >= 601:
                     parameter.text = parameter.text.replace('\r', ' ').replace('\n', ' ')
 
         if layer.get('status') == 'off':
@@ -1119,25 +1342,26 @@ def compile(src,**kwargs):
             continue
     
         # the default...
-        layer.set('status', 'off')
+        #layer.set('status', 'off')
 
         layer_declarations = get_applicable_declarations(layer, declarations)
+                
+        insert_layer_style(map_el, layer, 'polygon style %d' % next_counter(),
+                           get_polygon_rules(layer_declarations,**kwargs) + \
+                           get_polygon_pattern_rules(layer_declarations, **kwargs))
         
-        #pprint.PrettyPrinter().pprint(layer_declarations)
-        
-        insert_layer_style(map, layer, 'polygon style %d' % next_counter(),
-                           get_polygon_rules(layer_declarations) + get_polygon_pattern_rules(layer_declarations, dir, move_local_files))
-        
-        insert_layer_style(map, layer, 'line style %d' % next_counter(),
-                           get_line_rules(layer_declarations) + get_line_pattern_rules(layer_declarations, dir, move_local_files))
+        insert_layer_style(map_el, layer, 'line style %d' % next_counter(),
+                           get_line_rules(layer_declarations,**kwargs) + \
+                           get_line_pattern_rules(layer_declarations, **kwargs))
 
-        for (shield_name, shield_rule_els) in get_shield_rule_groups(layer_declarations, dir, move_local_files):
-            insert_layer_style(map, layer, 'shield style %d (%s)' % (next_counter(), shield_name), shield_rule_els)
+        for (shield_name, shield_rule_els) in get_shield_rule_groups(layer_declarations, **kwargs):
+            insert_layer_style(map_el, layer, 'shield style %d (%s)' % (next_counter(), shield_name), shield_rule_els)
 
         for (text_name, text_rule_els) in get_text_rule_groups(layer_declarations):
-            insert_layer_style(map, layer, 'text style %d (%s)' % (next_counter(), text_name), text_rule_els)
+            insert_layer_style(map_el, layer, 'text style %d (%s)' % (next_counter(), text_name), text_rule_els)
 
-        insert_layer_style(map, layer, 'point style %d' % next_counter(), get_point_rules(layer_declarations, dir, move_local_files))
+        insert_layer_style(map_el, layer, 'point style %d' % next_counter(), \
+            get_point_rules(layer_declarations, **kwargs))
         
         layer.set('name', 'layer %d' % next_counter())
         
@@ -1147,6 +1371,9 @@ def compile(src,**kwargs):
         if 'class' in layer.attrib:
             del layer.attrib['class']
 
+    if kwargs.get('pretty',None):
+        indent(map_el)
+    
     xml_out = StringIO.StringIO()
     doc.write(xml_out)
     
