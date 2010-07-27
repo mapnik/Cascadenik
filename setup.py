@@ -13,8 +13,10 @@ except ImportError:
     
 readme = file('README.txt','rb').read()
 
+VERSION = '0.2.0'
+
 options = dict(name='cascadenik',
-        version = '0.1.0',
+        version = VERSION,
         description='Cascading Stylesheets For Mapnik',
         long_description=readme,
         author='Michal Migurski',
