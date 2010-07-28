@@ -849,7 +849,7 @@ def postprocess_symbolizer_image_file(symbolizer_el, temp_name, **kwargs):
 
     msg('reading symbol: %s' % img_path)
     
-    target_dir = kwargs.get('target_dir')
+    target_dir = kwargs.get('target_dir',tempfile.gettempdir())
     
     move_local_files = kwargs.get('move_local_files')
 
@@ -1106,7 +1106,7 @@ def localize_shapefile(src, shapefile, **kwargs):
             msg('Warning, your Mapnik version is old and does not support relative paths to datasources')
             return os.path.realpath(urlparse.urljoin(src, shapefile))
 
-    target_dir = kwargs.get('target_dir')
+    target_dir = kwargs.get('target_dir',tempfile.gettempdir())
     
     # if no-cache is True we avoid caching otherwise
     # we attempt to pull targets locally without re-downloading

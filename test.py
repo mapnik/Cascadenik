@@ -14,7 +14,12 @@ from cascadenik.compile import filtered_property_declarations, is_applicable_sel
 from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
 from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
 from cascadenik.compile import insert_layer_style, test2str
-from cascadenik.compile import MAPNIK_AUTO_IMAGE_SUPPORT
+from cascadenik.compile import auto_detect_mapnik_version
+
+MAPNIK_AUTO_IMAGE_SUPPORT = False
+ver = auto_detect_mapnik_version()
+if ver:
+    MAPNIK_AUTO_IMAGE_SUPPORT = (ver >= 701)
 
 class ParseTests(unittest.TestCase):
     
@@ -1235,7 +1240,7 @@ class StyleRuleTests(unittest.TestCase):
         for (shield_name, shield_rule_els) in get_shield_rule_groups(declarations):
             insert_layer_style(map, layer, 'test shield style (%s)' % shield_name, shield_rule_els)
 
-        insert_layer_style(map, layer, 'test point style', get_point_rules(declarations, self.tmpdir))
+        insert_layer_style(map, layer, 'test point style', get_point_rules(declarations, target_dir=self.tmpdir))
         
         self.assertEqual(2, len(map.findall('Layer/StyleName')))
         
@@ -1334,9 +1339,9 @@ class StyleRuleTests(unittest.TestCase):
         map = xml.etree.ElementTree.Element('Map')
         map.append(layer)
         
-        insert_layer_style(map, layer, 'test point style', get_point_rules(declarations, self.tmpdir))
-        insert_layer_style(map, layer, 'test polygon pattern style', get_polygon_pattern_rules(declarations, self.tmpdir))
-        insert_layer_style(map, layer, 'test line pattern style', get_line_pattern_rules(declarations, self.tmpdir))
+        insert_layer_style(map, layer, 'test point style', get_point_rules(declarations, target_dir=self.tmpdir))
+        insert_layer_style(map, layer, 'test polygon pattern style', get_polygon_pattern_rules(declarations, target_dir=self.tmpdir))
+        insert_layer_style(map, layer, 'test line pattern style', get_line_pattern_rules(declarations, target_dir=self.tmpdir))
         
         self.assertEqual(3, len(map.findall('Layer/StyleName')))
         
