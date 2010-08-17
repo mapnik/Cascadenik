@@ -2,6 +2,22 @@ Cascadenik Changelog
 --------------------
 
 
+Version 0.2.0, August _, 2010:
+----------------------------
+ 
+ * Packaged from r___
+ 
+ * Re-implemented support for installing dependencies via Setuptools, if available
+ 
+ * Refactored handling of file-based resources
+ 
+ * Added preliminary support for writing XML compliant against different Mapnik versions
+ 
+ * Added support for caching (avoiding re-downloading) remote resources (initial patch from tmcw)
+ 
+ * Exposed the variety of new options as command line flags for cascadenik-compile.py
+ 
+
 Version 0.1.0, May 1, 2010:
 ---------------------------
 
