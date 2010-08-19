@@ -10,6 +10,7 @@ import base64
 import os.path
 import zipfile
 import style
+import shutil
 
 HAS_PIL = False
 try:
@@ -27,6 +28,8 @@ if not HAS_PIL:
     sys.stderr.write(warn)
 
 DEFAULT_ENCODING = 'utf-8'
+
+SHAPE_PARTS = (('.shp', True), ('.shx', True), ('.dbf', True), ('.prj', False), ('.index', False))
 
 try:
     import lxml.etree as ElementTree
@@ -1081,6 +1084,56 @@ def get_applicable_declarations(element, declarations):
     return [dec for dec in declarations
             if dec.selector.matches(element_tag, element_id, element_classes)]
 
+
+def handle_shapefile_parts(shapefile,target_dir):
+    if not os.path.exists(target_dir):
+        os.mkdir(target_dir)
+    for (expected, required) in SHAPE_PARTS:
+        if required and expected not in extensions:
+            raise Exception('Shapefile %(shapefile)s missing extension "%(expected)s"' % locals())
+        
+        name = os.path.splitext(shapefile)[0]
+        source = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
+        dest = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
+        
+        shutil.copy()
+
+def handle_zipped_shapefile(zipped_shp,target_dir):
+    zip_data = urllib.urlopen(zipped_shp).read()
+    zip_file = zipfile.ZipFile(StringIO.StringIO(zip_data))
+    
+    infos = zip_file.infolist()
+    extensions = [os.path.splitext(info.filename)[1] for info in infos]
+    basenames = [os.path.basename(info.filename) for info in infos]
+    
+    for (expected, required) in SHAPE_PARTS:
+        if required and expected not in extensions:
+            raise Exception('Zip file %(zipped_shp)s missing extension "%(expected)s"' % locals())
+
+        for (info, extension, basename) in zip(infos, extensions, basenames):
+            if extension == expected:
+                file_data = zip_file.read(info.filename)
+                if not os.path.exists(target_dir):
+                    os.mkdir(target_dir)
+                file_name = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
+                
+                file_ = open(file_name, 'wb')
+                file_.write(file_data)
+                file_.close()
+                
+                if extension == '.shp':
+                    local = file_name[:-4]
+                
+                break
+
+    return local
+
+def handle_placing_shapefile(shapefile,target_dir):
+    if os.path.splitext(shapefile)[1] == '.zip':
+        return handle_zipped_shapefile(shapefile,target_dir)
+    else:
+        return handle_shapefile_parts(shapefile,target_dir)
+
 def localize_shapefile(src, shapefile, **kwargs):
     """ Given a stylesheet path, a shapefile name, and a temp directory,
         modify the shapefile name so it's an absolute path.
@@ -1093,18 +1146,20 @@ def localize_shapefile(src, shapefile, **kwargs):
 
     move_local_files = kwargs.get('move_local_files')
     if move_local_files:
-        sys.stderr.write('WARNING: moving local shapefiles not yet supported\n')
+        sys.stderr.write('WARNING: moving local unzipped shapefiles not yet supported\n')
 
     if scheme == '':
         # assumed to be local
-        if kwargs.get('mapnik_version',None) >= 601:
-            # Mapnik 0.6.1 accepts relative paths, so we leave it unchanged
-            # but compiled file must maintain same relativity to the files
-            # as the stylesheet, which needs to be addressed separately
-            return shapefile
-        else:
-            msg('Warning, your Mapnik version is old and does not support relative paths to datasources')
-            return os.path.realpath(urlparse.urljoin(src, shapefile))
+        if not os.path.splitext(shapefile)[1] == ".zip":
+            # if not a local zip
+            if kwargs.get('mapnik_version',None) >= 601:
+                # Mapnik 0.6.1 accepts relative paths, so we leave it unchanged
+                # but compiled file must maintain same relativity to the files
+                # as the stylesheet, which needs to be addressed separately
+                return shapefile
+            else:
+                msg('Warning, your Mapnik version is old and does not support relative paths to datasources')
+                return os.path.realpath(urlparse.urljoin(src, shapefile))
 
     target_dir = kwargs.get('target_dir',tempfile.gettempdir())
     
@@ -1147,51 +1202,23 @@ def localize_shapefile(src, shapefile, **kwargs):
                 msg('Remote shapefile could not be found locally, therefore downloading from "%s"' % (shapefile))
                 msg('(searched for %s)' %  possible_names)
             if unzipped_path:
-               return unzipped_path
+                return unzipped_path
     else:
         msg('Avoiding searching for cached local files...')
-        msg('Downloading "%s" to "%s"' % (shapefile,target_dir))
+        msg('Placing "%s" at "%s"' % (shapefile,target_dir))
 
     # assumed to be a remote zip archive with .shp, .shx, and .dbf files
-    zip_data = urllib.urlopen(shapefile).read()
-    zip_file = zipfile.ZipFile(StringIO.StringIO(zip_data))
-    
-    infos = zip_file.infolist()
-    extensions = [os.path.splitext(info.filename)[1] for info in infos]
-    basenames = [os.path.basename(info.filename) for info in infos]
-    
-    for (expected, required) in (('.shp', True), ('.shx', True), ('.dbf', True), ('.prj', False)):
-        if required and expected not in extensions:
-            raise Exception('Zip file %(shapefile)s missing extension "%(expected)s"' % locals())
-
-        for (info, extension, basename) in zip(infos, extensions, basenames):
-            if extension == expected:
-                file_data = zip_file.read(info.filename)
-                if not os.path.exists(target_dir):
-                    os.mkdir(target_dir)
-                file_name = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
-                
-                file_ = open(file_name, 'wb')
-                file_.write(file_data)
-                file_.close()
-                
-                if extension == '.shp':
-                    local = file_name[:-4]
-                
-                break
-
-    return local
+    return handle_placing_shapefile(shapefile,target_dir)
 
 def auto_detect_mapnik_version():
     mapnik = None
-    # not quite ready for primetime...
-    #try:
-    #    import mapnik2 as mapnik
-    #except ImportError:
     try:
-        import mapnik
+        import mapnik2 as mapnik
     except ImportError:
-        pass
+        try:
+            import mapnik
+        except ImportError:
+            pass
     if mapnik:
         if hasattr(mapnik,'mapnik_version'):
             return mapnik.mapnik_version()
@@ -1297,14 +1324,17 @@ def compile(src,**kwargs):
     
     target_dir = kwargs.get('target_dir')
     if target_dir:
-        msg('Writing all file to "target_dir": %s' % target_dir)
+        msg('Writing all files to "target_dir": %s' % target_dir)
         if not os.path.exists(target_dir):
             os.makedirs(target_dir)
             msg('"target_dir" does not exist, creating...')
     else:
         tmp_dir = tempfile.gettempdir()
         kwargs['target_dir'] = tmp_dir
-        msg('Writing all files to temporary directory: %s' % tmp_dir)    
+        if kwargs.get('move_local_files'):
+            msg('Writing all files to temporary directory: %s' % tmp_dir)
+        else:       
+            msg('Writing all remote files to temporary directory: %s' % tmp_dir)    
 
     doc = ElementTree.parse(urllib.urlopen(src))
     map_el = doc.getroot()
@@ -1329,13 +1359,17 @@ def compile(src,**kwargs):
             if ds_type == 'shape' and parameter.get('name', None) == 'file':
                 # fetch a remote, zipped shapefile or read a local one
                 if parameter.text:
+                    msg('Handling shapefile datasource...')
                     parameter.text = localize_shapefile(src, parameter.text, **kwargs)
                     # TODO - support datasource reprojection to make map srs
+                    # TODO - support automatically indexing shapefiles
             elif ds_type == 'postgis' and parameter.get('name', None) == 'table':
                 # remove line breaks from possible SQL
                 # http://trac.mapnik.org/ticket/173
                 if not kwargs.get('mapnik_version',None) >= 601:
                     parameter.text = parameter.text.replace('\r', ' ').replace('\n', ' ')
+            elif parameter.get('name', None) == 'file':
+                pass #msg('other file based datasource needing handling!')
 
         if layer.get('status') == 'off':
             # don't bother

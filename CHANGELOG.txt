@@ -7,6 +7,8 @@ Version 0.2.0, August _, 2010:
  
  * Packaged from r___
  
+ * Added support for zipped shapefiles that are local to the filesystem.
+ 
  * Re-implemented support for installing dependencies via Setuptools, if available
  
  * Refactored handling of file-based resources
