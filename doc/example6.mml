@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map srs="+init=epsg:900913">
+    <Stylesheet><![CDATA[
+        *
+        {
+            map-bgcolor: #69f;
+        }
+        
+        .imagery {
+            /* http://trac.mapnik.org/wiki/RasterSymbolizer */
+            raster-scaling: bilinear;
+            raster-opacity: 1;
+            raster-mode: normal;
+        }
+
+    ]]></Stylesheet>
+
+    <Layer class="imagery" srs="+init=epsg:900913">
+        <Datasource>
+            <Parameter name="type">gdal</Parameter>
+            <Parameter name="file">test.tif</Parameter>
+        </Datasource>
+    </Layer>
+</Map>

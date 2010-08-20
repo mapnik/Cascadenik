@@ -687,13 +687,19 @@ def get_polygon_rules(declarations,**kwargs):
         and refer to it in Layer.
     """
     property_map = {'polygon-fill': 'fill', 'polygon-opacity': 'fill-opacity',
-                    'polygon-gamma': 'gamma'}
+                    'polygon-gamma': 'gamma',
+                    'polygon-meta-output': 'meta-output', 'polygon-meta-writer': 'meta-writer'}
+
     
+    return apply_rules(declarations,'PolygonSymbolizer',property_map,**kwargs)
+
+
+def apply_rules(declarations,elem_name,property_map,**kwargs):
     # a place to put rule elements
     rule_els = []
     
     for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
-        symbolizer_el = Element('PolygonSymbolizer')
+        symbolizer_el = Element(elem_name)
         
         for (parameter, value) in sorted(parameter_values.items()):
             if kwargs.get('mapnik_version') >= 800:
@@ -702,6 +708,54 @@ def get_polygon_rules(declarations,**kwargs):
                 parameter = Element('CssParameter', {'name': parameter})
                 parameter.text = str(value)
                 symbolizer_el.append(parameter)
+
+        rule_el = make_rule_element(filter, symbolizer_el)
+        rule_els.append(rule_el)
+    
+    return rule_els
+
+def get_raster_rules(declarations,**kwargs):
+    """ Given a Map element, a Layer element, and a list of declarations,
+        create a new Style element with a PolygonSymbolizer, add it to Map
+        and refer to it in Layer.
+    """
+    property_map = {'raster-opacity': 'opacity',
+                    'raster-mode': 'mode',
+                    'raster-scaling': 'scaling'
+                    }
+
+    return apply_rules(declarations,'RasterSymbolizer',property_map,**kwargs)
+
+def get_marker_rules(declarations,**kwargs):
+    """ Given a Map element, a Layer element, and a list of declarations,
+        create a new Style element with a LineSymbolizer, add it to Map
+        and refer to it in Layer.
+        
+        This function is wise to both line-<foo> and outline-<foo> properties,
+        and will generate pairs of LineSymbolizers if necessary.
+    """
+    # basically not supported before Mapnik2
+    if not kwargs.get('mapnik_version') >= 800:
+        return
+    
+    property_map = {'marker-line-color': 'stroke', 'marker-line-width': 'stroke-width',
+                    'marker-line-opacity': 'stroke-opacity', #'line-dasharray': 'stroke-dasharray',
+                    'marker-fill': 'fill', 'marker-fill-opacity': 'opacity',
+                    'marker-placement': 'placement','marker-type':'marker_type',
+                    'marker-width':'width','marker-height':'height',
+                    'marker-file':'file','marker-allow-overlap':'allow_overlap',
+                    'marker-spacing':'spacing','marker-max-error':'max_error',
+                    'marker-transform':'transform',
+                    'marker-meta-output': 'meta-output', 'marker-meta-writer': 'meta-writer'}
+    
+    # a place to put rule elements
+    rule_els = []
+    
+    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
+        symbolizer_el = Element('MarkersSymbolizer')
+
+        for (parameter, value) in sorted(parameter_values.items()):
+            symbolizer_el.set(parameter, str(value))
 
         rule_el = make_rule_element(filter, symbolizer_el)
         rule_els.append(rule_el)
@@ -718,7 +772,9 @@ def get_line_rules(declarations,**kwargs):
     """
     property_map = {'line-color': 'stroke', 'line-width': 'stroke-width',
                     'line-opacity': 'stroke-opacity', 'line-join': 'stroke-linejoin',
-                    'line-cap': 'stroke-linecap', 'line-dasharray': 'stroke-dasharray'}
+                    'line-cap': 'stroke-linecap', 'line-dasharray': 'stroke-dasharray',
+                    'line-meta-output': 'meta-output', 'line-meta-writer': 'meta-writer'}
+
 
     # temporarily prepend parameter names with 'in:', 'on:', and 'out:' to be removed later
     for (property_name, parameter) in property_map.items():
@@ -799,7 +855,8 @@ def get_text_rule_groups(declarations):
                     'text-dx': 'dx', 'text-dy': 'dy', 'text-character-spacing': 'character_spacing',
                     'text-line-spacing': 'line_spacing',
                     'text-avoid-edges': 'avoid_edges', 'text-min-distance': 'min_distance',
-                    'text-allow-overlap': 'allow_overlap', 'text-placement': 'placement'}
+                    'text-allow-overlap': 'allow_overlap', 'text-placement': 'placement',
+                    'text-meta-output': 'meta-output', 'text-meta-writer': 'meta-writer'}
 
     # pull out all the names
     text_names = [dec.selector.elements[1].names[0]
@@ -941,7 +998,8 @@ def get_shield_rule_groups(declarations, **kwargs):
                     'shield-fill': 'fill', 'shield-character-spacing': 'character_spacing',
                     'shield-line-spacing': 'line_spacing',
                     'shield-spacing': 'spacing', 'shield-min-distance': 'min_distance',
-                    'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height' }
+                    'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height',
+                    'shield-meta-output': 'meta-output', 'shield-meta-writer': 'meta-writer'}
 
     # pull out all the names
     text_names = [dec.selector.elements[1].names[0]
@@ -997,7 +1055,8 @@ def get_point_rules(declarations, **kwargs):
     """
     property_map = {'point-file': 'file', 'point-width': 'width',
                     'point-height': 'height', 'point-type': 'type',
-                    'point-allow-overlap': 'allow_overlap'}
+                    'point-allow-overlap': 'allow_overlap',
+                    'point-meta-output': 'meta-output', 'point-meta-writer': 'meta-writer'}
     
     # a place to put rule elements
     rule_els = []
@@ -1025,7 +1084,9 @@ def get_polygon_pattern_rules(declarations, **kwargs):
         Optionally provide an output directory for local copies of image files.
     """
     property_map = {'polygon-pattern-file': 'file', 'polygon-pattern-width': 'width',
-                    'polygon-pattern-height': 'height', 'polygon-pattern-type': 'type'}
+                    'polygon-pattern-height': 'height', 'polygon-pattern-type': 'type',
+                    'polygon-meta-output': 'meta-output', 'polygon-meta-writer': 'meta-writer'}
+
     
     # a place to put rule elements
     rule_els = []
@@ -1053,7 +1114,9 @@ def get_line_pattern_rules(declarations, **kwargs):
         Optionally provide an output directory for local copies of image files.
     """
     property_map = {'line-pattern-file': 'file', 'line-pattern-width': 'width',
-                    'line-pattern-height': 'height', 'line-pattern-type': 'type'}
+                    'line-pattern-height': 'height', 'line-pattern-type': 'type',
+                    'line-pattern-meta-output': 'meta-output', 'line-pattern-meta-writer': 'meta-writer'}
+
     
     # a place to put rule elements
     rule_els = []
@@ -1387,6 +1450,12 @@ def compile(src,**kwargs):
         insert_layer_style(map_el, layer, 'line style %d' % next_counter(),
                            get_line_rules(layer_declarations,**kwargs) + \
                            get_line_pattern_rules(layer_declarations, **kwargs))
+
+        insert_layer_style(map_el, layer, 'marker style %d' % next_counter(),
+                           get_marker_rules(layer_declarations,**kwargs))
+
+        insert_layer_style(map_el, layer, 'raster style %d' % next_counter(),
+                           get_raster_rules(layer_declarations,**kwargs))
 
         for (shield_name, shield_rule_els) in get_shield_rule_groups(layer_declarations, **kwargs):
             insert_layer_style(map_el, layer, 'shield style %d (%s)' % (next_counter(), shield_name), shield_rule_els)

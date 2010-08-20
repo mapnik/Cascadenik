@@ -75,14 +75,20 @@ properties = {
 
     #--------------- polygon symbolizer
 
-    # 
+    # polygon fill color
     'polygon-fill': color,
 
-    # 
+    # gamma value affecting level of antialiases of polygon edges
+    # 0.0 - 1.0 (default 1.0 - fully antialiased) 
     'polygon-gamma': float,
 
-    # 
+    # 0.0 - 1.0 (default 1.0)
     'polygon-opacity': float,
+
+    # metawriter support
+    'polygon-meta-output': str,
+
+    'polygon-meta-writer': str,
 
     #--------------- line symbolizer
 
@@ -104,6 +110,11 @@ properties = {
     # d0,d1, ... (default none)
     'line-dasharray': numbers, # Number(s)
 
+    # metawriter support
+    'line-meta-output': str,
+
+    'line-meta-writer': str,
+
     #--------------- line symbolizer for outlines
 
     # CSS colour (default "black")
@@ -124,6 +135,11 @@ properties = {
     # d0,d1, ... (default none)
     'outline-dasharray': numbers, # Number(s)
 
+    # metawriter support
+    'outline-meta-output': str,
+
+    'outline-meta-writer': str,
+
     #--------------- line symbolizer for inlines
 
     # CSS colour (default "black")
@@ -143,6 +159,11 @@ properties = {
 
     # d0,d1, ... (default none)
     'inline-dasharray': numbers, # Number(s)
+
+    # metawriter support
+    'inline-meta-output': str,
+
+    'inline-meta-writer': str,
 
     #--------------- text symbolizer
 
@@ -198,6 +219,11 @@ properties = {
     # "line" to label along lines instead of by point
     'text-placement': ('point', 'line'),
 
+    # metawriter support
+    'text-meta-output': str,
+
+    'text-meta-writer': str,
+
     #--------------- point symbolizer
 
     # path to image file
@@ -213,6 +239,82 @@ properties = {
     # true/false
     'point-allow-overlap': boolean,
 
+    # metawriter support
+    'point-meta-output': str,
+
+    'point-meta-writer': str,
+
+    #--------------- raster symbolizer
+
+    # raster transparency
+    # 0.0 - 1.0 (default 1.0)
+    'raster-opacity': float,
+    
+    # Compositing/Merging effects with image below raster level
+    # default normal
+    'raster-mode': ('normal','grain_merge', 'grain_merge2',
+                    'multiply', 'multiply2', 'divide', 'divide2',
+                    'screen', 'hard_light'),
+    
+    # resampling method
+    'raster-scaling': ('fast', 'bilinear', 'bilinear8',),
+    
+    #--------------- markers symbolizer
+
+    # CSS colour (default "black")
+    'marker-line-color': color,
+
+    # 0.0 - n (default 1.0)
+    'marker-line-width': float,
+
+    # 0.0 - 1.0 (default 1.0)
+    'marker-line-opacity': float,
+
+    # d0,d1, ... (default none)
+    #'line-dasharray': numbers, # Number(s)
+
+    # "line" to label along lines instead of by point
+    # default is line
+    'marker-placement': ('point', 'line'),
+
+    # marker shape type
+    # arrow default if line placement
+    # ellipse default if point placement
+    'marker-type': ('arrow', 'ellipse'),
+    
+    # marker width
+    # default 5
+    'marker-width': int,
+
+    # marker height
+    # default 5
+    'marker-height': int,
+
+    # marker fill color
+    'marker-fill': color,
+
+    # 0.0 - 1.0 (default 1.0)
+    # should we name marker-opacity ?
+    'marker-fill-opacity': float,
+
+    # TODO - expose these next
+    # path to svg file (optional)
+    'marker-file': uri, # none
+
+    # Allow markers to overlap other markers
+    'marker-allow-overlap': boolean,
+    
+    'marker-spacing':float,
+    
+    'marker-max-error':float,
+
+    'marker-transform': str,
+
+    # metawriter support
+    'marker-meta-output': str,
+
+    'marker-meta-writer': str,
+    
     #--------------- polygon pattern symbolizer
 
     # path to image file (default none)
@@ -225,6 +327,11 @@ properties = {
     # image type: png or tiff, omitted thanks to PIL
     'polygon-pattern-type': None,
 
+    # metawriter support
+    'polygon-pattern-meta-output': str,
+
+    'polygon-pattern-meta-writer': str,
+
     #--------------- line pattern symbolizer
 
     # path to image file (default none)
@@ -236,6 +343,11 @@ properties = {
 
     # image type: png or tiff, omitted thanks to PIL
     'line-pattern-type': None,
+
+    # metawriter support
+    'line-pattern-meta-output': str,
+
+    'line-pattern-meta-writer': str,
 
     #--------------- shield symbolizer
 
@@ -271,7 +383,12 @@ properties = {
     'shield-height': int,
 
     # image type: png or tiff, omitted thanks to PIL
-    'shield-type': None
+    'shield-type': None,
+
+    # metawriter support
+    'shield-meta-output': str,
+
+    'shield-meta-writer': str,
 }
 
 class ParseException(Exception):

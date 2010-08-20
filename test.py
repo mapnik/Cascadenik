@@ -446,6 +446,44 @@ class CascadeTests(unittest.TestCase):
         self.assertEqual('#ff9900', str(declarations[18].value))
 
 
+    def testMarkerMetaWriter(self):
+        s = """
+            .marker
+            {
+                /* http://trac.mapnik.org/wiki/MarkersSymbolizer */
+                marker-placement: point;
+                marker-fill: #cc3344;
+                marker-fill-opacity: .7;
+                marker-width: 10;
+                marker-height: 10;
+                marker-line-color: #cc3344;
+                marker-line-width: 7;
+                marker-line-opacity: .2;
+                marker-type: ellipse;
+                marker-meta-writer: "points";
+                marker-meta-output: "NAME,FIPS";
+            }
+        """
+        rulesets = stylesheet_rulesets(s)
+        
+        declarations = rulesets_declarations(rulesets)
+
+        self.assertEqual(11, len(declarations))
+
+        self.assertEqual('.marker', str(declarations[0].selector))
+        self.assertEqual('marker-placement', declarations[0].property.name)
+        self.assertEqual('point', str(declarations[0].value))
+
+        marker_type = declarations[8]
+        self.assertEqual('.marker', str(marker_type.selector))
+        self.assertEqual('marker-type', marker_type.property.name)
+        self.assertEqual('ellipse', str(marker_type.value))
+
+        meta_name = declarations[9]
+        self.assertEqual('.marker', str(meta_name.selector))
+        self.assertEqual('marker-meta-writer', meta_name.property.name)
+        self.assertEqual('points', str(meta_name.value))
+
 class SelectorParseTests(unittest.TestCase):
 
     def testFilters1(self):
