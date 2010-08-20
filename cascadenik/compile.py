@@ -9,8 +9,11 @@ from operator import lt, le, eq, ge, gt
 import base64
 import os.path
 import zipfile
-import style
 import shutil
+
+# cascadenik
+import safe64
+import style
 
 HAS_PIL = False
 try:
@@ -59,8 +62,14 @@ def next_counter():
     counter += 1
     return counter
 
-def safe(filename):
-    return base64.urlsafe_b64encode(filename)
+def url2fs(url):
+    """ encode a URL to be safe as a filename """
+    uri, extension = os.path.splitext(url)
+    return safe64.dir(uri) + extension
+
+def fs2url(url):
+    """ decode a filename to the URL it is derived from """
+    return safe64.decode(url)
 
 def indent(elem, level=0):
     """ http://infix.se/2007/02/06/gentlemen-indent-your-xml
@@ -937,7 +946,7 @@ def postprocess_symbolizer_image_file(symbolizer_el, temp_name, **kwargs):
         target_name = os.path.basename('%s%s' % (image_name,target_ext))
         if not is_local and kwargs.get('safe_urls'):
             # note we use/encode the raw url 'image_path' here...
-            target_dir = os.path.join(target_dir,safe(img_path))
+            target_dir = os.path.join(target_dir,url2fs(img_path))
         dest_file = os.path.join(target_dir,target_name)
     else:
         # local file and we're not moving it
@@ -1232,7 +1241,7 @@ def localize_shapefile(src, shapefile, **kwargs):
 
     if kwargs.get('safe_urls'):
         #todo - make "safe64"
-        target_dir = os.path.join(target_dir,safe(shapefile))
+        target_dir = os.path.join(target_dir,url2fs(shapefile))
     
     if caching:
         if kwargs.get('safe_urls'):
@@ -1307,7 +1316,7 @@ def compile(src,**kwargs):
        
      safe_urls:
        If True, paths of any files placed by Cascadenik will be base64 encoded calling
-       base64.urlsafe_b64encode() on the url or filesystem path.
+       safe64.url2fs() on the url or filesystem path.
 
      target_dir:
        If set, all file-based resources (symbols, shapefiles, etc) will be written to this
