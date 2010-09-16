@@ -20,35 +20,35 @@ parser = optparse.OptionParser(usage="""%prog [options] <mml> <xml>""", version=
 
 parser.add_option('-d', '--dir', dest='target_dir',
                   default=None,
-                  help='Write file-based resources (symbols, shapefiles, etc) to this target directory')
+                  help='Write file-based resources (symbols, shapefiles, etc) to this target directory (default: temp directory is used)')
 
 parser.add_option('--srs', dest='srs',
                   default=None,
-                  help='Target srs for the compiled stylesheet. If provided, overrides default map srs in the mml')
+                  help='Target srs for the compiled stylesheet. If provided, overrides default map srs in the mml (default: None)')
 
 parser.add_option('--move', dest='move_local_files',
                   default=False,
-                  help='Move local files to target --dir location in addition to remote resources',
+                  help='Move local files to target --dir location in addition to remote resources (default: False)',
                   action='store_true')
 
 parser.add_option('--no-cache', dest='no_cache',
                   default=False,
-                  help='Do not cache remote files (caching on by default)',
+                  help='Do not cache remote files (caching on by default, e.g. no_cache=True)',
                   action='store_true')
 
 parser.add_option('-p', '--pretty', dest='pretty',
                   default=True,
-                  help='Pretty print the xml output',
+                  help='Pretty print the xml output (default: True)',
                   action='store_true')
 
 parser.add_option('--safe-urls', dest='safe_urls',
                   default=False,
-                  help='Base64 encode all urls when saved as filesystem paths',
+                  help='Base64 encode all urls when saved as filesystem paths (default: False)',
                   action='store_true')
 
 parser.add_option('-v' , '--verbose', dest='verbose',
                   default=False,
-                  help='Make a bunch of noise',
+                  help='Make a bunch of noise (default: False)',
                   action='store_true')
 
 parser.add_option('--mapnik-version',dest='mapnik_version_string',
