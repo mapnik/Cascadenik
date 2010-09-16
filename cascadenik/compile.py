@@ -1,6 +1,7 @@
 import os, sys
 import math
 import urllib
+import urllib2
 import urlparse
 import tempfile
 import StringIO
@@ -1156,19 +1157,19 @@ def get_applicable_declarations(element, declarations):
     return [dec for dec in declarations
             if dec.selector.matches(element_tag, element_id, element_classes)]
 
-
-def handle_shapefile_parts(shapefile,target_dir):
-    if not os.path.exists(target_dir):
-        os.mkdir(target_dir)
-    for (expected, required) in SHAPE_PARTS:
-        if required and expected not in extensions:
-            raise Exception('Shapefile %(shapefile)s missing extension "%(expected)s"' % locals())
-        
-        name = os.path.splitext(shapefile)[0]
-        source = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
-        dest = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
-        
-        shutil.copy()
+# TODO - unfinished work around moving local shapefiles
+#def handle_shapefile_parts(shapefile,target_dir):
+#    if not os.path.exists(target_dir):
+#        os.mkdir(target_dir)
+#    for (expected, required) in SHAPE_PARTS:
+#        if required and expected not in extensions:
+#            raise Exception('Shapefile %(shapefile)s missing extension "%(expected)s"' % locals())
+#        
+#        name = os.path.splitext(shapefile)[0]
+#        source = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
+#        dest = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
+#        
+#        shutil.copy()
 
 def handle_zipped_shapefile(zipped_shp,target_dir):
     zip_data = urllib.urlopen(zipped_shp).read()
@@ -1203,8 +1204,9 @@ def handle_zipped_shapefile(zipped_shp,target_dir):
 def handle_placing_shapefile(shapefile,target_dir):
     if os.path.splitext(shapefile)[1] == '.zip':
         return handle_zipped_shapefile(shapefile,target_dir)
-    else:
-        return handle_shapefile_parts(shapefile,target_dir)
+    #else:
+    #    return handle_shapefile_parts(shapefile,target_dir)
+
 
 def localize_shapefile(src, shapefile, **kwargs):
     """ Given a stylesheet path, a shapefile name, and a temp directory,
@@ -1240,7 +1242,6 @@ def localize_shapefile(src, shapefile, **kwargs):
     caching = not kwargs.get('no_cache',None)
 
     if kwargs.get('safe_urls'):
-        #todo - make "safe64"
         target_dir = os.path.join(target_dir,url2fs(shapefile))
     
     if caching:
@@ -1281,6 +1282,65 @@ def localize_shapefile(src, shapefile, **kwargs):
 
     # assumed to be a remote zip archive with .shp, .shx, and .dbf files
     return handle_placing_shapefile(shapefile,target_dir)
+
+def localize_datasource(src, filename, **kwargs):
+    """ Handle localizing file-based datasources other than zipped shapefiles.
+    
+    This will only work for single-file based types.
+    """
+    (scheme, netloc, path, params, query, fragment) = urlparse.urlparse(filename)
+
+    move_local_files = kwargs.get('move_local_files')
+    if move_local_files:
+        sys.stderr.write('WARNING: moving local datasource files not yet supported\n')
+
+    if scheme == '':
+        # assumed to be local
+        if kwargs.get('mapnik_version',None) >= 601:
+            # Mapnik 0.6.1 accepts relative paths, so we leave it unchanged
+            # but compiled file must maintain same relativity to the files
+            # as the stylesheet, which needs to be addressed separately
+            return filename
+        else:
+            msg('Warning, your Mapnik version is old and does not support relative paths to datasources')
+            return os.path.realpath(urlparse.urljoin(src, filename))
+
+    target_dir = kwargs.get('target_dir',tempfile.gettempdir())
+    
+    # if no-cache is True we avoid caching otherwise
+    # we attempt to pull targets locally without re-downloading
+    caching = not kwargs.get('no_cache',None)
+
+    if kwargs.get('safe_urls'):
+        target_dir = os.path.join(target_dir,url2fs(filename))
+
+    target_file = os.path.join(target_dir,os.path.basename(filename))
+    
+    if caching:
+        if kwargs.get('safe_urls'):
+            if not os.path.isdir(target_dir):
+                # does not exist yet
+                msg('Downloading %s to base64 encoded dir: %s' % (filename,target_dir))
+            else:
+                # already downloaded, we can pull shapefile name from cache
+                msg('File found, pulling from base64 encoded directory cache instead of downloading')
+                return target_file
+        else:
+            # TODO - should we support zipped archives for non-shapefile datasources?
+            if os.path.exists(target_file):
+                return target_file
+    else:
+        msg('Avoiding searching for cached local files...')
+        msg('Placing "%s" at "%s"' % (filename,target_dir))
+
+    if not os.path.exists(target_dir):
+        os.mkdir(target_dir)
+    # use urllib2 here so 404's throw
+    remote_file_data = urllib2.urlopen(filename).read()
+    file_ = open(target_file, 'wb')
+    file_.write(remote_file_data)
+    file_.close()
+    return target_file
 
 def auto_detect_mapnik_version():
     mapnik = None
@@ -1427,21 +1487,27 @@ def compile(src,**kwargs):
             ds_type = ds_type[0]
         
         for parameter in ds_params:
-            # TODO - support other kinds of file-based datasources other than shapefiles
-            if ds_type == 'shape' and parameter.get('name', None) == 'file':
-                # fetch a remote, zipped shapefile or read a local one
-                if parameter.text:
-                    msg('Handling shapefile datasource...')
-                    parameter.text = localize_shapefile(src, parameter.text, **kwargs)
-                    # TODO - support datasource reprojection to make map srs
-                    # TODO - support automatically indexing shapefiles
-            elif ds_type == 'postgis' and parameter.get('name', None) == 'table':
+            if ds_type == 'postgis' and parameter.get('name', None) == 'table':
                 # remove line breaks from possible SQL
                 # http://trac.mapnik.org/ticket/173
                 if not kwargs.get('mapnik_version',None) >= 601:
                     parameter.text = parameter.text.replace('\r', ' ').replace('\n', ' ')
             elif parameter.get('name', None) == 'file':
-                pass #msg('other file based datasource needing handling!')
+                # make sure we localize any remote files
+                if parameter.text:
+                    if ds_type == 'shape':
+                        # handle a local shapefile or fetch a remote, zipped shapefile
+                        msg('Handling shapefile datasource...')
+                        parameter.text = localize_shapefile(src, parameter.text, **kwargs)
+                        # TODO - support datasource reprojection to make map srs
+                        # TODO - support automatically indexing shapefiles
+                    else: # ogr,raster, gdal, sqlite
+                        # attempt to generically handle other file based datasources
+                        msg('Handling generic datasource...')
+                        parameter.text = localize_datasource(src, parameter.text, **kwargs)
+                        
+            # TODO - consider custom support for other mapnik datasources:
+            # sqlite, oracle, osm, kismet, gdal, raster, rasterlite
 
         if layer.get('status') == 'off':
             # don't bother

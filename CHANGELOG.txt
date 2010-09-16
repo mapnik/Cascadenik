@@ -7,6 +7,8 @@ Version 0.2.0, August _, 2010:
  
  * Packaged from r___
 
+ * Added support for handling remote, single file-based datasources other than zipped shapefiles
+ 
  * Added support for MarkersSymbolizer, RasterSymbolizer, and MetaWriters
      - http://trac.mapnik.org/wiki/MarkersSymbolizer
      - http://trac.mapnik.org/wiki/MetaWriter
