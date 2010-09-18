@@ -219,6 +219,10 @@ properties = {
     # "line" to label along lines instead of by point
     'text-placement': ('point', 'line'),
 
+    # http://www.w3schools.com/css/pr_text_text-transform.asp
+    # Mapnik does not support 'capitalize' yet.
+    'text-transform': ('uppercase','lowercase'),
+
     # metawriter support
     'text-meta-output': str,
 
