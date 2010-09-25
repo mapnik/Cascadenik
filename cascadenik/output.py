@@ -299,7 +299,9 @@ class TextSymbolizer:
         sym.avoid_edges = self.avoid_edges.value if self.avoid_edges else sym.avoid_edges
         sym.minimum_distance = self.min_distance or sym.minimum_distance
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
-        sym.text_transform = self.text_transform if self.text_transform else sym.text_transform
+        
+        if mapnik.mapnik_version() >= 800:
+            sym.text_transform = self.text_transform if self.text_transform else sym.text_transform
         
         sym.displacement(self.dx or 0, self.dy or 0)
         
