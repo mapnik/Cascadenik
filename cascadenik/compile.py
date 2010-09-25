@@ -841,7 +841,9 @@ def get_text_rule_groups(declarations, **kwargs):
     return dict(groups)
 
 def locally_cache_remote_file(href, dir):
-    """
+    """ Locally cache a remote resource using a predictable file name
+        and awareness of modification date. Assume that files are "normal"
+        which is to say they have filenames with extensions.
     """
     scheme, host, remote_path, p, q, f = urlparse.urlparse(href)
     
@@ -867,6 +869,12 @@ def locally_cache_remote_file(href, dir):
         f.write(resp.read())
         f.close()
 
+    elif resp.status in (301, 302, 303) and resp.getheader('location', False):
+        # follow a redirect, totally untested.
+        redirected_href = urlparse.urljoin(href, resp.getheader('location'))
+        redirected_path = locally_cache_remote_file(redirected_href, dir)
+        os.rename(redirected_path, local_path)
+    
     elif resp.status == 304:
         # hurrah, it's cached
         pass
