@@ -289,12 +289,13 @@ class TextSymbolizer:
 class ShieldSymbolizer:
     def __init__(self, name, face_name=None, size=None, file=None, filetype=None, \
         width=None, height=None, color=None, min_distance=None, character_spacing=None, \
-        line_spacing=None, spacing=None):
+        line_spacing=None, spacing=None, fontset=None):
         
-        assert (face_name and size) or file
+        assert ((face_name or fontset) and size) or file
         
         assert type(name) is str
         assert face_name is None or type(face_name) is str
+        assert fontset is None or type(fontset) is str
         assert size is None or type(size) is int
         assert width is None or type(width) is int
         assert height is None or type(height) is int
@@ -306,7 +307,8 @@ class ShieldSymbolizer:
         assert min_distance is None or type(min_distance) is int
 
         self.name = name
-        self.face_name = face_name
+        self.face_name = face_name or ''
+        self.fontset = fontset
         self.size = size
         self.file = file
         self.type = filetype
@@ -337,6 +339,8 @@ class ShieldSymbolizer:
         sym.line_spacing = self.line_spacing or sym.line_spacing
         sym.spacing = self.spacing or sym.line_spacing
         sym.minimum_distance = self.min_distance or sym.minimum_distance
+        if self.fontset:
+            sym.fontset = self.fontset.value
         
         return sym
 

@@ -303,6 +303,9 @@ properties = {
     # 
     'shield-face-name': str,
 
+    # Fontset name
+    'shield-fontset': str,
+    
     # 
     'shield-size': int,
 

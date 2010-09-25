@@ -922,7 +922,9 @@ def get_shield_rule_groups(declarations, **kwargs):
         
         Optionally provide an output directory for local copies of image files.
     """
-    property_map = {'shield-face-name': 'face_name', 'shield-size': 'size', 
+    property_map = {'shield-face-name': 'face_name',
+                    'shield-fontset': 'fontset',
+                    'shield-size': 'size', 
                     'shield-fill': 'fill', 'shield-character-spacing': 'character_spacing',
                     'shield-line-spacing': 'line_spacing',
                     'shield-spacing': 'spacing', 'shield-min-distance': 'min_distance',
@@ -957,6 +959,7 @@ def get_shield_rule_groups(declarations, **kwargs):
         for (filter, values) in filtered_property_declarations(name_declarations, property_names):
         
             face_name = values.has_key('shield-face-name') and values['shield-face-name'].value or None
+            fontset = values.has_key('shield-fontset') and values['shield-fontset'].value or None
             size = values.has_key('shield-size') and values['shield-size'].value or None
             
             file, filetype, width, height \
@@ -974,12 +977,12 @@ def get_shield_rule_groups(declarations, **kwargs):
             line_spacing = values.has_key('shield-line-spacing') and values['shield-line-spacing'].value or None
             spacing = values.has_key('shield-spacing') and values['shield-spacing'].value or None
             
-            symbolizer = ((face_name and size) or file) \
-                and output.ShieldSymbolizer(text_name, face_name, size, file, filetype, 
+            if file or ((face_name or fontset) and size):
+                symbolizer = output.ShieldSymbolizer(text_name, face_name, size, file, filetype, 
                                             width, height, color, min_distance,
-                                            character_spacing, line_spacing, spacing)
+                                            character_spacing, line_spacing, spacing,
+                                            fontset=fontset)
             
-            if symbolizer:
                 rules.append(make_rule(filter, symbolizer))
         
         groups.append((text_name, rules))
