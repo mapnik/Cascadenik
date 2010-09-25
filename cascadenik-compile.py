@@ -5,7 +5,7 @@ import sys
 import optparse
 import cascadenik
 import tempfile
-import mapnik
+import mapnik2 as mapnik
 
 try:
     import xml.etree.ElementTree as ElementTree
@@ -85,7 +85,7 @@ parser.add_option('-v' , '--verbose', dest='verbose',
 
 parser.add_option('--mapnik-version',dest='mapnik_version_string',
                   default=None,
-                  help='The Mapnik version to target (default is 0.7.1 if not able to be autodetected)')
+                  help='The Mapnik version to target (default is 0.8.0 if not able to be autodetected)')
 
 if __name__ == '__main__':
     (options, args) = parser.parse_args()

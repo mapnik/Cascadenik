@@ -1,15 +1,11 @@
 import style
+import warnings
 
 try:
     import mapnik2 as mapnik
-    mapnik.Filter = mapnik.Expression
 except ImportError:
-    try:
-        import mapnik
-        mapnik.Expression = str
-    except ImportError:
-        # *.to_mapnik() won't work, maybe that's okay?
-        pass
+    warnings.warn("mapnik library not available, *.to_mapnik() won't work")
+    pass
 
 class Map:
     def __init__(self, srs=None, layers=None, bgcolor=None):
@@ -39,7 +35,7 @@ class Map:
                 
                 for rule in style.rules:
                     rul = mapnik.Rule('rule %d' % ids.next())
-                    rul.filter = rule.filter and mapnik.Filter(rule.filter.text) or rul.filter
+                    rul.filter = rule.filter and mapnik.Expression(rule.filter.text) or rul.filter
                     rul.min_scale = rule.minscale and rule.minscale.value or rul.min_scale
                     rul.max_scale = rule.maxscale and rule.maxscale.value or rul.max_scale
                     
@@ -307,9 +303,7 @@ class TextSymbolizer:
         sym.avoid_edges = self.avoid_edges.value if self.avoid_edges else sym.avoid_edges
         sym.minimum_distance = self.min_distance or sym.minimum_distance
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
-        
-        if mapnik.mapnik_version() >= 800:
-            sym.text_transform = self.text_transform if self.text_transform else sym.text_transform
+        sym.text_transform = self.text_transform if self.text_transform else sym.text_transform
         
         sym.displacement(self.dx or 0, self.dy or 0)
         

@@ -25,7 +25,7 @@ options = dict(name='cascadenik',
         license='todo',
         requires=['Mapnik','cssutils','PIL'],
         keywords='Mapnik,xml,css,mapping',
-        url='http://mapnik-utils.googlecode.com/',
+        url='http://github.com/mapnik/Cascadenik',
         classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',

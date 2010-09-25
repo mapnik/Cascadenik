@@ -621,10 +621,7 @@ def is_applicable_selector(selector, filter):
 def get_map_attributes(declarations, **kwargs):
     """
     """
-    if kwargs.get('mapnik_version') >= 800:
-        property_map = {'map-bgcolor': 'background-color'}
-    else:
-        property_map = {'map-bgcolor': 'bgcolor'}    
+    property_map = {'map-bgcolor': 'bgcolor'}
     
     return dict([(property_map[dec.property.name], dec.value.value)
                  for dec in declarations
@@ -709,9 +706,6 @@ def get_marker_rules(declarations,**kwargs):
         create a new Style element with a MarkersSymbolizer, add it to Map
         and refer to it in Layer.
     """
-    # basically not supported before Mapnik2
-    if not kwargs.get('mapnik_version') >= 800:
-        return
     
     property_map = {'marker-line-color': 'stroke', 
                     'marker-line-width': 'stroke-width',
@@ -906,14 +900,7 @@ def postprocess_symbolizer_image_file(file_name, temp_name, **kwargs):
     elif dir:
         path = os.path.join(target_dir, os.path.basename(img_path))
     
-    # support latest mapnik features of auto-detection
-    # of image sizes and jpeg reading support...
-    ver = kwargs.get('mapnik_version',None)
-    # http://trac.mapnik.org/ticket/508
-    mapnik_auto_image_support = (ver >= 700)
-    mapnik_formats = ['.png','tif','tiff']
-    if ver >= 800:
-        mapnik_formats.extend(['.jpg','.jpeg'])
+    mapnik_formats = ('.png','tif','tiff','.jpg','.jpeg')
     supported_type = ext in mapnik_formats
     if supported_type:
         target_ext = ext
@@ -940,10 +927,6 @@ def postprocess_symbolizer_image_file(file_name, temp_name, **kwargs):
             supported_type = os.path.splitext(img_path)[1] in mapnik_formats
             is_local = True
             msg('found locally cached file: %s' %  dest_file)
-
-    # throw error if we need to detect image sizes and can't because pil is missing
-    if not mapnik_auto_image_support and not HAS_PIL:
-        raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
 
     # okay, we actually need read the data into memory now
     if is_local:
@@ -1206,14 +1189,10 @@ def localize_shapefile(src, shapefile, **kwargs):
         # assumed to be local
         if not os.path.splitext(shapefile)[1] == ".zip":
             # if not a local zip
-            if kwargs.get('mapnik_version',None) >= 601:
-                # Mapnik 0.6.1 accepts relative paths, so we leave it unchanged
-                # but compiled file must maintain same relativity to the files
-                # as the stylesheet, which needs to be addressed separately
-                return shapefile
-            else:
-                msg('Warning, your Mapnik version is old and does not support relative paths to datasources')
-                return os.path.realpath(urlparse.urljoin(src, shapefile))
+            # Mapnik 0.6.1+ accepts relative paths, so we leave it unchanged
+            # but compiled file must maintain same relativity to the files
+            # as the stylesheet, which needs to be addressed separately
+            return shapefile
 
     target_dir = kwargs.get('target_dir',tempfile.gettempdir())
     
@@ -1276,14 +1255,10 @@ def localize_datasource(src, filename, **kwargs):
 
     if scheme == '':
         # assumed to be local
-        if kwargs.get('mapnik_version',None) >= 601:
-            # Mapnik 0.6.1 accepts relative paths, so we leave it unchanged
-            # but compiled file must maintain same relativity to the files
-            # as the stylesheet, which needs to be addressed separately
-            return filename
-        else:
-            msg('Warning, your Mapnik version is old and does not support relative paths to datasources')
-            return os.path.realpath(urlparse.urljoin(src, filename))
+        # Mapnik 0.6.1+ accepts relative paths, so we leave it unchanged
+        # but compiled file must maintain same relativity to the files
+        # as the stylesheet, which needs to be addressed separately
+        return filename
 
     target_dir = kwargs.get('target_dir',tempfile.gettempdir())
     
@@ -1323,17 +1298,8 @@ def localize_datasource(src, filename, **kwargs):
     return target_file
 
 def auto_detect_mapnik_version():
-    mapnik = None
-    try:
-        import mapnik2 as mapnik
-    except ImportError:
-        try:
-            import mapnik
-        except ImportError:
-            pass
-    if mapnik:
-        if hasattr(mapnik,'mapnik_version'):
-            return mapnik.mapnik_version()
+    import mapnik2 as mapnik
+    return mapnik.mapnik_version()
 
 def mapnik_version_string(version):
     patch_level = version % 100
@@ -1379,7 +1345,7 @@ def compile(src,**kwargs):
      mapnik_version:
        The Mapnik release to target for optimal stylesheet compatibility.
        
-       701 (aka '0.7.1') is the assumed default target, unless specified or autodetected.
+       800 (aka '0.8.0') is the assumed default target, unless specified or autodetected.
               
        'mapnik_version' must be an integer matching the format of 
        include/mapnik/version.hpp which follows the Boost method:
@@ -1390,14 +1356,14 @@ def compile(src,**kwargs):
        
        If not provided the mapnik_version will be autodetected by:
        
-       >>> import mapnik
+       >>> import mapnik2 as mapnik
        >>> mapnik.mapnik_version()
-       701
+       800
        
        This is equivalent to:
        
        >>> mapnik.mapnik_version_string()
-       '0.7.1'
+       '0.8.0'
        
        To convert from the string to integer do:
        >>> n = mapnik.mapnik_version_string().split('.')
@@ -1417,7 +1383,7 @@ def compile(src,**kwargs):
             kwargs['mapnik_version'] = version 
             msg('Autodetected Mapnik version: %s | %s' % (version,mapnik_version_string(version)))
         else:
-            default_version = 701 # 0.7.1
+            default_version = 800 # 0.8.0
             msg('Failed to autodetect "mapnik_version" falling back to %s | %s' % (default_version,mapnik_version_string(default_version)))
     else:
         msg('Targeting mapnik version: %s | %s' % (kwargs['mapnik_version'],mapnik_version_string(kwargs['mapnik_version'])))        
@@ -1469,12 +1435,7 @@ def compile(src,**kwargs):
             continue
         
         for parameter_el in layer_el.find('Datasource').findall('Parameter'):
-            if parameter_el.get('name', None) == 'table':
-                # remove line breaks from possible SQL
-                # http://trac.mapnik.org/ticket/173
-                if not kwargs.get('mapnik_version') >= 601:
-                    parameter_el.text = parameter_el.text.replace('\r', ' ').replace('\n', ' ')
-            elif parameter_el.get('name', None) == 'file':
+            if parameter_el.get('name', None) == 'file':
                 # make sure we localize any remote files
                 if parameter_el.get('type', None) == 'shape':
                     # handle a local shapefile or fetch a remote, zipped shapefile

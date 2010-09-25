@@ -7,10 +7,7 @@ import unittest
 import tempfile
 import xml.etree.ElementTree
 
-try:
-    import mapnik2 as mapnik
-except ImportError:
-    import mapnik
+import mapnik2 as mapnik
 
 from cascadenik.style import ParseException, stylesheet_rulesets, rulesets_declarations, stylesheet_declarations
 from cascadenik.style import Selector, SelectorElement, SelectorAttributeTest
@@ -21,14 +18,8 @@ from cascadenik.compile import filtered_property_declarations, is_applicable_sel
 from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
 from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
 from cascadenik.compile import test2str, compile
-from cascadenik.compile import auto_detect_mapnik_version
 import cascadenik.output as output
     
-MAPNIK_AUTO_IMAGE_SUPPORT = False
-ver = auto_detect_mapnik_version()
-if ver:
-    MAPNIK_AUTO_IMAGE_SUPPORT = (ver >= 701)
-
 class ParseTests(unittest.TestCase):
     
     def testBadSelector1(self):
@@ -1085,54 +1076,36 @@ class StyleRuleTests(unittest.TestCase):
         assert shield_rule_groups['label'][0].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][0].symbolizers[0].face_name)
         self.assertEqual(12, shield_rule_groups['label'][0].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][0].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][0].symbolizers[0].height)
         self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] <= 1", shield_rule_groups['label'][0].filter.text)
         
         assert shield_rule_groups['label'][1].minscale is None
         assert shield_rule_groups['label'][1].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][1].symbolizers[0].face_name)
         self.assertEqual(10, shield_rule_groups['label'][1].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][1].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][1].symbolizers[0].height)
         self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] > 1", shield_rule_groups['label'][1].filter.text)
         
         assert shield_rule_groups['label'][2].minscale is None
         assert shield_rule_groups['label'][2].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][2].symbolizers[0].face_name)
         self.assertEqual(14, shield_rule_groups['label'][2].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][2].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][2].symbolizers[0].height)
         self.assertEqual("[bar] = 'baz' and [foo] <= 1", shield_rule_groups['label'][2].filter.text)
         
         assert shield_rule_groups['label'][3].minscale is None
         assert shield_rule_groups['label'][3].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][3].symbolizers[0].face_name)
         self.assertEqual(14, shield_rule_groups['label'][3].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][3].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][3].symbolizers[0].height)
         self.assertEqual("[bar] = 'baz' and [foo] > 1", shield_rule_groups['label'][3].filter.text)
         
         assert shield_rule_groups['label'][4].minscale is None
         assert shield_rule_groups['label'][4].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][4].symbolizers[0].face_name)
         self.assertEqual(16, shield_rule_groups['label'][4].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][4].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][4].symbolizers[0].height)
         self.assertEqual("[bar] = 'quux' and [foo] <= 1", shield_rule_groups['label'][4].filter.text)
         
         assert shield_rule_groups['label'][5].minscale is None
         assert shield_rule_groups['label'][5].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][5].symbolizers[0].face_name)
         self.assertEqual(16, shield_rule_groups['label'][5].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][5].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][5].symbolizers[0].height)
         self.assertEqual("[bar] = 'quux' and [foo] > 1", shield_rule_groups['label'][5].filter.text)
 
     def testStyleRules06(self):
@@ -1153,54 +1126,36 @@ class StyleRuleTests(unittest.TestCase):
         assert shield_rule_groups['label'][0].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][0].symbolizers[0].face_name)
         self.assertEqual(12, shield_rule_groups['label'][0].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][0].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][0].symbolizers[0].height)
         self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] <= 1", shield_rule_groups['label'][0].filter.text)
         
         assert shield_rule_groups['label'][1].minscale is None
         assert shield_rule_groups['label'][1].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][1].symbolizers[0].face_name)
         self.assertEqual(10, shield_rule_groups['label'][1].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][1].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][1].symbolizers[0].height)
         self.assertEqual("not [bar] = 'baz' and not [bar] = 'quux' and [foo] > 1", shield_rule_groups['label'][1].filter.text)
         
         assert shield_rule_groups['label'][2].minscale is None
         assert shield_rule_groups['label'][2].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][2].symbolizers[0].face_name)
         self.assertEqual(14, shield_rule_groups['label'][2].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][2].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][2].symbolizers[0].height)
         self.assertEqual("[bar] = 'baz' and [foo] <= 1", shield_rule_groups['label'][2].filter.text)
         
         assert shield_rule_groups['label'][3].minscale is None
         assert shield_rule_groups['label'][3].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][3].symbolizers[0].face_name)
         self.assertEqual(14, shield_rule_groups['label'][3].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][3].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][3].symbolizers[0].height)
         self.assertEqual("[bar] = 'baz' and [foo] > 1", shield_rule_groups['label'][3].filter.text)
         
         assert shield_rule_groups['label'][4].minscale is None
         assert shield_rule_groups['label'][4].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][4].symbolizers[0].face_name)
         self.assertEqual(16, shield_rule_groups['label'][4].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][4].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][4].symbolizers[0].height)
         self.assertEqual("[bar] = 'quux' and [foo] <= 1", shield_rule_groups['label'][4].filter.text)
         
         assert shield_rule_groups['label'][5].minscale is None
         assert shield_rule_groups['label'][5].maxscale is None
         self.assertEqual('Helvetica', shield_rule_groups['label'][5].symbolizers[0].face_name)
         self.assertEqual(16, shield_rule_groups['label'][5].symbolizers[0].size)
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual(8, shield_rule_groups['label'][5].symbolizers[0].width)
-            self.assertEqual(8, shield_rule_groups['label'][5].symbolizers[0].height)
         self.assertEqual("[bar] = 'quux' and [foo] > 1", shield_rule_groups['label'][5].filter.text)
 
         point_rules = get_point_rules(declarations, target_dir=self.tmpdir)
@@ -1208,10 +1163,6 @@ class StyleRuleTests(unittest.TestCase):
         assert point_rules[0].filter is None
         assert point_rules[0].minscale is None
         assert point_rules[0].maxscale is None
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual('png', point_rules[0].symbolizers[0].type)
-            self.assertEqual(8, point_rules[0].symbolizers[0].width)
-            self.assertEqual(8, point_rules[0].symbolizers[0].height)
 
     def testStyleRules07(self):
         s = """
@@ -1227,30 +1178,18 @@ class StyleRuleTests(unittest.TestCase):
         assert point_rules[0].filter is None
         assert point_rules[0].minscale is None
         assert point_rules[0].maxscale is None
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual('png', point_rules[0].symbolizers[0].type)
-            self.assertEqual(8, point_rules[0].symbolizers[0].width)
-            self.assertEqual(8, point_rules[0].symbolizers[0].height)
 
         polygon_pattern_rules = get_polygon_pattern_rules(declarations, target_dir=self.tmpdir)
         
         assert polygon_pattern_rules[0].filter is None
         assert polygon_pattern_rules[0].minscale is None
         assert polygon_pattern_rules[0].maxscale is None
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual('png', polygon_pattern_rules[0].symbolizers[0].type)
-            self.assertEqual(8, polygon_pattern_rules[0].symbolizers[0].width)
-            self.assertEqual(8, polygon_pattern_rules[0].symbolizers[0].height)
 
         line_pattern_rules = get_line_pattern_rules(declarations, target_dir=self.tmpdir)
         
         assert line_pattern_rules[0].filter is None
         assert line_pattern_rules[0].minscale is None
         assert line_pattern_rules[0].maxscale is None
-        if not MAPNIK_AUTO_IMAGE_SUPPORT:
-            self.assertEqual('png', line_pattern_rules[0].symbolizers[0].type)
-            self.assertEqual(8, line_pattern_rules[0].symbolizers[0].width)
-            self.assertEqual(8, line_pattern_rules[0].symbolizers[0].height)
 
     def testStyleRules08(self):
         s = """
