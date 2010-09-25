@@ -899,14 +899,9 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
     if not mapnik_auto_image_support and not Image:
         raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
 
-    # okay, we actually need read the data into memory now
-    img_data = open(path,'rb').read()
-    im = Image.open(StringIO.StringIO(img_data))
+    img = Image.open(path)
 
-    im.save(dest_file)
-    os.chmod(dest_file, 0644)
-
-    return dest_file, target_ext[1:], im.size[0], im.size[1]
+    return dest_file, target_ext[1:], img.size[0], img.size[1]
 
 def get_shield_rule_groups(declarations, **kwargs):
     """ Given a list of declarations, return a list of output.Rule objects.
