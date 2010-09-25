@@ -17,18 +17,15 @@ import shutil
 import safe64
 import style
 
-HAS_PIL = False
 try:
     from PIL import Image
-    HAS_PIL = True
 except ImportError:
     try:
         import Image
-        HAS_PIL = True
     except ImportError:
-        pass
+        Image = False
 
-if not HAS_PIL:
+if not Image:
     warn = 'Warning: PIL (Python Imaging Library) is required for proper handling of image symbolizers when using JPEG format images or not running Mapnik >=0.7.0\n'
     sys.stderr.write(warn)
 
@@ -896,7 +893,7 @@ def postprocess_symbolizer_image_file(file_name, temp_name, **kwargs):
             msg('found locally cached file: %s' %  dest_file)
 
     # throw error if we need to detect image sizes and can't because pil is missing
-    if not mapnik_auto_image_support and not HAS_PIL:
+    if not mapnik_auto_image_support and not Image:
         raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
 
     # okay, we actually need read the data into memory now
