@@ -621,10 +621,7 @@ def is_applicable_selector(selector, filter):
 def get_map_attributes(declarations, **kwargs):
     """
     """
-    if kwargs.get('mapnik_version') >= 800:
-        property_map = {'map-bgcolor': 'background-color'}
-    else:
-        property_map = {'map-bgcolor': 'bgcolor'}    
+    property_map = {'map-bgcolor': 'bgcolor'}    
     
     return dict([(property_map[dec.property.name], dec.value.value)
                  for dec in declarations
@@ -699,49 +696,6 @@ def get_raster_rules(declarations,**kwargs):
             sym_params[attr] = values.has_key(prop) and values[prop].value or None
         
         symbolizer = output.RasterSymbolizer(**sym_params)
-
-        rules.append(make_rule(filter, symbolizer))
-
-    return rules
-
-def get_marker_rules(declarations,**kwargs):
-    """ Given a Map element, a Layer element, and a list of declarations,
-        create a new Style element with a MarkersSymbolizer, add it to Map
-        and refer to it in Layer.
-    """
-    # basically not supported before Mapnik2
-    if not kwargs.get('mapnik_version') >= 800:
-        return
-    
-    property_map = {'marker-line-color': 'stroke', 
-                    'marker-line-width': 'stroke-width',
-                    'marker-line-opacity': 'stroke-opacity',
-                    'marker-fill': 'fill', 
-                    'marker-fill-opacity': 'opacity',
-                    'marker-placement': 'placement',
-                    'marker-type':'marker_type',
-                    'marker-width':'width',
-                    'marker-height':'height',
-                    'marker-file':'file',
-                    'marker-allow-overlap':'allow_overlap',
-                    'marker-spacing':'spacing',
-                    'marker-max-error':'max_error',
-                    'marker-transform':'transform',
-                    #'marker-meta-output': 'meta-output', 
-                    #'marker-meta-writer': 'meta-writer'
-                    }
-    
-    property_names = property_map.keys()
-    
-    # a place to put rules
-    rules = []
-
-    for (filter, values) in filtered_property_declarations(declarations, property_names):
-        sym_params = {}
-        for prop,attr in property_map.items():
-            sym_params[attr] = values.has_key(prop) and values[prop].value or None
-        
-        symbolizer = output.MarkersSymbolizer(**sym_params)
 
         rules.append(make_rule(filter, symbolizer))
 
@@ -912,8 +866,6 @@ def postprocess_symbolizer_image_file(file_name, temp_name, **kwargs):
     # http://trac.mapnik.org/ticket/508
     mapnik_auto_image_support = (ver >= 700)
     mapnik_formats = ['.png','tif','tiff']
-    if ver >= 800:
-        mapnik_formats.extend(['.jpg','.jpeg'])
     supported_type = ext in mapnik_formats
     if supported_type:
         target_ext = ext
@@ -1325,12 +1277,9 @@ def localize_datasource(src, filename, **kwargs):
 def auto_detect_mapnik_version():
     mapnik = None
     try:
-        import mapnik2 as mapnik
+        import mapnik
     except ImportError:
-        try:
-            import mapnik
-        except ImportError:
-            pass
+        pass
     if mapnik:
         if hasattr(mapnik,'mapnik_version'):
             return mapnik.mapnik_version()
@@ -1500,9 +1449,6 @@ def compile(src,**kwargs):
 
         styles.append(output.Style('polygon pattern style %d' % ids.next(),
                                    get_polygon_pattern_rules(layer_declarations, **kwargs)))
-
-        styles.append(output.Style('marker style %d' % ids.next(),
-                           get_marker_rules(layer_declarations,**kwargs)))
 
         styles.append(output.Style('raster style %d' % ids.next(),
                            get_raster_rules(layer_declarations,**kwargs)))

@@ -1,15 +1,10 @@
 import style
 
 try:
-    import mapnik2 as mapnik
-    mapnik.Filter = mapnik.Expression
+    import mapnik
 except ImportError:
-    try:
-        import mapnik
-        mapnik.Expression = str
-    except ImportError:
-        # *.to_mapnik() won't work, maybe that's okay?
-        pass
+    # *.to_mapnik() won't work, maybe that's okay?
+    pass
 
 class Map:
     def __init__(self, srs=None, layers=None, bgcolor=None):
@@ -176,33 +171,6 @@ class RasterSymbolizer:
 
         return sym
 
-class MarkersSymbolizer:
-    def __init__(self, filename=None, allow_overlap=None, spacing=None, max_error=None, opacity=None, **kwargs):
-        assert filename is None or type(filename) is str
-        assert allow_overlap is None or allow_overlap.__class__ is style.boolean
-        assert spacing is None or type(spacing) in (int, float)
-        assert max_error is None or type(max_error) in (int, float)
-        assert opacity is None or type(opacity) in (int, float)
-
-        self.filename = filename
-        self.allow_overlap = allow_overlap
-        self.spacing = spacing or 100
-        self.max_error = max_error or 0.2
-        self.opacity = opacity or 1.0
-
-    def __repr__(self):
-        return 'Markers(%s, %s, %s)' % (self.filename, self.allow_overlap, self.spacing, self.max_error, self.opacity)
-
-    def to_mapnik(self):
-        sym = mapnik.MarkersSymbolizer()
-        sym.filename = self.filename or sym.filename
-        sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
-        sym.spacing = self.spacing
-        sym.max_error = self.max_error
-        sym.opacity = self.opacity
-
-        return sym
-
 class LineSymbolizer:
     def __init__(self, color, width, opacity=None, join=None, cap=None, dashes=None):
         assert color.__class__ is style.color
@@ -293,7 +261,7 @@ class TextSymbolizer:
         return 'Text(%s, %s)' % (self.face_name, self.size)
 
     def to_mapnik(self):
-        sym = mapnik.TextSymbolizer(mapnik.Expression(self.name), self.face_name, self.size,
+        sym = mapnik.TextSymbolizer(self.name, self.face_name, self.size,
                                     mapnik.Color(str(self.color)))
 
         sym.wrap_width = self.wrap_width or sym.wrap_width
@@ -307,9 +275,6 @@ class TextSymbolizer:
         sym.avoid_edges = self.avoid_edges.value if self.avoid_edges else sym.avoid_edges
         sym.minimum_distance = self.min_distance or sym.minimum_distance
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
-        
-        if mapnik.mapnik_version() >= 800:
-            sym.text_transform = self.text_transform if self.text_transform else sym.text_transform
         
         sym.displacement(self.dx or 0, self.dy or 0)
         
@@ -353,7 +318,7 @@ class ShieldSymbolizer:
 
     def to_mapnik(self):
         sym = mapnik.ShieldSymbolizer(
-                mapnik.Expression(self.name), 
+                self.name, 
                 self.face_name, 
                 self.size, 
                 mapnik.Color(str(self.color)) if self.color else None, 
