@@ -852,6 +852,13 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
     """ Given a file name and an output directory name, save the image
         file to a temporary location while noting its dimensions.
     """
+    # support latest mapnik features of auto-detection
+    # of image sizes and jpeg reading support...
+    # http://trac.mapnik.org/ticket/508
+    version = kwargs.get('mapnik_version', None)
+    mapnik_auto_image_support = (version >= 700)
+    mapnik_requires_absolute_paths = (version < 601)
+
     scheme, n, path, p, q, f = urlparse.urlparse(file_href)
 
     if scheme == 'http':
@@ -859,6 +866,9 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
         
     if scheme not in ('file', '') or not os.path.exists(path):
         raise Exception("you're not helping")
+    
+    if mapnik_requires_absolute_paths:
+        path = os.path.realpath(path)
     
     rel_path = os.path.relpath(path, target_dir)
 
@@ -875,12 +885,6 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
     
     image_name, ext = os.path.splitext(path)
     
-    # support latest mapnik features of auto-detection
-    # of image sizes and jpeg reading support...
-    # http://trac.mapnik.org/ticket/508
-    ver = kwargs.get('mapnik_version', None)
-    mapnik_auto_image_support = (ver >= 700)
-
     if ext in ('.png', 'tif', 'tiff'):
         target_ext = ext
     else:
