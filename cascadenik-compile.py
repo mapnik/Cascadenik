@@ -35,10 +35,9 @@ def main(file, **kwargs):
     
     if kwargs.get('pretty'):
         doc = ElementTree.fromstring(open(filename, 'rb').read())
-        print doc
         cascadenik._compile.indent(doc)
         f = open(filename, 'wb')
-        doc.write(f)
+        ElementTree.ElementTree(doc).write(f)
         f.close()
         
     if kwargs.get('compiled'):
