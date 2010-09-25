@@ -6,7 +6,17 @@ import optparse
 import cascadenik
 import tempfile
 import mapnik
-import ElementTree
+
+try:
+    import xml.etree.ElementTree as ElementTree
+    from xml.etree.ElementTree import Element
+except ImportError:
+    try:
+        import lxml.etree as ElementTree
+        from lxml.etree import Element
+    except ImportError:
+        import elementtree.ElementTree as ElementTree
+        from elementtree.ElementTree import Element
 
 def main(file, **kwargs):
     """ Given an input layers file and a directory, print the compiled
@@ -16,7 +26,8 @@ def main(file, **kwargs):
     mmap = mapnik.Map(1, 1)
     # allow [zoom] filters to work
     mmap.srs = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null'
-    cascadenik.load_map(mmap, file, **kwargs)
+    load_kwargs = dict([(k, v) for (k, v) in kwargs.items() if k in ('target_dir', 'move_local_files')])
+    cascadenik.load_map(mmap, file, **load_kwargs)
     
     (handle, filename) = tempfile.mkstemp(suffix='.xml', prefix='cascadenik-mapnik-')
     os.close(handle)
@@ -24,6 +35,7 @@ def main(file, **kwargs):
     
     if kwargs.get('pretty'):
         doc = ElementTree.fromstring(open(filename, 'rb').read())
+        print doc
         cascadenik._compile.indent(doc)
         f = open(filename, 'wb')
         doc.write(f)
