@@ -214,10 +214,11 @@ class TextSymbolizer:
         spacing=None, label_position_tolerance=None, max_char_angle_delta=None, \
         halo_color=None, halo_radius=None, dx=None, dy=None, avoid_edges=None, \
         min_distance=None, allow_overlap=None, placement=None, \
-        character_spacing=None, line_spacing=None, text_transform=None):
+        character_spacing=None, line_spacing=None, text_transform=None, fontset=None):
 
         assert type(name) is str
-        assert type(face_name) is str
+        assert face_name is None or type(face_name) is str
+        assert fontset is None or type(fontset) is str
         assert type(size) is int
         assert color.__class__ is style.color
         assert wrap_width is None or type(wrap_width) is int
@@ -236,8 +237,11 @@ class TextSymbolizer:
         assert placement is None or type(placement) is str
         assert text_transform is None or type(text_transform) is str
 
+        assert face_name or fontset, "Must specify either face_name or fontset"
+
         self.name = name
-        self.face_name = face_name
+        self.face_name = face_name or ''
+        self.fontset = fontset
         self.size = size
         self.color = color
 
@@ -275,6 +279,8 @@ class TextSymbolizer:
         sym.avoid_edges = self.avoid_edges.value if self.avoid_edges else sym.avoid_edges
         sym.minimum_distance = self.min_distance or sym.minimum_distance
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
+        if self.fontset:
+            sym.fontset = self.fontset.value
         
         sym.displacement(self.dx or 0, self.dy or 0)
         

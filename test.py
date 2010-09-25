@@ -1421,6 +1421,7 @@ class StyleRuleTests(unittest.TestCase):
         text_rule_groups = get_text_rule_groups(declarations)
         
         self.assertEqual('Helvetica', text_rule_groups['label'][0].symbolizers[0].face_name)
+        self.assertEqual('Helvetica', text_rule_groups['label'][0].symbolizers[0].face_name)
         self.assertEqual(12, text_rule_groups['label'][0].symbolizers[0].size)
 
         self.assertEqual(color(0xFF, 0x00, 0x00), text_rule_groups['label'][0].symbolizers[0].color)
@@ -1436,6 +1437,35 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(5, text_rule_groups['label'][0].symbolizers[0].min_distance)
         self.assertEqual(boolean(0), text_rule_groups['label'][0].symbolizers[0].allow_overlap)
         self.assertEqual('point', text_rule_groups['label'][0].symbolizers[0].placement)
+
+    def testStyleRules12a(self):
+        s = """
+            Layer label1
+            {
+                text-face-name: 'Helvetica';
+                text-fontset: 'bananas';
+
+                text-size: 12;
+                text-fill: #f00;
+            }
+            Layer label2
+            {
+                text-fontset: "monkeys";
+
+                text-size: 12;
+                text-fill: #f00;
+            }
+        """
+
+        declarations = stylesheet_declarations(s, is_gym=True)
+
+        text_rule_groups = get_text_rule_groups(declarations)
+        
+        self.assertEqual('Helvetica', text_rule_groups['label1'][0].symbolizers[0].face_name)
+        self.assertEqual('bananas', text_rule_groups['label1'][0].symbolizers[0].fontset)
+
+        self.assertEqual('', text_rule_groups['label2'][0].symbolizers[0].face_name)
+        self.assertEqual('monkeys', text_rule_groups['label2'][0].symbolizers[0].fontset)
 
     def testStyleRules13(self):
         s = """

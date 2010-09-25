@@ -765,7 +765,9 @@ def get_line_rules(declarations, **kwargs):
 def get_text_rule_groups(declarations, **kwargs):
     """ Given a list of declarations, return a list of output.Rule objects.
     """
-    property_map = {'text-face-name': 'face_name', 'text-size': 'size', 
+    property_map = {'text-face-name': 'face_name',
+                    'text-fontset': 'fontset',
+                    'text-size': 'size', 
                     'text-ratio': 'text_ratio', 'text-wrap-width': 'wrap_width', 'text-spacing': 'spacing',
                     'text-label-position-tolerance': 'label_position_tolerance','text-transform':'text_transform',
                     'text-max-char-angle-delta': 'max_char_angle_delta', 'text-fill': 'fill',
@@ -803,7 +805,8 @@ def get_text_rule_groups(declarations, **kwargs):
         
         for (filter, values) in filtered_property_declarations(name_declarations, property_names):
             
-            face_name = values.has_key('text-face-name') and values['text-face-name'].value
+            face_name = values.has_key('text-face-name') and values['text-face-name'].value or None
+            fontset = values.has_key('text-fontset') and values['text-fontset'].value or None
             size = values.has_key('text-size') and values['text-size'].value
             color = values.has_key('text-fill') and values['text-fill'].value
             
@@ -822,14 +825,13 @@ def get_text_rule_groups(declarations, **kwargs):
             placement = values.has_key('text-placement') and values['text-placement'].value or None
             text_transform = values.has_key('text-transform') and values['text-transform'].value or None
             
-            symbolizer = face_name and size and color \
-                and output.TextSymbolizer(text_name, face_name, size, color, \
-                                          wrap_width, spacing, label_position_tolerance, \
-                                          max_char_angle_delta, halo_color, halo_radius, dx, dy, \
-                                          avoid_edges, min_distance, allow_overlap, placement, \
-                                          text_transform)
+            if (face_name or fontset) and size and color:
+                symbolizer = output.TextSymbolizer(text_name, face_name, size, color, \
+                                              wrap_width, spacing, label_position_tolerance, \
+                                              max_char_angle_delta, halo_color, halo_radius, dx, dy, \
+                                              avoid_edges, min_distance, allow_overlap, placement, \
+                                              text_transform, fontset=fontset)
             
-            if symbolizer:
                 rules.append(make_rule(filter, symbolizer))
         
         groups.append((text_name, rules))

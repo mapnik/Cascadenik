@@ -169,6 +169,9 @@ properties = {
     # Font name
     'text-face-name': str,
 
+    # Fontset name
+    'text-fontset': str,
+
     # Font size
     'text-size': int,
 
