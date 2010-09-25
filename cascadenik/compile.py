@@ -37,12 +37,12 @@ DEFAULT_ENCODING = 'utf-8'
 SHAPE_PARTS = (('.shp', True), ('.shx', True), ('.dbf', True), ('.prj', False), ('.index', False))
 
 try:
-    import lxml.etree as ElementTree
-    from lxml.etree import Element
+    import xml.etree.ElementTree as ElementTree
+    from xml.etree.ElementTree import Element
 except ImportError:
     try:
-        import xml.etree.ElementTree as ElementTree
-        from xml.etree.ElementTree import Element
+        import lxml.etree as ElementTree
+        from lxml.etree import Element
     except ImportError:
         import elementtree.ElementTree as ElementTree
         from elementtree.ElementTree import Element
