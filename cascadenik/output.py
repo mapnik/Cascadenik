@@ -5,7 +5,6 @@ try:
     import mapnik2 as mapnik
 except ImportError:
     warnings.warn("mapnik library not available, *.to_mapnik() won't work")
-    pass
 
 class Map:
     def __init__(self, srs=None, layers=None, bgcolor=None):
@@ -172,33 +171,6 @@ class RasterSymbolizer:
 
         return sym
 
-class MarkersSymbolizer:
-    def __init__(self, filename=None, allow_overlap=None, spacing=None, max_error=None, opacity=None, **kwargs):
-        assert filename is None or type(filename) is str
-        assert allow_overlap is None or allow_overlap.__class__ is style.boolean
-        assert spacing is None or type(spacing) in (int, float)
-        assert max_error is None or type(max_error) in (int, float)
-        assert opacity is None or type(opacity) in (int, float)
-
-        self.filename = filename
-        self.allow_overlap = allow_overlap
-        self.spacing = spacing or 100
-        self.max_error = max_error or 0.2
-        self.opacity = opacity or 1.0
-
-    def __repr__(self):
-        return 'Markers(%s, %s, %s)' % (self.filename, self.allow_overlap, self.spacing, self.max_error, self.opacity)
-
-    def to_mapnik(self):
-        sym = mapnik.MarkersSymbolizer()
-        sym.filename = self.filename or sym.filename
-        sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
-        sym.spacing = self.spacing
-        sym.max_error = self.max_error
-        sym.opacity = self.opacity
-
-        return sym
-
 class LineSymbolizer:
     def __init__(self, color, width, opacity=None, join=None, cap=None, dashes=None):
         assert color.__class__ is style.color
@@ -242,10 +214,11 @@ class TextSymbolizer:
         spacing=None, label_position_tolerance=None, max_char_angle_delta=None, \
         halo_color=None, halo_radius=None, dx=None, dy=None, avoid_edges=None, \
         min_distance=None, allow_overlap=None, placement=None, \
-        character_spacing=None, line_spacing=None, text_transform=None):
+        character_spacing=None, line_spacing=None, text_transform=None, fontset=None):
 
         assert type(name) is str
-        assert type(face_name) is str
+        assert face_name is None or type(face_name) is str
+        assert fontset is None or type(fontset) is str
         assert type(size) is int
         assert color.__class__ is style.color
         assert wrap_width is None or type(wrap_width) is int
@@ -264,8 +237,11 @@ class TextSymbolizer:
         assert placement is None or type(placement) is str
         assert text_transform is None or type(text_transform) is str
 
+        assert face_name or fontset, "Must specify either face_name or fontset"
+
         self.name = name
-        self.face_name = face_name
+        self.face_name = face_name or ''
+        self.fontset = fontset
         self.size = size
         self.color = color
 
@@ -304,6 +280,8 @@ class TextSymbolizer:
         sym.minimum_distance = self.min_distance or sym.minimum_distance
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
         sym.text_transform = self.text_transform if self.text_transform else sym.text_transform
+        if self.fontset:
+            sym.fontset = self.fontset.value
         
         sym.displacement(self.dx or 0, self.dy or 0)
         
@@ -312,12 +290,13 @@ class TextSymbolizer:
 class ShieldSymbolizer:
     def __init__(self, name, face_name=None, size=None, file=None, \
         color=None, min_distance=None, character_spacing=None, \
-        line_spacing=None, spacing=None):
+        line_spacing=None, spacing=None, fontset=None):
         
-        assert (face_name and size) or file
+        assert ((face_name or fontset) and size) or file
         
         assert type(name) is str
         assert face_name is None or type(face_name) is str
+        assert fontset is None or type(fontset) is str
         assert size is None or type(size) is int
 
         assert color is None or color.__class__ is style.color
@@ -327,7 +306,8 @@ class ShieldSymbolizer:
         assert min_distance is None or type(min_distance) is int
 
         self.name = name
-        self.face_name = face_name
+        self.face_name = face_name or ''
+        self.fontset = fontset
         self.size = size
         self.file = file
 
@@ -352,6 +332,8 @@ class ShieldSymbolizer:
         sym.line_spacing = self.line_spacing or sym.line_spacing
         sym.spacing = self.spacing or sym.line_spacing
         sym.minimum_distance = self.min_distance or sym.minimum_distance
+        if self.fontset:
+            sym.fontset = self.fontset.value
         
         return sym
 

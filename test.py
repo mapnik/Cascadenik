@@ -442,44 +442,6 @@ class CascadeTests(unittest.TestCase):
         self.assertEqual('text-fill', declarations[18].property.name)
         self.assertEqual('#ff9900', str(declarations[18].value))
 
-    def testMarkerMetaWriter(self):
-        s = """
-            .marker
-            {
-                /* http://trac.mapnik.org/wiki/MarkersSymbolizer */
-                marker-placement: point;
-                marker-fill: #cc3344;
-                marker-fill-opacity: .7;
-                marker-width: 10;
-                marker-height: 10;
-                marker-line-color: #cc3344;
-                marker-line-width: 7;
-                marker-line-opacity: .2;
-                marker-type: ellipse;
-                marker-meta-writer: "points";
-                marker-meta-output: "NAME,FIPS";
-            }
-        """
-        rulesets = stylesheet_rulesets(s)
-        
-        declarations = rulesets_declarations(rulesets)
-
-        self.assertEqual(11, len(declarations))
-
-        self.assertEqual('.marker', str(declarations[0].selector))
-        self.assertEqual('marker-placement', declarations[0].property.name)
-        self.assertEqual('point', str(declarations[0].value))
-
-        marker_type = declarations[8]
-        self.assertEqual('.marker', str(marker_type.selector))
-        self.assertEqual('marker-type', marker_type.property.name)
-        self.assertEqual('ellipse', str(marker_type.value))
-
-        meta_name = declarations[9]
-        self.assertEqual('.marker', str(meta_name.selector))
-        self.assertEqual('marker-meta-writer', meta_name.property.name)
-        self.assertEqual('points', str(meta_name.value))
-
 class SelectorParseTests(unittest.TestCase):
 
     def testFilters1(self):
@@ -1398,6 +1360,7 @@ class StyleRuleTests(unittest.TestCase):
         text_rule_groups = get_text_rule_groups(declarations)
         
         self.assertEqual('Helvetica', text_rule_groups['label'][0].symbolizers[0].face_name)
+        self.assertEqual('Helvetica', text_rule_groups['label'][0].symbolizers[0].face_name)
         self.assertEqual(12, text_rule_groups['label'][0].symbolizers[0].size)
 
         self.assertEqual(color(0xFF, 0x00, 0x00), text_rule_groups['label'][0].symbolizers[0].color)
@@ -1413,6 +1376,35 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(5, text_rule_groups['label'][0].symbolizers[0].min_distance)
         self.assertEqual(boolean(0), text_rule_groups['label'][0].symbolizers[0].allow_overlap)
         self.assertEqual('point', text_rule_groups['label'][0].symbolizers[0].placement)
+
+    def testStyleRules12a(self):
+        s = """
+            Layer label1
+            {
+                text-face-name: 'Helvetica';
+                text-fontset: 'bananas';
+
+                text-size: 12;
+                text-fill: #f00;
+            }
+            Layer label2
+            {
+                text-fontset: "monkeys";
+
+                text-size: 12;
+                text-fill: #f00;
+            }
+        """
+
+        declarations = stylesheet_declarations(s, is_gym=True)
+
+        text_rule_groups = get_text_rule_groups(declarations)
+        
+        self.assertEqual('Helvetica', text_rule_groups['label1'][0].symbolizers[0].face_name)
+        self.assertEqual('bananas', text_rule_groups['label1'][0].symbolizers[0].fontset)
+
+        self.assertEqual('', text_rule_groups['label2'][0].symbolizers[0].face_name)
+        self.assertEqual('monkeys', text_rule_groups['label2'][0].symbolizers[0].fontset)
 
     def testStyleRules13(self):
         s = """
@@ -1457,7 +1449,7 @@ class StyleRuleTests(unittest.TestCase):
 
             Layer both
             {
-                shield-face-name: 'Helvetica';
+                shield-fontset: 'SuperFonts';
                 shield-size: 12;
                 
                 shield-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png');
@@ -1478,7 +1470,8 @@ class StyleRuleTests(unittest.TestCase):
 
         self.assertEqual(5, shield_rule_groups['just_image'][0].symbolizers[0].min_distance)
         
-        self.assertEqual('Helvetica', shield_rule_groups['both'][0].symbolizers[0].face_name)
+        self.assertEqual('', shield_rule_groups['both'][0].symbolizers[0].face_name)
+        self.assertEqual('SuperFonts', shield_rule_groups['both'][0].symbolizers[0].fontset)
         self.assertEqual(12, shield_rule_groups['both'][0].symbolizers[0].size)
         self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['both'][0].symbolizers[0].color)
         self.assertEqual(5, shield_rule_groups['both'][0].symbolizers[0].min_distance)
