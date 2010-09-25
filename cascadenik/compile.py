@@ -835,79 +835,76 @@ def get_text_rule_groups(declarations, **kwargs):
     
     return dict(groups)
 
-def postprocess_symbolizer_image_file(file_name, temp_name, **kwargs):
+def locally_cache_remote_file(href, dir):
+    """
+    """
+    scheme, n, path, p, q, f = urlparse.urlparse(href)
+
+    head, ext = os.path.splitext(path)
+    
+    (handle, local_path) = tempfile.mkstemp(prefix='cascadenik-', suffix=ext, dir=dir)
+    os.write(handle, urllib.urlopen(href).read())
+    os.close(handle)
+
+    print >> sys.stderr, 'copy remote file:', href, 'to', local_path
+    
+    return local_path
+
+def postprocess_symbolizer_image_file(file_href, temp_name, target_dir, **kwargs):
     """ Given a file name, an output directory name, and a temporary
         file name, save the file to a temporary location as a PNG
         while noting its dimensions.
     """
-    # read the image to get some more details
-    img_path = file_name
+    print >> sys.stderr, 'postprocessing:', file_href, target_dir, kwargs
+    
+    scheme, n, path, p, q, f = urlparse.urlparse(file_href)
 
-    msg('reading symbol: %s' % img_path)
+    if scheme == 'http':
+        scheme, path = '', locally_cache_remote_file(file_href, target_dir)
+        
+    if scheme not in ('file', '') or not os.path.exists(path):
+        raise Exception("you're not helping")
+    
+    rel_path = os.path.relpath(path, target_dir)
+
+    if path.startswith('/'):
+        path = path
+    elif rel_path.startswith('../'):
+        path = os.path.join(target_dir, path)
+    else:
+        path = rel_path
+
+    print >> sys.stderr, 'keeping local file:', path
+
+    msg('reading symbol: %s' % path)
 
     target_dir = kwargs.get('target_dir',tempfile.gettempdir())
     
-    move_local_files = kwargs.get('move_local_files')
-
-    # todo - use urlparse logic?
-    is_local = os.path.exists(img_path)
-    # if not url throw error?
-    
-    image_name, ext = os.path.splitext(img_path)
-    if os.path.exists(img_path) and not move_local_files:
-        path = img_path
-    elif dir:
-        path = os.path.join(target_dir, os.path.basename(img_path))
+    image_name, ext = os.path.splitext(path)
     
     # support latest mapnik features of auto-detection
     # of image sizes and jpeg reading support...
-    ver = kwargs.get('mapnik_version',None)
     # http://trac.mapnik.org/ticket/508
+    ver = kwargs.get('mapnik_version', None)
     mapnik_auto_image_support = (ver >= 700)
-    mapnik_formats = ['.png','tif','tiff']
-    supported_type = ext in mapnik_formats
-    if supported_type:
+
+    if ext in ('.png', 'tif', 'tiff'):
         target_ext = ext
     else:
         target_ext = '.png'
 
-    if move_local_files or not is_local:
-        target_name = os.path.basename('%s%s' % (image_name,target_ext))
-        if not is_local and kwargs.get('safe_urls'):
-            # note we use/encode the raw url 'image_path' here...
-            target_dir = os.path.join(target_dir,url2fs(img_path))
-        dest_file = os.path.join(target_dir,target_name)
-    else:
-        # local file and we're not moving it
-        dest_file = '%s%s' % (image_name,target_ext)
+    # new local file name
+    dest_file = '%s%s' % (image_name, target_ext)
 
     msg('Destination file: %s' % dest_file)
         
-    # are we caching, eg pulling from already downloaded files
-    caching = not kwargs.get('no_cache')
-    if not is_local and caching:
-        if os.path.exists(dest_file):
-            img_path = dest_file
-            supported_type = os.path.splitext(img_path)[1] in mapnik_formats
-            is_local = True
-            msg('found locally cached file: %s' %  dest_file)
-
     # throw error if we need to detect image sizes and can't because pil is missing
     if not mapnik_auto_image_support and not Image:
         raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
 
     # okay, we actually need read the data into memory now
-    if is_local:
-        img_data = open(img_path,'rb').read()
-    else:
-        #if os.path.isabs(img_path) and sys.platform == "win32":
-        #    img_path = 'file:%s' % img_path
-        img_data = urllib.urlopen(img_path).read()
-    
+    img_data = open(path,'rb').read()
     im = Image.open(StringIO.StringIO(img_data))
-
-    if not os.path.exists(target_dir):
-        os.mkdir(target_dir)
 
     im.save(dest_file)
     os.chmod(dest_file, 0644)
@@ -1406,7 +1403,15 @@ def compile(src,**kwargs):
         # or a URL or file location?
         doc = ElementTree.parse(urllib.urlopen(src))
         map_el = doc.getroot()
+
+        if src.startswith('http://') or src.startswith('file://'):
+            base = src
+        else:
+            base = 'file://' + os.path.realpath(src)
+
         base = src
+            
+    print >> sys.stderr, 'base:', base
     
     declarations = extract_declarations(map_el, base)
     
