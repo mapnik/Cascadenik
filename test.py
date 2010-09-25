@@ -594,8 +594,6 @@ class SelectorParseTests(unittest.TestCase):
         self.assertEqual(u"[name] = 'Grüner Strich'", test2str(filters[1].tests[0]))
         self.assert_(isinstance(filters[1].tests[0].value, unicode))
         self.assert_(isinstance(filters[1].tests[0].property, str))
-        print repr(filters[1].tests[0].property)
-        print repr(filters[1].tests[0].value)
 
     def testUnicode1(self):
         # Unicode is bad in property values
@@ -1826,7 +1824,6 @@ class CompileXMLTests(unittest.TestCase):
         ms = compile(s, target_dir=self.tmpdir)
         ms.to_mapnik(mmap)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
-        print open(os.path.join(self.tmpdir, 'out.mml'), 'rb').read()
 
     def testCompile5(self):
         s = u"""<?xml version="1.0" encoding="UTF-8" ?>
@@ -1845,7 +1842,6 @@ class CompileXMLTests(unittest.TestCase):
         ms = compile(s, target_dir=self.tmpdir)
         ms.to_mapnik(mmap)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
-        print open(os.path.join(self.tmpdir, 'out.mml'), 'rb').read()
         
         
 if __name__ == '__main__':
