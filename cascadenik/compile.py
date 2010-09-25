@@ -13,6 +13,11 @@ import zipfile
 import style, output
 import shutil
 
+from hashlib import md5
+from datetime import datetime
+from time import strftime, localtime
+from httplib import HTTPConnection
+
 # cascadenik
 import safe64
 import style
@@ -838,14 +843,37 @@ def get_text_rule_groups(declarations, **kwargs):
 def locally_cache_remote_file(href, dir):
     """
     """
-    scheme, n, path, p, q, f = urlparse.urlparse(href)
-
-    head, ext = os.path.splitext(path)
+    scheme, host, remote_path, p, q, f = urlparse.urlparse(href)
     
-    (handle, local_path) = tempfile.mkstemp(prefix='cascadenik-', suffix=ext, dir=dir)
-    os.write(handle, urllib.urlopen(href).read())
-    os.close(handle)
+    assert scheme == 'http', 'No gophers.'
 
+    head, ext = os.path.splitext(os.path.basename(remote_path))
+    hash = md5(href).hexdigest()
+    
+    local_path = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
+    headers = {}
+    
+    if os.path.exists(local_path):
+        t = localtime(os.stat(local_path).st_mtime)
+        headers['If-Modified-Since'] = strftime('%a, %d %b %Y %H:%M:%S %Z', t)
+    
+    conn = HTTPConnection(host, timeout=5)
+    conn.request('GET', remote_path, headers=headers)
+    resp = conn.getresponse()
+    
+    if resp.status in range(200, 210):
+        # hurrah, it worked
+        f = open(local_path, 'wb')
+        f.write(resp.read())
+        f.close()
+
+    elif resp.status == 304:
+        # hurrah, it's cached
+        pass
+
+    else:
+        raise Exception("Failed to get remote resource %s: %s" % (href, resp.status))
+    
     return local_path
 
 def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
