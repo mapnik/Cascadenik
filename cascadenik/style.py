@@ -4,9 +4,6 @@ import os.path
 import urlparse
 import operator
 from binascii import unhexlify as unhex
-
-# monkey with sys.path due to some weirdness inside cssutils
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 from cssutils.tokenize2 import Tokenizer as cssTokenizer
 
 class color:
@@ -19,15 +16,11 @@ class color:
     def __str__(self):
         return repr(self)
 
-class color_transparent:
-    def __init__(self, r, g, b):
-        self.channels = r, g, b
+    def __eq__(self, other):
+        return self.channels == other.channels
 
-    def __repr__(self):
-        return '#%02x%02x%02x' % self.channels
-
-    def __str__(self):
-        return repr(self)
+class color_transparent(color):
+    pass
 
 class uri:
     def __init__(self, address, base=None):
@@ -55,6 +48,9 @@ class boolean:
     def __str__(self):
         return repr(self)
 
+    def __eq__(self, other):
+        return hasattr(other, 'value') and bool(self.value) == bool(other.value)
+
 class numbers:
     def __init__(self, *values):
         self.values = values
@@ -64,6 +60,9 @@ class numbers:
 
     def __str__(self):
         return repr(self)
+
+    def __eq__(self, other):
+        return self.values == other.values
 
 # recognized properties
 
@@ -188,8 +187,8 @@ properties = {
     # Vertical spacing between lines of multiline labels (in pixels)
     'text-line-spacing': int,
 
-    # allow labels to be moved from their point
-    'text-label-position-tolerance': None, # ?
+    # allow labels to be moved from their point by some distance
+    'text-label-position-tolerance': int,
 
     # Maximum angle (in degrees) between two consecutive characters in a label allowed (to stop placing labels around sharp corners)
     'text-max-char-angle-delta': int,
@@ -410,7 +409,7 @@ class Declaration:
         self.sort_key = sort_key
 
     def __repr__(self):
-        return '%(selector)s { %(property)s: %(value)s }' % self.__dict__
+        return u'%(selector)s { %(property)s: %(value)s }' % self.__dict__
 
 class Selector:
     """ Represents a complete selector with elements and attribute checks.
@@ -472,7 +471,7 @@ class Selector:
                     test.op, test.value = '<', max(zooms[test.value])
                 elif test.op == '>':
                     test.op, test.value = '<', min(zooms[test.value])
-                    
+
 
     def specificity(self):
         """ Loosely based on http://www.w3.org/TR/REC-CSS2/cascade.html#specificity
@@ -547,7 +546,7 @@ class Selector:
         return True
 
     def __repr__(self):
-        return ' '.join(repr(a) for a in self.elements)
+        return u' '.join(repr(a) for a in self.elements)
 
 class SelectorElement:
     """ One element in selector, with names and tests.
@@ -564,7 +563,7 @@ class SelectorElement:
             self.tests = []
 
     def addName(self, name):
-        self.names.append(name)
+        self.names.append(str(name))
     
     def addTest(self, test):
         self.tests.append(test)
@@ -582,7 +581,7 @@ class SelectorElement:
         return len([n for n in self.names if n.startswith('.')])
     
     def __repr__(self):
-        return ''.join(self.names) + ''.join(repr(t) for t in self.tests)
+        return u''.join(self.names) + u''.join(repr(t) for t in self.tests)
 
 class SelectorAttributeTest:
     """ Attribute test for a Selector, i.e. the part that looks like "[foo=bar]"
@@ -590,11 +589,11 @@ class SelectorAttributeTest:
     def __init__(self, property, op, value):
         assert op in ('<', '<=', '=', '!=', '>=', '>')
         self.op = op
-        self.property = property
+        self.property = str(property)
         self.value = value
 
     def __repr__(self):
-        return '[%(property)s%(op)s%(value)s]' % self.__dict__
+        return u'[%(property)s%(op)s%(value)s]' % self.__dict__
 
     def __cmp__(self, other):
         """
@@ -818,7 +817,7 @@ class Value:
         return repr(self.value)
 
     def __str__(self):
-        return unicode(self.value)
+        return str(self.value)
 
 def stylesheet_declarations(string, base=None, is_gym=False):
     """
@@ -1103,7 +1102,7 @@ def postprocess_value(tokens, property, base=None, line=0, col=0):
         if tokens[0][0] != 'STRING':
             raise ParseException('String value only for property "%(property)s"' % locals(), line, col)
 
-        value = tokens[0][1][1:-1]
+        value = str(tokens[0][1][1:-1])
 
     elif properties[property.name] is color_transparent:
         if tokens[0][0] != 'HASH' and (tokens[0][0] != 'IDENT' or tokens[0][1] != 'transparent'):
@@ -1145,7 +1144,7 @@ def postprocess_value(tokens, property, base=None, line=0, col=0):
         if tokens[0][0] != 'URI':
             raise ParseException('URI value only for property "%(property)s"' % locals(), line, col)
 
-        raw = tokens[0][1]
+        raw = str(tokens[0][1])
 
         if raw.startswith('url("') and raw.endswith('")'):
             raw = raw[5:-2]
@@ -1171,7 +1170,7 @@ def postprocess_value(tokens, property, base=None, line=0, col=0):
         if tokens[0][1] not in properties[property.name]:
             raise ParseException('Unrecognized value for property "%(property)s"' % locals(), line, col)
 
-        value = tokens[0][1]
+        value = str(tokens[0][1])
             
     elif properties[property.name] is numbers:
         values = []

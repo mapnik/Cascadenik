@@ -1,19 +1,39 @@
 #!/usr/bin/env python
- 
+
+import os
 import sys
 import optparse
 import cascadenik
+import tempfile
+import mapnik
+import ElementTree
 
 def main(file, **kwargs):
     """ Given an input layers file and a directory, print the compiled
         XML file to stdout and save any encountered external image files
         to the named directory.
     """
-    compiled = cascadenik.compile(file, **kwargs)
+    mmap = mapnik.Map(1, 1)
+    # allow [zoom] filters to work
+    mmap.srs = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null'
+    cascadenik.load_map(mmap, file, **kwargs)
+    
+    (handle, filename) = tempfile.mkstemp(suffix='.xml', prefix='cascadenik-mapnik-')
+    os.close(handle)
+    mapnik.save_map(mmap, filename)
+    
+    if kwargs.get('pretty'):
+        doc = ElementTree.fromstring(open(filename, 'rb').read())
+        cascadenik._compile.indent(doc)
+        f = open(filename, 'wb')
+        doc.write(f)
+        f.close()
+        
     if kwargs.get('compiled'):
-        open(kwargs['compiled'],'wb').write(compiled)
+        os.rename(filename, kwargs['compiled'])
     else:
-        print compiled
+        print open(filename, 'r').read()
+        os.unlink(filename)
     return 0
 
 parser = optparse.OptionParser(usage="""%prog [options] <mml> <xml>""", version='%prog ' + cascadenik.VERSION)
@@ -55,12 +75,14 @@ parser.add_option('--mapnik-version',dest='mapnik_version_string',
                   default=None,
                   help='The Mapnik version to target (default is 0.7.1 if not able to be autodetected)')
 
-                  
 if __name__ == '__main__':
     (options, args) = parser.parse_args()
+
     if not args:
         parser.error('Please specify a .mml file')
+
     layersfile = args[0]
+
     if layersfile.endswith('.mss'):
         parser.error('Only accepts an .mml file')
     if len(args) == 2:

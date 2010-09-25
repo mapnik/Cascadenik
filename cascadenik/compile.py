@@ -10,6 +10,7 @@ from operator import lt, le, eq, ge, gt
 import base64
 import os.path
 import zipfile
+import style, output
 import shutil
 
 # cascadenik
@@ -547,7 +548,7 @@ def extract_declarations(map_el, base):
 
         else:
             continue
-        
+            
         rulesets = style.stylesheet_rulesets(styles, base=local_base, is_gym=is_gym_projection(map_el.get('srs','')))
         declarations += style.rulesets_declarations(rulesets)
 
@@ -570,80 +571,42 @@ def test2str(test):
     else:
         raise Exception('"%s" is not a valid filter operation' % test.op)
 
-def make_rule_element(filter, *symbolizer_els):
-    """ Given a Filter, return a Rule element prepopulated with
-        applicable min/max scale denominator and filter elements.
+def make_rule(filter, *symbolizers):
+    """ Given a Filter and some symbolizers, return a Rule prepopulated
+        with applicable min/max scale denominator and filter.
     """
-    rule_el = Element('Rule')
-    
     scale_tests = [test for test in filter.tests if test.isMapScaled()]
     other_tests = [test for test in filter.tests if not test.isMapScaled()]
+    
+    # these will be replaced with values as necessary
+    minscale, maxscale, filter = None, None, None
     
     for scale_test in scale_tests:
 
         if scale_test.op in ('>', '>='):
-            minscale = Element('MinScaleDenominator')
-            rule_el.append(minscale)
-        
             if scale_test.op == '>=':
-                minscale.text = str(scale_test.value)
+                value = scale_test.value
             elif scale_test.op == '>':
-                minscale.text = str(scale_test.value + 1)
+                value = scale_test.value + 1
+
+            minscale = output.MinScaleDenominator(value)
 
         if scale_test.op in ('<', '<='):
-            maxscale = Element('MaxScaleDenominator')
-            rule_el.append(maxscale)
-        
             if scale_test.op == '<=':
-                maxscale.text = str(scale_test.value)
+                value = scale_test.value
             elif scale_test.op == '<':
-                maxscale.text = str(scale_test.value - 1)
+                value = scale_test.value - 1
+
+            maxscale = output.MaxScaleDenominator(value)
     
     filter_text = ' and '.join(test2str(test) for test in other_tests)
     
     if filter_text:
-        filter_el = Element('Filter')
-        filter_el.text = filter_text
-        rule_el.append(filter_el)
-    
-    rule_el.tail = '\n        '
-    
-    for symbolizer_el in symbolizer_els:
-        if symbolizer_el != False:
-            rule_el.append(symbolizer_el)
-    
-    return rule_el
+        filter = output.Filter(filter_text)
 
-def insert_layer_style(map_el, layer_el, style_name, rule_els):
-    """ Given a Map element, a Layer element, a style name and a list of Rule
-        elements, create a new Style element and insert it into the flow and
-        point to it from the Layer element.
-    """
-    if not rule_els:
-        return
+    rule = output.Rule(minscale, maxscale, filter, [s for s in symbolizers if s])
     
-    style_el = Element('Style', {'name': style_name})
-    style_el.text = '\n        '
-    
-    for rule_el in rule_els:
-        style_el.append(rule_el)
-    
-    style_el.tail = '\n    '
-    if hasattr(map_el,'getchildren'):
-        map_el.insert(map_el.getchildren().index(layer_el), style_el)
-    else:
-        map_el.insert(map_el._children.index(layer_el), style_el)
-    
-    stylename_el = Element('StyleName')
-    stylename_el.text = style_name
-    stylename_el.tail = '\n        '
-
-    if hasattr(map_el,'getchildren'):
-        layer_el.insert(layer_el.getchildren().index(layer_el.find('Datasource')), stylename_el)
-    else:
-        layer_el.insert(layer_el._children.index(layer_el.find('Datasource')), stylename_el)
-    
-    layer_el.set('status', 'on')
+    return rule
 
 def is_applicable_selector(selector, filter):
     """ Given a Selector and Filter, return True if the Selector is
@@ -655,39 +618,38 @@ def is_applicable_selector(selector, filter):
     
     return True
 
-def add_map_style(map_el, declarations,**kwargs):
+def get_map_attributes(declarations, **kwargs):
     """
     """
-
     if kwargs.get('mapnik_version') >= 800:
         property_map = {'map-bgcolor': 'background-color'}
     else:
         property_map = {'map-bgcolor': 'bgcolor'}    
-    for dec in declarations:
-        if dec.property.name in property_map:
-            map_el.set(property_map[dec.property.name], str(dec.value))
+    
+    return dict([(property_map[dec.property.name], dec.value.value)
+                 for dec in declarations
+                 if dec.property.name in property_map])
 
-def filtered_property_declarations(declarations, property_map):
+def filtered_property_declarations(declarations, property_names):
     """
     """
     # just the ones we care about here
-    declarations = [dec for dec in declarations if dec.property.name in property_map]
+    declarations = [dec for dec in declarations if dec.property.name in property_names]
     selectors = [dec.selector for dec in declarations]
 
     # a place to put rules
     rules = []
     
     for filter in tests_filter_combinations(selectors_tests(selectors)):
-        rule = (filter, {})
+        rule = {}
         
         # collect all the applicable declarations into a list of parameters and values
         for dec in declarations:
             if is_applicable_selector(dec.selector, filter):
-                parameter = property_map[dec.property.name]
-                rule[1][parameter] = dec.value
+                rule[dec.property.name] = dec.value
 
-        if rule[1]:
-            rules.append(rule)
+        if rule:
+            rules.append((filter, rule))
 
     return rules
 
@@ -700,33 +662,25 @@ def get_polygon_rules(declarations,**kwargs):
                     'polygon-gamma': 'gamma',
                     'polygon-meta-output': 'meta-output', 'polygon-meta-writer': 'meta-writer'}
 
+    property_names = property_map.keys()
     
-    return apply_rules(declarations,'PolygonSymbolizer',property_map,**kwargs)
-
-
-def apply_rules(declarations,elem_name,property_map,**kwargs):
-    # a place to put rule elements
-    rule_els = []
+    # a place to put rules
+    rules = []
     
-    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
-        symbolizer_el = Element(elem_name)
+    for (filter, values) in filtered_property_declarations(declarations, property_names):
+        color = values.has_key('polygon-fill') and values['polygon-fill'].value
+        opacity = values.has_key('polygon-opacity') and values['polygon-opacity'].value or None
+        gamma = values.has_key('polygon-gamma') and values['polygon-gamma'].value or None
+        symbolizer = color and output.PolygonSymbolizer(color, opacity, gamma)
         
-        for (parameter, value) in sorted(parameter_values.items()):
-            if kwargs.get('mapnik_version') >= 800:
-                symbolizer_el.set(parameter, str(value))
-            else:
-                parameter = Element('CssParameter', {'name': parameter})
-                parameter.text = str(value)
-                symbolizer_el.append(parameter)
-
-        rule_el = make_rule_element(filter, symbolizer_el)
-        rule_els.append(rule_el)
+        if symbolizer:
+            rules.append(make_rule(filter, symbolizer))
     
-    return rule_els
+    return rules
 
 def get_raster_rules(declarations,**kwargs):
     """ Given a Map element, a Layer element, and a list of declarations,
-        create a new Style element with a PolygonSymbolizer, add it to Map
+        create a new Style element with a RasterSymbolizer, add it to Map
         and refer to it in Layer.
     """
     property_map = {'raster-opacity': 'opacity',
@@ -734,51 +688,70 @@ def get_raster_rules(declarations,**kwargs):
                     'raster-scaling': 'scaling'
                     }
 
-    return apply_rules(declarations,'RasterSymbolizer',property_map,**kwargs)
+    property_names = property_map.keys()
+
+    # a place to put rules
+    rules = []
+
+    for (filter, values) in filtered_property_declarations(declarations, property_names):
+        sym_params = {}
+        for prop,attr in property_map.items():
+            sym_params[attr] = values.has_key(prop) and values[prop].value or None
+        
+        symbolizer = output.RasterSymbolizer(**sym_params)
+
+        rules.append(make_rule(filter, symbolizer))
+
+    return rules
 
 def get_marker_rules(declarations,**kwargs):
     """ Given a Map element, a Layer element, and a list of declarations,
-        create a new Style element with a LineSymbolizer, add it to Map
+        create a new Style element with a MarkersSymbolizer, add it to Map
         and refer to it in Layer.
-        
-        This function is wise to both line-<foo> and outline-<foo> properties,
-        and will generate pairs of LineSymbolizers if necessary.
     """
     # basically not supported before Mapnik2
     if not kwargs.get('mapnik_version') >= 800:
         return
     
-    property_map = {'marker-line-color': 'stroke', 'marker-line-width': 'stroke-width',
-                    'marker-line-opacity': 'stroke-opacity', #'line-dasharray': 'stroke-dasharray',
-                    'marker-fill': 'fill', 'marker-fill-opacity': 'opacity',
-                    'marker-placement': 'placement','marker-type':'marker_type',
-                    'marker-width':'width','marker-height':'height',
-                    'marker-file':'file','marker-allow-overlap':'allow_overlap',
-                    'marker-spacing':'spacing','marker-max-error':'max_error',
+    property_map = {'marker-line-color': 'stroke', 
+                    'marker-line-width': 'stroke-width',
+                    'marker-line-opacity': 'stroke-opacity',
+                    'marker-fill': 'fill', 
+                    'marker-fill-opacity': 'opacity',
+                    'marker-placement': 'placement',
+                    'marker-type':'marker_type',
+                    'marker-width':'width',
+                    'marker-height':'height',
+                    'marker-file':'file',
+                    'marker-allow-overlap':'allow_overlap',
+                    'marker-spacing':'spacing',
+                    'marker-max-error':'max_error',
                     'marker-transform':'transform',
-                    'marker-meta-output': 'meta-output', 'marker-meta-writer': 'meta-writer'}
+                    #'marker-meta-output': 'meta-output', 
+                    #'marker-meta-writer': 'meta-writer'
+                    }
     
-    # a place to put rule elements
-    rule_els = []
+    property_names = property_map.keys()
     
-    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
-        symbolizer_el = Element('MarkersSymbolizer')
+    # a place to put rules
+    rules = []
 
-        for (parameter, value) in sorted(parameter_values.items()):
-            symbolizer_el.set(parameter, str(value))
-
-        rule_el = make_rule_element(filter, symbolizer_el)
-        rule_els.append(rule_el)
-    
-    return rule_els
-
-def get_line_rules(declarations,**kwargs):
-    """ Given a Map element, a Layer element, and a list of declarations,
-        create a new Style element with a LineSymbolizer, add it to Map
-        and refer to it in Layer.
+    for (filter, values) in filtered_property_declarations(declarations, property_names):
+        sym_params = {}
+        for prop,attr in property_map.items():
+            sym_params[attr] = values.has_key(prop) and values[prop].value or None
         
-        This function is wise to both line-<foo> and outline-<foo> properties,
-        and will generate pairs of LineSymbolizers if necessary.
+        symbolizer = output.MarkersSymbolizer(**sym_params)
+
+        rules.append(make_rule(filter, symbolizer))
+
+    return rules
+
+def get_line_rules(declarations, **kwargs):
+    """ Given a list of declarations, return a list of output.Rule objects.
+        
+        This function is wise to line-<foo>, inline-<foo>, and outline-<foo> properties,
+        and will generate multiple LineSymbolizers if necessary.
     """
     property_map = {'line-color': 'stroke', 'line-width': 'stroke-width',
                     'line-opacity': 'stroke-opacity', 'line-join': 'stroke-linejoin',
@@ -786,80 +759,61 @@ def get_line_rules(declarations,**kwargs):
                     'line-meta-output': 'meta-output', 'line-meta-writer': 'meta-writer'}
 
 
-    # temporarily prepend parameter names with 'in:', 'on:', and 'out:' to be removed later
-    for (property_name, parameter) in property_map.items():
-        property_map['in' + property_name] = 'in:' + parameter
-        property_map['out' + property_name] = 'out:' + parameter
-        property_map[property_name] = 'on:' + parameter
+    property_names = property_map.keys()
     
-    # a place to put rule elements
-    rule_els = []
+    # prepend parameter names with 'in' and 'out'
+    for i in range(len(property_names)):
+        property_names.append('in' + property_names[i])
+        property_names.append('out' + property_names[i])
+
+    # a place to put rules
+    rules = []
     
-    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
-        if 'on:stroke' in parameter_values and 'on:stroke-width' in parameter_values:
-            line_symbolizer_el = Element('LineSymbolizer')
-        else:
-            # we can do nothing with a weightless, colorless line
-            continue
-        
-        if 'out:stroke' in parameter_values and 'out:stroke-width' in parameter_values:
-            outline_symbolizer_el = Element('LineSymbolizer')
-        else:
-            # we can do nothing with a weightless, colorless outline
-            outline_symbolizer_el = False
-        
-        if 'in:stroke' in parameter_values and 'in:stroke-width' in parameter_values:
-            inline_symbolizer_el = Element('LineSymbolizer')
-        else:
-            # we can do nothing with a weightless, colorless inline
-            inline_symbolizer_el = False
-        
-        for (parameter, value) in sorted(parameter_values.items()):
-            if parameter.startswith('on:'):
-                # knock off the leading 'on:' from above
-                if kwargs.get('mapnik_version') >= 800:
-                    line_symbolizer_el.set(parameter[3:], str(value))
-                else:
-                    parameter = Element('CssParameter', {'name': parameter[3:]})
-                    parameter.text = str(value)
-                    line_symbolizer_el.append(parameter)
-
-            elif parameter.startswith('in:') and inline_symbolizer_el != False:
-                # knock off the leading 'in:' from above
-                if kwargs.get('mapnik_version') >= 800:
-                    inline_symbolizer_el.set(parameter[3:], str(value))
-                else:
-                    parameter = Element('CssParameter', {'name': parameter[3:]})
-                    parameter.text = str(value)
-                    inline_symbolizer_el.append(parameter)
-
-            elif parameter.startswith('out:') and outline_symbolizer_el != False:
-                # for the width...
-                if parameter == 'out:stroke-width':
-                    # ...double the weight and add the interior to make a proper outline
-                    value = parameter_values['on:stroke-width'].value + 2 * value.value
-            
-                # knock off the leading 'out:' from above
-                if kwargs.get('mapnik_version') >= 800:
-                    outline_symbolizer_el.set(parameter[4:], str(value))
-                else:
-                    parameter = Element('CssParameter', {'name': parameter[4:]})
-                    parameter.text = str(value)
-                    outline_symbolizer_el.append(parameter)
-
-        rule_el = make_rule_element(filter, outline_symbolizer_el, line_symbolizer_el, inline_symbolizer_el)
-        rule_els.append(rule_el)
+    for (filter, values) in filtered_property_declarations(declarations, property_names):
     
-    return rule_els
+        width = values.has_key('line-width') and values['line-width'].value
+        color = values.has_key('line-color') and values['line-color'].value
 
-def get_text_rule_groups(declarations):
-    """ Given a Map element, a Layer element, and a list of declarations,
-        create new Style elements with a TextSymbolizer, add them to Map
-        and refer to them in Layer.
+        opacity = values.has_key('line-opacity') and values['line-opacity'].value or None
+        join = values.has_key('line-join') and values['line-join'].value or None
+        cap = values.has_key('line-cap') and values['line-cap'].value or None
+        dashes = values.has_key('line-dasharray') and values['line-dasharray'].value or None
+
+        line_symbolizer = color and width and output.LineSymbolizer(color, width, opacity, join, cap, dashes) or False
+
+        width = values.has_key('inline-width') and values['inline-width'].value
+        color = values.has_key('inline-color') and values['inline-color'].value
+
+        opacity = values.has_key('inline-opacity') and values['inline-opacity'].value or None
+        join = values.has_key('inline-join') and values['inline-join'].value or None
+        cap = values.has_key('inline-cap') and values['inline-cap'].value or None
+        dashes = values.has_key('inline-dasharray') and values['inline-dasharray'].value or None
+
+        inline_symbolizer = color and width and output.LineSymbolizer(color, width, opacity, join, cap, dashes) or False
+
+        # outline requires regular line to have a meaningful width
+        width = values.has_key('outline-width') and values.has_key('line-width') \
+            and values['line-width'].value + values['outline-width'].value * 2
+        color = values.has_key('outline-color') and values['outline-color'].value
+
+        opacity = values.has_key('outline-opacity') and values['outline-opacity'].value or None
+        join = values.has_key('outline-join') and values['outline-join'].value or None
+        cap = values.has_key('outline-cap') and values['outline-cap'].value or None
+        dashes = values.has_key('outline-dasharray') and values['outline-dasharray'].value or None
+
+        outline_symbolizer = color and width and output.LineSymbolizer(color, width, opacity, join, cap, dashes) or False
+        
+        if outline_symbolizer or line_symbolizer or inline_symbolizer:
+            rules.append(make_rule(filter, outline_symbolizer, line_symbolizer, inline_symbolizer))
+
+    return rules
+
+def get_text_rule_groups(declarations, **kwargs):
+    """ Given a list of declarations, return a list of output.Rule objects.
     """
     property_map = {'text-face-name': 'face_name', 'text-size': 'size', 
                     'text-ratio': 'text_ratio', 'text-wrap-width': 'wrap_width', 'text-spacing': 'spacing',
-                    'text-label-position-tolerance': 'label_position_tolerance','text-transform':'text_transform'
+                    'text-label-position-tolerance': 'label_position_tolerance','text-transform':'text_transform',
                     'text-max-char-angle-delta': 'max_char_angle_delta', 'text-fill': 'fill',
                     'text-halo-fill': 'halo_fill', 'text-halo-radius': 'halo_radius',
                     'text-dx': 'dx', 'text-dy': 'dy', 'text-character-spacing': 'character_spacing',
@@ -868,12 +822,15 @@ def get_text_rule_groups(declarations):
                     'text-allow-overlap': 'allow_overlap', 'text-placement': 'placement',
                     'text-meta-output': 'meta-output', 'text-meta-writer': 'meta-writer'}
 
+    property_names = property_map.keys()
+    
     # pull out all the names
     text_names = [dec.selector.elements[1].names[0]
                   for dec in declarations
                   if len(dec.selector.elements) is 2 and len(dec.selector.elements[1].names) is 1]
-
-    rule_el_groups = []
+    
+    # a place to put groups
+    groups = []
     
     # a separate style element for each text name
     for text_name in set(text_names):
@@ -887,38 +844,54 @@ def get_text_rule_groups(declarations):
                                      or (len(dec.selector.elements) == 2
                                          and dec.selector.elements[1].names[0] in (text_name, '*')))]
         
-        # a place to put rule elements
-        rule_els = []
+        # a place to put rules
+        rules = []
         
-        for (filter, parameter_values) in filtered_property_declarations(name_declarations, property_map):
-            if 'face_name' in parameter_values and 'size' in parameter_values:
-                symbolizer_el = Element('TextSymbolizer')
-            else:
-                # we can do nothing with fontless text
-                continue
-
-            symbolizer_el.set('name', text_name)
+        for (filter, values) in filtered_property_declarations(name_declarations, property_names):
             
-            for (parameter, value) in parameter_values.items():
-                symbolizer_el.set(parameter, str(value))
-    
-            rule_el = make_rule_element(filter, symbolizer_el)
-            rule_els.append(rule_el)
+            face_name = values.has_key('text-face-name') and values['text-face-name'].value
+            size = values.has_key('text-size') and values['text-size'].value
+            color = values.has_key('text-fill') and values['text-fill'].value
+            
+            ratio = values.has_key('text-ratio') and values['text-ratio'].value or None
+            wrap_width = values.has_key('text-wrap-width') and values['text-wrap-width'].value or None
+            spacing = values.has_key('text-spacing') and values['text-spacing'].value or None
+            label_position_tolerance = values.has_key('text-label-position-tolerance') and values['text-label-position-tolerance'].value or None
+            max_char_angle_delta = values.has_key('text-max-char-angle-delta') and values['text-max-char-angle-delta'].value or None
+            halo_color = values.has_key('text-halo-fill') and values['text-halo-fill'].value or None
+            halo_radius = values.has_key('text-halo-radius') and values['text-halo-radius'].value or None
+            dx = values.has_key('text-dx') and values['text-dx'].value or None
+            dy = values.has_key('text-dy') and values['text-dy'].value or None
+            avoid_edges = values.has_key('text-avoid-edges') and values['text-avoid-edges'].value or None
+            min_distance = values.has_key('text-min-distance') and values['text-min-distance'].value or None
+            allow_overlap = values.has_key('text-allow-overlap') and values['text-allow-overlap'].value or None
+            placement = values.has_key('text-placement') and values['text-placement'].value or None
+            text_transform = values.has_key('text-transform') and values['text-transform'].value or None
+            
+            symbolizer = face_name and size and color \
+                and output.TextSymbolizer(text_name, face_name, size, color, \
+                                          wrap_width, spacing, label_position_tolerance, \
+                                          max_char_angle_delta, halo_color, halo_radius, dx, dy, \
+                                          avoid_edges, min_distance, allow_overlap, placement, \
+                                          text_transform)
+            
+            if symbolizer:
+                rules.append(make_rule(filter, symbolizer))
         
-        rule_el_groups.append((text_name, rule_els))
+        groups.append((text_name, rules))
+    
+    return dict(groups)
 
-    return rule_el_groups
-
-def postprocess_symbolizer_image_file(symbolizer_el, temp_name, **kwargs):
-    """ Given a symbolizer element, output directory name, and temporary
-        file name, find the "file" attribute in the symbolizer and save it
-        to a target location as a PNG while noting its dimensions.
+def postprocess_symbolizer_image_file(file_name, temp_name, **kwargs):
+    """ Given a file name, an output directory name, and a temporary
+        file name, save the file to a temporary location as a PNG
+        while noting its dimensions.
     """
     # read the image to get some more details
-    img_path = symbolizer_el.get('file')
+    img_path = file_name
 
     msg('reading symbol: %s' % img_path)
-    
+
     target_dir = kwargs.get('target_dir',tempfile.gettempdir())
     
     move_local_files = kwargs.get('move_local_files')
@@ -928,12 +901,16 @@ def postprocess_symbolizer_image_file(symbolizer_el, temp_name, **kwargs):
     # if not url throw error?
     
     image_name, ext = os.path.splitext(img_path)
-
+    if os.path.exists(img_path) and not move_local_files:
+        path = img_path
+    elif dir:
+        path = os.path.join(target_dir, os.path.basename(img_path))
+    
     # support latest mapnik features of auto-detection
     # of image sizes and jpeg reading support...
     ver = kwargs.get('mapnik_version',None)
     # http://trac.mapnik.org/ticket/508
-    mapnik_auto_image_support = (ver >= 701) or (ver >= 700 and 'pattern' not in symbolizer_el.tag)
+    mapnik_auto_image_support = (ver >= 700)
     mapnik_formats = ['.png','tif','tiff']
     if ver >= 800:
         mapnik_formats.extend(['.jpg','.jpeg'])
@@ -964,11 +941,6 @@ def postprocess_symbolizer_image_file(symbolizer_el, temp_name, **kwargs):
             is_local = True
             msg('found locally cached file: %s' %  dest_file)
 
-    # finally, early return if possible
-    if is_local and os.path.exists(dest_file) and mapnik_auto_image_support and supported_type:
-        symbolizer_el.set('file', dest_file)
-        return
-    
     # throw error if we need to detect image sizes and can't because pil is missing
     if not mapnik_auto_image_support and not HAS_PIL:
         raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
@@ -983,26 +955,18 @@ def postprocess_symbolizer_image_file(symbolizer_el, temp_name, **kwargs):
     
     im = Image.open(StringIO.StringIO(img_data))
 
-    if not mapnik_auto_image_support:
-        # todo - providing widths has no effect as we don't resize
-        #if not (symbolizer_el.get('width', False) and symbolizer_el.get('height', False)):
-        symbolizer_el.set('width', str(im.size[0]))
-        symbolizer_el.set('height', str(im.size[1]))
-        symbolizer_el.set('type', target_ext[1:])
-
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
 
     im.save(dest_file)
-    symbolizer_el.set('file', dest_file)
     os.chmod(dest_file, 0644)
 
-    
+    return dest_file, target_ext[1:], im.size[0], im.size[1]
 
 def get_shield_rule_groups(declarations, **kwargs):
-    """ Given a Map element, a Layer element, and a list of declarations,
-        create new Style elements with a TextSymbolizer, add them to Map
-        and refer to them in Layer.
+    """ Given a list of declarations, return a list of output.Rule objects.
+        
+        Optionally provide an output directory for local copies of image files.
     """
     property_map = {'shield-face-name': 'face_name', 'shield-size': 'size', 
                     'shield-fill': 'fill', 'shield-character-spacing': 'character_spacing',
@@ -1011,12 +975,15 @@ def get_shield_rule_groups(declarations, **kwargs):
                     'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height',
                     'shield-meta-output': 'meta-output', 'shield-meta-writer': 'meta-writer'}
 
+    property_names = property_map.keys()
+    
     # pull out all the names
     text_names = [dec.selector.elements[1].names[0]
                   for dec in declarations
                   if len(dec.selector.elements) is 2 and len(dec.selector.elements[1].names) is 1]
-
-    rule_el_groups = []
+    
+    # a place to put groups
+    groups = []
     
     # a separate style element for each text name
     for text_name in set(text_names):
@@ -1030,36 +997,43 @@ def get_shield_rule_groups(declarations, **kwargs):
                                      or (len(dec.selector.elements) == 2
                                          and dec.selector.elements[1].names[0] in (text_name, '*')))]
         
-        # a place to put rule elements
-        rule_els = []
+        # a place to put rules
+        rules = []
         
-        for (filter, parameter_values) in filtered_property_declarations(name_declarations, property_map):
-            if 'file' in parameter_values and 'face_name' in parameter_values and 'size' in parameter_values:
-                symbolizer_el = Element('ShieldSymbolizer')
-            else:
-                # we can do nothing with fontless text
-                continue
-
-            symbolizer_el.set('name', text_name)
-            symbolizer_el.set('placement', 'line')
+        for (filter, values) in filtered_property_declarations(name_declarations, property_names):
+        
+            face_name = values.has_key('shield-face-name') and values['shield-face-name'].value or None
+            size = values.has_key('shield-size') and values['shield-size'].value or None
             
-            for (parameter, value) in parameter_values.items():
-                symbolizer_el.set(parameter, str(value))
-    
-            if symbolizer_el.get('file', False):
-                postprocess_symbolizer_image_file(symbolizer_el, 'shield', **kwargs)
-    
-                rule_el = make_rule_element(filter, symbolizer_el)
-                rule_els.append(rule_el)
+            file, filetype, width, height \
+                = values.has_key('shield-file') \
+                and postprocess_symbolizer_image_file(str(values['shield-file'].value), 'shield', **kwargs) \
+                or (None, None, None, None)
+            
+            width = values.has_key('shield-width') and values['shield-width'].value or width
+            height = values.has_key('shield-height') and values['shield-height'].value or height
+            
+            color = values.has_key('shield-fill') and values['shield-fill'].value or None
+            min_distance = values.has_key('shield-min-distance') and values['shield-min-distance'].value or None
+            
+            character_spacing = values.has_key('shield-character-spacing') and values['shield-character-spacing'].value or None
+            line_spacing = values.has_key('shield-line-spacing') and values['shield-line-spacing'].value or None
+            spacing = values.has_key('shield-spacing') and values['shield-spacing'].value or None
+            
+            symbolizer = ((face_name and size) or file) \
+                and output.ShieldSymbolizer(text_name, face_name, size, file, filetype, 
+                                            width, height, color, min_distance,
+                                            character_spacing, line_spacing, spacing)
+            
+            if symbolizer:
+                rules.append(make_rule(filter, symbolizer))
         
-        rule_el_groups.append((text_name, rule_els))
-
-    return rule_el_groups
+        groups.append((text_name, rules))
+    
+    return dict(groups)
 
 def get_point_rules(declarations, **kwargs):
-    """ Given a Map element, a Layer element, and a list of declarations,
-        create a new Style element with a PointSymbolizer, add it to Map
-        and refer to it in Layer.
+    """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
     """
@@ -1068,28 +1042,30 @@ def get_point_rules(declarations, **kwargs):
                     'point-allow-overlap': 'allow_overlap',
                     'point-meta-output': 'meta-output', 'point-meta-writer': 'meta-writer'}
     
-    # a place to put rule elements
-    rule_els = []
+    property_names = property_map.keys()
     
-    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
-        symbolizer_el = Element('PointSymbolizer')
+    # a place to put rules
+    rules = []
+    
+    for (filter, values) in filtered_property_declarations(declarations, property_names):
+        point_file, point_type, point_width, point_height \
+            = values.has_key('point-file') \
+            and postprocess_symbolizer_image_file(str(values['point-file'].value), 'point', **kwargs) \
+            or (None, None, None, None)
         
-        # collect all the applicable declarations into a symbolizer element
-        for (parameter, value) in parameter_values.items():
-            symbolizer_el.set(parameter, str(value))
+        point_width = values.has_key('point-width') and values['point-width'].value or point_width
+        point_height = values.has_key('point-height') and values['point-height'].value or point_height
+        point_allow_overlap = values.has_key('point-allow-overlap') and values['point-allow-overlap'].value or None
+        
+        symbolizer = point_file and output.PointSymbolizer(point_file, point_type, point_width, point_height, point_allow_overlap)
+
+        if symbolizer:
+            rules.append(make_rule(filter, symbolizer))
     
-        if symbolizer_el.get('file', False):
-            postprocess_symbolizer_image_file(symbolizer_el, 'point', **kwargs)
-            
-            rule_el = make_rule_element(filter, symbolizer_el)
-            rule_els.append(rule_el)
-    
-    return rule_els
+    return rules
 
 def get_polygon_pattern_rules(declarations, **kwargs):
-    """ Given a Map element, a Layer element, and a list of declarations,
-        create a new Style element with a PolygonPatternSymbolizer, add it to Map
-        and refer to it in Layer.
+    """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
     """
@@ -1098,28 +1074,29 @@ def get_polygon_pattern_rules(declarations, **kwargs):
                     'polygon-meta-output': 'meta-output', 'polygon-meta-writer': 'meta-writer'}
 
     
-    # a place to put rule elements
-    rule_els = []
+    property_names = property_map.keys()
     
-    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
-        symbolizer_el = Element('PolygonPatternSymbolizer')
+    # a place to put rules
+    rules = []
+    
+    for (filter, values) in filtered_property_declarations(declarations, property_names):
+    
+        poly_pattern_file, poly_pattern_type, poly_pattern_width, poly_pattern_height \
+            = values.has_key('polygon-pattern-file') \
+            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), 'polygon-pattern', **kwargs) \
+            or (None, None, None, None)
         
-        # collect all the applicable declarations into a symbolizer element
-        for (parameter, value) in parameter_values.items():
-            symbolizer_el.set(parameter, str(value))
+        poly_pattern_width = values.has_key('polygon-pattern-width') and values['polygon-pattern-width'].value or poly_pattern_width
+        poly_pattern_height = values.has_key('polygon-pattern-height') and values['polygon-pattern-height'].value or poly_pattern_height
+        symbolizer = poly_pattern_file and output.PolygonPatternSymbolizer(poly_pattern_file, poly_pattern_type, poly_pattern_width, poly_pattern_height)
+        
+        if symbolizer:
+            rules.append(make_rule(filter, symbolizer))
     
-        if symbolizer_el.get('file', False):
-            postprocess_symbolizer_image_file(symbolizer_el, 'polygon-pattern', **kwargs)
-            
-            rule_el = make_rule_element(filter, symbolizer_el)
-            rule_els.append(rule_el)
-    
-    return rule_els
+    return rules
 
 def get_line_pattern_rules(declarations, **kwargs):
-    """ Given a Map element, a Layer element, and a list of declarations,
-        create a new Style element with a LinePatternSymbolizer, add it to Map
-        and refer to it in Layer.
+    """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
     """
@@ -1128,23 +1105,26 @@ def get_line_pattern_rules(declarations, **kwargs):
                     'line-pattern-meta-output': 'meta-output', 'line-pattern-meta-writer': 'meta-writer'}
 
     
-    # a place to put rule elements
-    rule_els = []
+    property_names = property_map.keys()
     
-    for (filter, parameter_values) in filtered_property_declarations(declarations, property_map):
-        symbolizer_el = Element('LinePatternSymbolizer')
+    # a place to put rules
+    rules = []
+    
+    for (filter, values) in filtered_property_declarations(declarations, property_names):
+    
+        line_pattern_file, line_pattern_type, line_pattern_width, line_pattern_height \
+            = values.has_key('line-pattern-file') \
+            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), 'line-pattern', **kwargs) \
+            or (None, None, None, None)
         
-        # collect all the applicable declarations into a symbolizer element
-        for (parameter, value) in parameter_values.items():
-            symbolizer_el.set(parameter, str(value))
+        line_pattern_width = values.has_key('line-pattern-width') and values['line-pattern-width'].value or line_pattern_width
+        line_pattern_height = values.has_key('line-pattern-height') and values['line-pattern-height'].value or line_pattern_height
+        symbolizer = line_pattern_file and output.LinePatternSymbolizer(line_pattern_file, line_pattern_type, line_pattern_width, line_pattern_height)
+        
+        if symbolizer:
+            rules.append(make_rule(filter, symbolizer))
     
-        if symbolizer_el.get('file', False):
-            postprocess_symbolizer_image_file(symbolizer_el, 'line-pattern', **kwargs)
-            
-            rule_el = make_rule_element(filter, symbolizer_el)
-            rule_els.append(rule_el)
-    
-    return rule_els
+    return rules
 
 def get_applicable_declarations(element, declarations):
     """ Given an XML element and a list of declarations, return the ones
@@ -1425,7 +1405,6 @@ def compile(src,**kwargs):
        701
        
     """
-
     global VERBOSE
     if kwargs.get('verbose'):
         VERBOSE = True
@@ -1468,91 +1447,99 @@ def compile(src,**kwargs):
         else:       
             msg('Writing all remote files to temporary directory: %s' % tmp_dir)    
 
-    doc = ElementTree.parse(urllib.urlopen(src))
-    map_el = doc.getroot()
+    try:
+        # guessing src is a literal XML string?
+        map_el = ElementTree.fromstring(src)
+        base = None
+    except:
+        # or a URL or file location?
+        doc = ElementTree.parse(urllib.urlopen(src))
+        map_el = doc.getroot()
+        base = src
+    
+    declarations = extract_declarations(map_el, base)
+    
+    # a list of layers and a sequential ID generator
+    layers, ids = [], (i for i in xrange(1, 999999))
+    
+    for layer_el in map_el.findall('Layer'):
+    
+        # nevermind with this one
+        if layer_el.get('status', None) in ('off', '0', 0):
+            continue
+        
+        for parameter_el in layer_el.find('Datasource').findall('Parameter'):
+            if parameter_el.get('name', None) == 'table':
+                # remove line breaks from possible SQL
+                # http://trac.mapnik.org/ticket/173
+                if not kwargs.get('mapnik_version') >= 601:
+                    parameter_el.text = parameter_el.text.replace('\r', ' ').replace('\n', ' ')
+            elif parameter_el.get('name', None) == 'file':
+                # make sure we localize any remote files
+                if parameter_el.get('type', None) == 'shape':
+                    # handle a local shapefile or fetch a remote, zipped shapefile
+                    msg('Handling shapefile datasource...')
+                    parameter_el.text = localize_shapefile(src, parameter_el.text, **kwargs)
+                    # TODO - support datasource reprojection to make map srs
+                    # TODO - support automatically indexing shapefiles
+                else: # ogr,raster, gdal, sqlite
+                    # attempt to generically handle other file based datasources
+                    msg('Handling generic datasource...')
+                    parameter_el.text = localize_datasource(src, parameter_el.text, **kwargs)
+
+            # TODO - consider custom support for other mapnik datasources:
+            # sqlite, oracle, osm, kismet, gdal, raster, rasterlite
+
+        layer_declarations = get_applicable_declarations(layer_el, declarations)
+        
+        # a list of styles
+        styles = []
+        
+        styles.append(output.Style('polygon style %d' % ids.next(),
+                                   get_polygon_rules(layer_declarations, **kwargs)))
+
+        styles.append(output.Style('polygon pattern style %d' % ids.next(),
+                                   get_polygon_pattern_rules(layer_declarations, **kwargs)))
+
+        styles.append(output.Style('marker style %d' % ids.next(),
+                           get_marker_rules(layer_declarations,**kwargs)))
+
+        styles.append(output.Style('raster style %d' % ids.next(),
+                           get_raster_rules(layer_declarations,**kwargs)))
+
+        styles.append(output.Style('line style %d' % ids.next(),
+                                   get_line_rules(layer_declarations, **kwargs)))
+
+        styles.append(output.Style('line pattern style %d' % ids.next(),
+                                   get_line_pattern_rules(layer_declarations, **kwargs)))
+
+        for (shield_name, shield_rules) in get_shield_rule_groups(layer_declarations, **kwargs).items():
+            styles.append(output.Style('shield style %d (%s)' % (ids.next(), shield_name), shield_rules))
+
+        for (text_name, text_rules) in get_text_rule_groups(layer_declarations, **kwargs).items():
+            styles.append(output.Style('text style %d (%s)' % (ids.next(), text_name), text_rules))
+
+        styles.append(output.Style('point style %d' % ids.next(),
+                                   get_point_rules(layer_declarations, **kwargs)))
+                                   
+        styles = [s for s in styles if s.rules]
+        
+        if styles:
+            datasource_params = dict([(p.get('name'), p.text) for p in layer_el.find('Datasource').findall('Parameter')])
+            datasource = output.Datasource(**datasource_params)
+            
+            layer = output.Layer('layer %d' % ids.next(),
+                                 datasource, styles,
+                                 layer_el.get('srs', None),
+                                 layer_el.get('min_zoom', None) and int(layer_el.get('min_zoom')) or None,
+                                 layer_el.get('max_zoom', None) and int(layer_el.get('max_zoom')) or None)
+    
+            layers.append(layer)
+    
+    map_attrs = get_map_attributes(get_applicable_declarations(map_el, declarations))
     
     # if a target srs is profiled, override whatever is in mml
     if kwargs.get('srs'):
         map_el.set('srs',kwargs.get('srs'))
     
-    declarations = extract_declarations(map_el, src)
-    
-    add_map_style(map_el, get_applicable_declarations(map_el, declarations),**kwargs)
-
-    for layer in map_el.findall('Layer'):
-    
-        ds_params = layer.find('Datasource').findall('Parameter')
-        ds_type = [i.text for i in ds_params if i.get('name','') == 'type']
-        if len(ds_type):
-            ds_type = ds_type[0]
-        
-        for parameter in ds_params:
-            if ds_type == 'postgis' and parameter.get('name', None) == 'table':
-                # remove line breaks from possible SQL
-                # http://trac.mapnik.org/ticket/173
-                if not kwargs.get('mapnik_version',None) >= 601:
-                    parameter.text = parameter.text.replace('\r', ' ').replace('\n', ' ')
-            elif parameter.get('name', None) == 'file':
-                # make sure we localize any remote files
-                if parameter.text:
-                    if ds_type == 'shape':
-                        # handle a local shapefile or fetch a remote, zipped shapefile
-                        msg('Handling shapefile datasource...')
-                        parameter.text = localize_shapefile(src, parameter.text, **kwargs)
-                        # TODO - support datasource reprojection to make map srs
-                        # TODO - support automatically indexing shapefiles
-                    else: # ogr,raster, gdal, sqlite
-                        # attempt to generically handle other file based datasources
-                        msg('Handling generic datasource...')
-                        parameter.text = localize_datasource(src, parameter.text, **kwargs)
-                        
-            # TODO - consider custom support for other mapnik datasources:
-            # sqlite, oracle, osm, kismet, gdal, raster, rasterlite
-
-        if layer.get('status') == 'off':
-            # don't bother
-            continue
-    
-        # the default...
-        #layer.set('status', 'off')
-
-        layer_declarations = get_applicable_declarations(layer, declarations)
-                
-        insert_layer_style(map_el, layer, 'polygon style %d' % next_counter(),
-                           get_polygon_rules(layer_declarations,**kwargs) + \
-                           get_polygon_pattern_rules(layer_declarations, **kwargs))
-        
-        insert_layer_style(map_el, layer, 'line style %d' % next_counter(),
-                           get_line_rules(layer_declarations,**kwargs) + \
-                           get_line_pattern_rules(layer_declarations, **kwargs))
-
-        insert_layer_style(map_el, layer, 'marker style %d' % next_counter(),
-                           get_marker_rules(layer_declarations,**kwargs))
-
-        insert_layer_style(map_el, layer, 'raster style %d' % next_counter(),
-                           get_raster_rules(layer_declarations,**kwargs))
-
-        for (shield_name, shield_rule_els) in get_shield_rule_groups(layer_declarations, **kwargs):
-            insert_layer_style(map_el, layer, 'shield style %d (%s)' % (next_counter(), shield_name), shield_rule_els)
-
-        for (text_name, text_rule_els) in get_text_rule_groups(layer_declarations):
-            insert_layer_style(map_el, layer, 'text style %d (%s)' % (next_counter(), text_name), text_rule_els)
-
-        insert_layer_style(map_el, layer, 'point style %d' % next_counter(), \
-            get_point_rules(layer_declarations, **kwargs))
-        
-        layer.set('name', 'layer %d' % next_counter())
-        
-        if 'id' in layer.attrib:
-            del layer.attrib['id']
-    
-        if 'class' in layer.attrib:
-            del layer.attrib['class']
-
-    if kwargs.get('pretty',None):
-        indent(map_el)
-    
-    xml_out = StringIO.StringIO()
-    doc.write(xml_out)
-    
-    return xml_out.getvalue()
+    return output.Map(map_el.attrib.get('srs', None), layers, **map_attrs)
