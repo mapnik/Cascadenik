@@ -223,10 +223,18 @@ class LineSymbolizer:
         return 'Line(%s, %s)' % (self.color, self.width)
 
     def to_mapnik(self):
+        line_caps = {'butt': mapnik.line_cap.BUTT_CAP,
+                     'round': mapnik.line_cap.ROUND_CAP,
+                     'square': mapnik.line_cap.SQUARE_CAP}
+
+        line_joins = {'miter': mapnik.line_join.MITER_JOIN,
+                      'round': mapnik.line_join.ROUND_JOIN,
+                      'bevel': mapnik.line_join.BEVEL_JOIN}
+    
         stroke = mapnik.Stroke(mapnik.Color(str(self.color)), self.width)
         stroke.opacity = self.opacity or stroke.opacity
-        stroke.line_cap = self.cap or stroke.line_cap
-        stroke.line_join = self.join or stroke.line_join
+        stroke.line_cap = self.cap and line_caps[self.cap] or stroke.line_cap
+        stroke.line_join = self.join and line_joins[self.join] or stroke.line_join
         if self.dashes:
             stroke.add_dash(*self.dashes.values)
         sym = mapnik.LineSymbolizer(stroke)
