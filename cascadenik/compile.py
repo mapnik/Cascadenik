@@ -846,17 +846,12 @@ def locally_cache_remote_file(href, dir):
     os.write(handle, urllib.urlopen(href).read())
     os.close(handle)
 
-    print >> sys.stderr, 'copy remote file:', href, 'to', local_path
-    
     return local_path
 
-def postprocess_symbolizer_image_file(file_href, temp_name, target_dir, **kwargs):
-    """ Given a file name, an output directory name, and a temporary
-        file name, save the file to a temporary location as a PNG
-        while noting its dimensions.
+def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
+    """ Given a file name and an output directory name, save the image
+        file to a temporary location while noting its dimensions.
     """
-    print >> sys.stderr, 'postprocessing:', file_href, target_dir, kwargs
-    
     scheme, n, path, p, q, f = urlparse.urlparse(file_href)
 
     if scheme == 'http':
@@ -873,8 +868,6 @@ def postprocess_symbolizer_image_file(file_href, temp_name, target_dir, **kwargs
         path = os.path.join(target_dir, path)
     else:
         path = rel_path
-
-    print >> sys.stderr, 'keeping local file:', path
 
     msg('reading symbol: %s' % path)
 
@@ -958,7 +951,7 @@ def get_shield_rule_groups(declarations, **kwargs):
             
             file, filetype, width, height \
                 = values.has_key('shield-file') \
-                and postprocess_symbolizer_image_file(str(values['shield-file'].value), 'shield', **kwargs) \
+                and postprocess_symbolizer_image_file(str(values['shield-file'].value), **kwargs) \
                 or (None, None, None, None)
             
             width = values.has_key('shield-width') and values['shield-width'].value or width
@@ -1001,7 +994,7 @@ def get_point_rules(declarations, **kwargs):
     for (filter, values) in filtered_property_declarations(declarations, property_names):
         point_file, point_type, point_width, point_height \
             = values.has_key('point-file') \
-            and postprocess_symbolizer_image_file(str(values['point-file'].value), 'point', **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['point-file'].value), **kwargs) \
             or (None, None, None, None)
         
         point_width = values.has_key('point-width') and values['point-width'].value or point_width
@@ -1034,7 +1027,7 @@ def get_polygon_pattern_rules(declarations, **kwargs):
     
         poly_pattern_file, poly_pattern_type, poly_pattern_width, poly_pattern_height \
             = values.has_key('polygon-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), 'polygon-pattern', **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), **kwargs) \
             or (None, None, None, None)
         
         poly_pattern_width = values.has_key('polygon-pattern-width') and values['polygon-pattern-width'].value or poly_pattern_width
@@ -1065,7 +1058,7 @@ def get_line_pattern_rules(declarations, **kwargs):
     
         line_pattern_file, line_pattern_type, line_pattern_width, line_pattern_height \
             = values.has_key('line-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), 'line-pattern', **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), **kwargs) \
             or (None, None, None, None)
         
         line_pattern_width = values.has_key('line-pattern-width') and values['line-pattern-width'].value or line_pattern_width
@@ -1411,8 +1404,6 @@ def compile(src,**kwargs):
 
         base = src
             
-    print >> sys.stderr, 'base:', base
-    
     declarations = extract_declarations(map_el, base)
     
     # a list of layers and a sequential ID generator

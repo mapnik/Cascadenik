@@ -24,6 +24,9 @@ class color_transparent(color):
 
 class uri:
     def __init__(self, address, base=''):
+        # sometimes comes in as None
+        base = base or ''
+    
         addr_scheme, n, addr_path, p, q, f = urlparse.urlparse(address)
         base_scheme, n, base_path, p, q, f = urlparse.urlparse(base)
         
