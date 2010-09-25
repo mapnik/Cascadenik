@@ -232,13 +232,6 @@ properties = {
     # path to image file
     'point-file': uri, # none
 
-    # px (default 4), generally omit this and let PIL handle it
-    'point-width': int,
-    'point-height': int,
-
-    # image type: png or tiff, omitted thanks to PIL
-    'point-type': None,
-
     # true/false
     'point-allow-overlap': boolean,
 
@@ -323,13 +316,6 @@ properties = {
     # path to image file (default none)
     'polygon-pattern-file': uri,
 
-    # px (default 4), generally omit this and let PIL handle it
-    'polygon-pattern-width': int,
-    'polygon-pattern-height': int,
-
-    # image type: png or tiff, omitted thanks to PIL
-    'polygon-pattern-type': None,
-
     # metawriter support
     'polygon-pattern-meta-output': str,
 
@@ -339,13 +325,6 @@ properties = {
 
     # path to image file (default none)
     'line-pattern-file': uri,
-
-    # px (default 4), generally omit this and let PIL handle it
-    'line-pattern-width': int,
-    'line-pattern-height': int,
-
-    # image type: png or tiff, omitted thanks to PIL
-    'line-pattern-type': None,
 
     # metawriter support
     'line-pattern-meta-output': str,
@@ -380,13 +359,6 @@ properties = {
 
     # path to image file (default none)
     'shield-file': uri,
-
-    # px (default 4), generally omit this and let PIL handle it
-    'shield-width': int,
-    'shield-height': int,
-
-    # image type: png or tiff, omitted thanks to PIL
-    'shield-type': None,
 
     # metawriter support
     'shield-meta-output': str,

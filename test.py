@@ -1419,17 +1419,11 @@ class StyleRuleTests(unittest.TestCase):
             Layer
             {
                 point-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png');
-                point-width: 16;
-                point-height: 16;
                 point-allow-overlap: true;
 
                 polygon-pattern-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png');
-                polygon-pattern-width: 16;
-                polygon-pattern-height: 16;
 
                 line-pattern-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png');
-                line-pattern-width: 16;
-                line-pattern-height: 16;
             }
         """
 
@@ -1437,19 +1431,11 @@ class StyleRuleTests(unittest.TestCase):
 
         point_rules = get_point_rules(declarations, target_dir=self.tmpdir)
         
-        self.assertEqual(16, point_rules[0].symbolizers[0].width)
-        self.assertEqual(16, point_rules[0].symbolizers[0].height)
         self.assertEqual(boolean(True), point_rules[0].symbolizers[0].allow_overlap)
 
         polygon_pattern_rules = get_polygon_pattern_rules(declarations, target_dir=self.tmpdir)
-        
-        self.assertEqual(16, polygon_pattern_rules[0].symbolizers[0].width)
-        self.assertEqual(16, polygon_pattern_rules[0].symbolizers[0].height)
 
         line_pattern_rules = get_line_pattern_rules(declarations, target_dir=self.tmpdir)
-        
-        self.assertEqual(16, line_pattern_rules[0].symbolizers[0].width)
-        self.assertEqual(16, line_pattern_rules[0].symbolizers[0].height)
 
     def testStyleRules14(self):
         s = """
@@ -1465,8 +1451,6 @@ class StyleRuleTests(unittest.TestCase):
             Layer just_image
             {
                 shield-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png');
-                shield-width: 16;
-                shield-height: 16;
                 
                 shield-min-distance: 5;
             }
@@ -1477,8 +1461,6 @@ class StyleRuleTests(unittest.TestCase):
                 shield-size: 12;
                 
                 shield-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png');
-                shield-width: 16;
-                shield-height: 16;
                 
                 shield-fill: #f00;
                 shield-min-distance: 5;
@@ -1494,15 +1476,11 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['just_text'][0].symbolizers[0].color)
         self.assertEqual(5, shield_rule_groups['just_text'][0].symbolizers[0].min_distance)
 
-        self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].width)
-        self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].height)
         self.assertEqual(5, shield_rule_groups['just_image'][0].symbolizers[0].min_distance)
         
         self.assertEqual('Helvetica', shield_rule_groups['both'][0].symbolizers[0].face_name)
         self.assertEqual(12, shield_rule_groups['both'][0].symbolizers[0].size)
         self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['both'][0].symbolizers[0].color)
-        self.assertEqual(16, shield_rule_groups['both'][0].symbolizers[0].width)
-        self.assertEqual(16, shield_rule_groups['both'][0].symbolizers[0].height)
         self.assertEqual(5, shield_rule_groups['both'][0].symbolizers[0].min_distance)
 
 class CompileXMLTests(unittest.TestCase):
@@ -1742,8 +1720,6 @@ class CompileXMLTests(unittest.TestCase):
                         shield-size: 12;
                         
                         shield-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png');
-                        shield-width: 16;
-                        shield-height: 16;
                         
                         shield-fill: #f00;
                         shield-min-distance: 5;

@@ -955,7 +955,7 @@ def get_shield_rule_groups(declarations, **kwargs):
                     'shield-fill': 'fill', 'shield-character-spacing': 'character_spacing',
                     'shield-line-spacing': 'line_spacing',
                     'shield-spacing': 'spacing', 'shield-min-distance': 'min_distance',
-                    'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height',
+                    'shield-file': 'file',
                     'shield-meta-output': 'meta-output', 'shield-meta-writer': 'meta-writer'}
 
     property_names = property_map.keys()
@@ -993,9 +993,6 @@ def get_shield_rule_groups(declarations, **kwargs):
                 and postprocess_symbolizer_image_file(str(values['shield-file'].value), 'shield', **kwargs) \
                 or (None, None, None, None)
             
-            width = values.has_key('shield-width') and values['shield-width'].value or width
-            height = values.has_key('shield-height') and values['shield-height'].value or height
-            
             color = values.has_key('shield-fill') and values['shield-fill'].value or None
             min_distance = values.has_key('shield-min-distance') and values['shield-min-distance'].value or None
             
@@ -1004,8 +1001,7 @@ def get_shield_rule_groups(declarations, **kwargs):
             spacing = values.has_key('shield-spacing') and values['shield-spacing'].value or None
             
             symbolizer = ((face_name and size) or file) \
-                and output.ShieldSymbolizer(text_name, face_name, size, file, filetype, 
-                                            width, height, color, min_distance,
+                and output.ShieldSymbolizer(text_name, face_name, size, file, color, min_distance,
                                             character_spacing, line_spacing, spacing)
             
             if symbolizer:
@@ -1020,8 +1016,7 @@ def get_point_rules(declarations, **kwargs):
         
         Optionally provide an output directory for local copies of image files.
     """
-    property_map = {'point-file': 'file', 'point-width': 'width',
-                    'point-height': 'height', 'point-type': 'type',
+    property_map = {'point-file': 'file', 
                     'point-allow-overlap': 'allow_overlap',
                     'point-meta-output': 'meta-output', 'point-meta-writer': 'meta-writer'}
     
@@ -1036,11 +1031,9 @@ def get_point_rules(declarations, **kwargs):
             and postprocess_symbolizer_image_file(str(values['point-file'].value), 'point', **kwargs) \
             or (None, None, None, None)
         
-        point_width = values.has_key('point-width') and values['point-width'].value or point_width
-        point_height = values.has_key('point-height') and values['point-height'].value or point_height
         point_allow_overlap = values.has_key('point-allow-overlap') and values['point-allow-overlap'].value or None
         
-        symbolizer = point_file and output.PointSymbolizer(point_file, point_type, point_width, point_height, point_allow_overlap)
+        symbolizer = point_file and output.PointSymbolizer(point_file, point_allow_overlap)
 
         if symbolizer:
             rules.append(make_rule(filter, symbolizer))
@@ -1052,8 +1045,7 @@ def get_polygon_pattern_rules(declarations, **kwargs):
         
         Optionally provide an output directory for local copies of image files.
     """
-    property_map = {'polygon-pattern-file': 'file', 'polygon-pattern-width': 'width',
-                    'polygon-pattern-height': 'height', 'polygon-pattern-type': 'type',
+    property_map = {'polygon-pattern-file': 'file', 
                     'polygon-meta-output': 'meta-output', 'polygon-meta-writer': 'meta-writer'}
 
     
@@ -1069,9 +1061,7 @@ def get_polygon_pattern_rules(declarations, **kwargs):
             and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), 'polygon-pattern', **kwargs) \
             or (None, None, None, None)
         
-        poly_pattern_width = values.has_key('polygon-pattern-width') and values['polygon-pattern-width'].value or poly_pattern_width
-        poly_pattern_height = values.has_key('polygon-pattern-height') and values['polygon-pattern-height'].value or poly_pattern_height
-        symbolizer = poly_pattern_file and output.PolygonPatternSymbolizer(poly_pattern_file, poly_pattern_type, poly_pattern_width, poly_pattern_height)
+        symbolizer = poly_pattern_file and output.PolygonPatternSymbolizer(poly_pattern_file)
         
         if symbolizer:
             rules.append(make_rule(filter, symbolizer))
@@ -1083,8 +1073,7 @@ def get_line_pattern_rules(declarations, **kwargs):
         
         Optionally provide an output directory for local copies of image files.
     """
-    property_map = {'line-pattern-file': 'file', 'line-pattern-width': 'width',
-                    'line-pattern-height': 'height', 'line-pattern-type': 'type',
+    property_map = {'line-pattern-file': 'file', 
                     'line-pattern-meta-output': 'meta-output', 'line-pattern-meta-writer': 'meta-writer'}
 
     
@@ -1100,9 +1089,7 @@ def get_line_pattern_rules(declarations, **kwargs):
             and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), 'line-pattern', **kwargs) \
             or (None, None, None, None)
         
-        line_pattern_width = values.has_key('line-pattern-width') and values['line-pattern-width'].value or line_pattern_width
-        line_pattern_height = values.has_key('line-pattern-height') and values['line-pattern-height'].value or line_pattern_height
-        symbolizer = line_pattern_file and output.LinePatternSymbolizer(line_pattern_file, line_pattern_type, line_pattern_width, line_pattern_height)
+        symbolizer = line_pattern_file and output.LinePatternSymbolizer(line_pattern_file)
         
         if symbolizer:
             rules.append(make_rule(filter, symbolizer))

@@ -310,8 +310,8 @@ class TextSymbolizer:
         return sym
 
 class ShieldSymbolizer:
-    def __init__(self, name, face_name=None, size=None, file=None, filetype=None, \
-        width=None, height=None, color=None, min_distance=None, character_spacing=None, \
+    def __init__(self, name, face_name=None, size=None, file=None, \
+        color=None, min_distance=None, character_spacing=None, \
         line_spacing=None, spacing=None):
         
         assert (face_name and size) or file
@@ -319,8 +319,6 @@ class ShieldSymbolizer:
         assert type(name) is str
         assert face_name is None or type(face_name) is str
         assert size is None or type(size) is int
-        assert width is None or type(width) is int
-        assert height is None or type(height) is int
 
         assert color is None or color.__class__ is style.color
         assert character_spacing is None or type(character_spacing) is int
@@ -332,9 +330,6 @@ class ShieldSymbolizer:
         self.face_name = face_name
         self.size = size
         self.file = file
-        self.type = filetype
-        self.width = width
-        self.height = height
 
         self.color = color
         self.character_spacing = character_spacing
@@ -351,10 +346,7 @@ class ShieldSymbolizer:
                 self.face_name, 
                 self.size, 
                 mapnik.Color(str(self.color)) if self.color else None, 
-                self.file, 
-                self.type, 
-                self.width, 
-                self.height)
+                mapnik.PathExpression(self.file))
         
         sym.character_spacing = self.character_spacing or sym.character_spacing
         sym.line_spacing = self.line_spacing or sym.line_spacing
@@ -364,28 +356,22 @@ class ShieldSymbolizer:
         return sym
 
 class BasePointSymbolizer(object):
-    def __init__(self, file, filetype, width, height):
+    def __init__(self, file):
         assert type(file) is str
-        assert type(filetype) is str
-        assert type(width) is int
-        assert type(height) is int
 
         self.file = file
-        self.type = filetype
-        self.width = width
-        self.height = height
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self.file)
 
     def to_mapnik(self):
         sym_class = getattr(mapnik, self.__class__.__name__)
-        sym = sym_class(self.file, self.type, self.width, self.height)
+        sym = sym_class(mapnik.PathExpression(self.file))
         return sym
 
 class PointSymbolizer(BasePointSymbolizer):
-    def __init__(self, file, filetype, width, height, allow_overlap=None):
-        super(PointSymbolizer, self).__init__(file, filetype, width, height)
+    def __init__(self, file, allow_overlap=None):
+        super(PointSymbolizer, self).__init__(file)
 
         assert allow_overlap is None or allow_overlap.__class__ is style.boolean
 
@@ -397,7 +383,6 @@ class PointSymbolizer(BasePointSymbolizer):
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
         
         return sym
-        
 
 class PolygonPatternSymbolizer(BasePointSymbolizer):
     pass
