@@ -1332,11 +1332,6 @@ def compile(src,**kwargs):
        If set, all file-based resources (symbols, shapefiles, etc) will be written to this
        output directory. If not set, tempfile.gettempdir() will be used.
      
-     move_local_files:
-       If True, not just remote files but also locally referenced files (currently only
-       symbols) will be move to the 'target_dir'. Support for datasources will be added
-       in the future. (default: None)
-        
      no_cache:
        By default remotely downloaded files will be read from the location where they
        were unpacked ('target_dir'). If 'no_cache' is True, then remote files will be
@@ -1412,10 +1407,6 @@ def compile(src,**kwargs):
     else:
         tmp_dir = tempfile.gettempdir()
         kwargs['target_dir'] = tmp_dir
-        if kwargs.get('move_local_files'):
-            msg('Writing all files to temporary directory: %s' % tmp_dir)
-        else:       
-            msg('Writing all remote files to temporary directory: %s' % tmp_dir)    
 
     try:
         # guessing src is a literal XML string?

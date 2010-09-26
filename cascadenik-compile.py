@@ -28,9 +28,7 @@ def main(src_file, dest_file, **kwargs):
     mmap = mapnik.Map(1, 1)
     # allow [zoom] filters to work
     mmap.srs = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null'
-    load_kwargs = {'move_local_files': kwargs.get('move_local_files', None),
-                   'target_dir': dirname(realpath(dest_file))}
-    cascadenik.load_map(mmap, src_file, **load_kwargs)
+    cascadenik.load_map(mmap, src_file, target_dir=dirname(realpath(dest_file)))
     
     (handle, tmp_file) = tempfile.mkstemp(suffix='.xml', prefix='cascadenik-mapnik-')
     os.close(handle)
@@ -48,17 +46,13 @@ def main(src_file, dest_file, **kwargs):
 
 parser = optparse.OptionParser(usage="""%prog [options] <mml> <xml>""", version='%prog ' + cascadenik.VERSION)
 
-parser.set_defaults(move_local_files=False, no_cache=False, pretty=True, safe_urls=False, verbose=False)
+parser.set_defaults(no_cache=False, pretty=True, safe_urls=False, verbose=False)
 
 #parser.add_option('-d', '--dir', dest='target_dir',
 #                  help='Write file-based resources (symbols, shapefiles, etc) to this target directory (default: current working directory is used)')
 
 parser.add_option('--srs', dest='srs',
                   help='Target srs for the compiled stylesheet. If provided, overrides default map srs in the mml (default: None)')
-
-parser.add_option('--move', dest='move_local_files',
-                  help='Move local files to target --dir location in addition to remote resources (default: False)',
-                  action='store_true')
 
 parser.add_option('--no-cache', dest='no_cache',
                   help='Do not cache remote files (caching on by default, e.g. no_cache=True)',
