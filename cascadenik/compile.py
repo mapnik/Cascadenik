@@ -1236,7 +1236,7 @@ def appropriate_path(original, path, dir):
     rel_path = os.path.relpath(path, dir)
 
     if rel_path.startswith('../'):
-        return os.path.join(dir, path)
+        return os.path.realpath(path)
 
     return rel_path
 
