@@ -1,11 +1,15 @@
 import ConfigParser
 import StringIO
+import mapnik
 
 class DataSources(object):
     def __init__(self):
         self.bases = set([])
         self.parser = None
         self.sources = {}
+
+    def get(self, name):
+        return self.sources.get(name)
 
     def add_config(self, textdata, filename):
         data = StringIO.StringIO(textdata)
@@ -23,6 +27,19 @@ class DataSources(object):
             base = self.parser.get(sect,"base") if self.parser.has_option(sect, "base") else None
             layer_srs = self.parser.get(sect,"layer_srs") if self.parser.has_option(sect, "layer_srs") else None
 
+            # handle the most common projections
+            if layer_srs and layer_srs.lower().startswith("epsg:"):
+                if self.PROJ4_PROJECTIONS.get(layer_srs.lower()):
+                    layer_srs = self.PROJ4_PROJECTIONS.get(layer_srs.lower())
+                else:
+                    layer_srs = '+init=%s' % layer_srs
+
+            # try to init the projection
+            if layer_srs:
+                try:
+                    mapnik.Projection(layer_srs)
+                except:
+                    raise Exception("Section [%s] declares an invalid layer_srs in %s." % (sect, filename))
 
             # this layer declares a base
             if base:
@@ -52,6 +69,8 @@ class DataSources(object):
                         opt_value = self.parser.get(sect,option)
                 except ConfigParser.NoOptionError:
                     pass
+                except ValueError, e:
+                    raise ValueError("Section [%s], field '%s' in file %s contains an invalid value: %s" % (sect, option, filename, e))
 
                 if opt_value is not None:
                     options[option] = opt_value
@@ -64,6 +83,10 @@ class DataSources(object):
                 conf['layer_srs'] = layer_srs
             self.sources[name] = conf
                 
+
+    PROJ4_PROJECTIONS = {"epsg:4326" : "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+                         "epsg:900913" : "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
+                         }
 
     XML_OPTIONS = {"shape" : dict(file=str,encoding=str),
                    "postgis" : dict(cursor_size=int,

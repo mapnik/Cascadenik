@@ -22,6 +22,7 @@ from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_
 from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
 from cascadenik.compile import test2str, compile
 from cascadenik.compile import auto_detect_mapnik_version
+from cascadenik.sources import DataSources
 import cascadenik.output as output
     
 MAPNIK_AUTO_IMAGE_SUPPORT = False
@@ -1558,6 +1559,87 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(16, shield_rule_groups['both'][0].symbolizers[0].width)
         self.assertEqual(16, shield_rule_groups['both'][0].symbolizers[0].height)
         self.assertEqual(5, shield_rule_groups['both'][0].symbolizers[0].min_distance)
+
+class DataSourcesTests(unittest.TestCase):
+
+    def gen_section(self, name, **kwargs):
+        return """[%s]\n%s""" % (name, "\n".join(("%s=%s" % kwarg for kwarg in kwargs.items())))
+                                 
+    def testSimple1(self):
+        cdata = """
+[simple]
+type=shape
+file=foo.shp
+garbage=junk
+"""
+        dss = DataSources()
+        dss.add_config(cdata, __file__)
+        self.assertTrue(dss.sources['simple'] != None)
+
+        ds = dss.sources['simple']
+        self.assertTrue(ds['parameters'] != None)
+        p = ds['parameters']
+        self.assertEqual(p['type'],'shape')
+        self.assertEqual(p['file'],'foo.shp')
+        self.assertTrue(p.get('garbage') == None)
+
+        self.assertRaises(Exception, dss.add_config, (self.gen_section("foo", encoding="bar"), __file__))
+    
+    def testChain1(self):
+        dss = DataSources()
+        dss.add_config(self.gen_section("t1", type="shape", file="foo"), __file__)
+        dss.add_config(self.gen_section("t2", type="shape", file="foo"), __file__)
+        self.assertTrue(dss.get('t1') != None)
+        self.assertTrue(dss.get('t2') != None)
+
+    def testDefaults1(self):
+        dss = DataSources()
+        dss.add_config(self.gen_section("DEFAULT", var="cows"), __file__)
+        dss.add_config(self.gen_section("t1", type="shape", file="%(var)s"), __file__)
+
+        self.assertEqual(dss.get('t1')['parameters']['file'], "cows")
+
+    def testChainedDefaults1(self):
+        dss = DataSources()
+        dss.add_config(self.gen_section("DEFAULT", var="cows"), __file__)
+        dss.add_config(self.gen_section("DEFAULT", var="cows2"), __file__)
+        dss.add_config(self.gen_section("t1", type="shape", file="%(var)s"), __file__)
+
+        self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
+
+    def testBase1(self):
+        dss = DataSources()
+        dss.add_config(self.gen_section("base", type="shape", encoding="latin1"), __file__)
+        dss.add_config(self.gen_section("t2", base="base", file="foo"), __file__)
+        self.assertTrue("base" in dss.bases)
+        self.assertEqual(dss.get('t2')['base'], 'base')
+        self.assertEqual(dss.get('t2')['parameters']['file'], 'foo')
+
+    def testSRS(self):
+        dss = DataSources()
+        dss.add_config(self.gen_section("s", type="shape", layer_srs="epsg:4326"), __file__)
+        dss.add_config(self.gen_section("g", type="shape", layer_srs="epsg:900913"), __file__)
+        self.assertEqual(dss.get("s")['layer_srs'], dss.PROJ4_PROJECTIONS['epsg:4326'])
+        self.assertEqual(dss.get("g")['layer_srs'], dss.PROJ4_PROJECTIONS['epsg:900913'])
+        self.assertRaises(Exception, dss.add_config, (self.gen_section("s", type="shape", layer_srs="epsg:43223432423"), __file__))
+
+    def testDataTypes(self):
+        dss = DataSources()
+        dss.add_config(self.gen_section("s",
+                                        type="postgis",
+                                        cursor_size="5",
+                                        estimate_extent="yes"), __file__)
+        self.assertEqual(dss.get("s")['parameters']['cursor_size'], 5)
+        self.assertEqual(dss.get("s")['parameters']['estimate_extent'], True)
+
+        self.assertRaises(Exception,
+                          dss.add_config,
+                          (self.gen_section("f",
+                                            type="postgis",
+                                            cursor_size="5.xx",
+                                            estimate_extent="yes"), __file__))
+        
+    
 
 class CompileXMLTests(unittest.TestCase):
 
