@@ -971,7 +971,7 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
         scheme, path = '', locally_cache_remote_file(file_href, target_dir)
         
     if scheme not in ('file', '') or not os.path.exists(path):
-        raise Exception("you're not helping")
+        raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
     
     if mapnik_requires_absolute_paths:
         path = os.path.realpath(path)
@@ -1262,7 +1262,7 @@ def localize_shapefile(shp_href, target_dir, **kwargs):
         scheme, path = '', locally_cache_remote_file(shp_href, target_dir)
 
     if scheme not in ('file', ''):
-        raise Exception("you're not helping")
+        raise Exception("Shapefile needs to be a working, fetchable resource, not %s" % shp_href)
     
     if mapnik_requires_absolute_paths:
         path = os.path.realpath(path)
@@ -1274,64 +1274,26 @@ def localize_shapefile(shp_href, target_dir, **kwargs):
     
     return appropriate_path(original, path, target_dir)
 
-def localize_datasource(src, filename, **kwargs):
-    """ Handle localizing file-based datasources other than zipped shapefiles.
+def localize_file_datasource(file_href, target_dir, **kwargs):
+    """ Handle localizing file-based datasources other than shapefiles.
     
-    This will only work for single-file based types.
+        This will only work for single-file based types.
     """
-    (scheme, netloc, path, params, query, fragment) = urlparse(filename)
+    # support latest mapnik features of auto-detection
+    # of image sizes and jpeg reading support...
+    # http://trac.mapnik.org/ticket/508
+    version = kwargs.get('mapnik_version', None)
+    mapnik_requires_absolute_paths = (version < 601)
 
-    move_local_files = kwargs.get('move_local_files')
-    if move_local_files:
-        sys.stderr.write('WARNING: moving local datasource files not yet supported\n')
-
-    if scheme == '':
-        # assumed to be local
-        if kwargs.get('mapnik_version',None) >= 601:
-            # Mapnik 0.6.1 accepts relative paths, so we leave it unchanged
-            # but compiled file must maintain same relativity to the files
-            # as the stylesheet, which needs to be addressed separately
-            return filename
-        else:
-            msg('Warning, your Mapnik version is old and does not support relative paths to datasources')
-            return os.path.realpath(urljoin(src, filename))
-
-    target_dir = kwargs.get('target_dir',tempfile.gettempdir())
+    scheme, n, path, p, q, f = urlparse(file_href)
     
-    # if no-cache is True we avoid caching otherwise
-    # we attempt to pull targets locally without re-downloading
-    caching = not kwargs.get('no_cache',None)
+    if scheme == 'http':
+        scheme, path = '', locally_cache_remote_file(file_href, target_dir)
 
-    if kwargs.get('safe_urls'):
-        target_dir = os.path.join(target_dir,url2fs(filename))
+    if scheme not in ('file', ''):
+        raise Exception("Datasource file needs to be a working, fetchable resource, not %s" % file_href)
 
-    target_file = os.path.join(target_dir, basename(filename))
-    
-    if caching:
-        if kwargs.get('safe_urls'):
-            if not os.path.isdir(target_dir):
-                # does not exist yet
-                msg('Downloading %s to base64 encoded dir: %s' % (filename,target_dir))
-            else:
-                # already downloaded, we can pull shapefile name from cache
-                msg('File found, pulling from base64 encoded directory cache instead of downloading')
-                return target_file
-        else:
-            # TODO - should we support zipped archives for non-shapefile datasources?
-            if os.path.exists(target_file):
-                return target_file
-    else:
-        msg('Avoiding searching for cached local files...')
-        msg('Placing "%s" at "%s"' % (filename,target_dir))
-
-    if not os.path.exists(target_dir):
-        os.mkdir(target_dir)
-    # use urllib2 here so 404's throw
-    remote_file_data = urllib2.urlopen(filename).read()
-    file_ = open(target_file, 'wb')
-    file_.write(remote_file_data)
-    file_.close()
-    return target_file
+    return appropriate_path(path, path, target_dir)
 
 def auto_detect_mapnik_version():
     mapnik = None
@@ -1507,19 +1469,24 @@ def compile(src,**kwargs):
         elif datasource_params.get('file') is not None:
             # make sure we localize any remote files
             file_param = datasource_params.get('file')
+            file_param = style.resolve_paths(file_param, src)
+
             if datasource_params.get('type') == 'shape':
                 # handle a local shapefile or fetch a remote, zipped shapefile
                 msg('Handling shapefile datasource...')
-                file_param = style.resolve_paths(file_param, src)
                 file_param = localize_shapefile(file_param, **kwargs)
+
                 # TODO - support datasource reprojection to make map srs
                 # TODO - support automatically indexing shapefiles
+
             else: # ogr,raster, gdal, sqlite
                 # attempt to generically handle other file based datasources
                 msg('Handling generic datasource...')
-                file_param = localize_datasource(src, file_param, **kwargs)
+                file_param = localize_file_datasource(file_param, **kwargs)
+
             msg("Localized path = %s" % file_param)
             datasource_params['file'] = file_param
+
             # TODO - consider custom support for other mapnik datasources:
             # sqlite, oracle, osm, kismet, gdal, raster, rasterlite
 
