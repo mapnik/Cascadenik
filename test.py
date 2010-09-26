@@ -1754,6 +1754,7 @@ template=template1
 
         self.assertEqual(map.layers[0].srs, '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
         self.assertEqual(map.layers[0].datasource.parameters['file'], 'test.shp')
+        self.assertEqual(map.layers[0].datasource.parameters['base'], 'data')
         self.assertEqual(map.layers[0].datasource.parameters['encoding'], 'latin1')
         self.assertEqual(map.layers[0].datasource.parameters['type'], 'shape')
 
