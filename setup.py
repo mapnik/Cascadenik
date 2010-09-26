@@ -5,7 +5,7 @@ import sys
 # but setuptools is often broken, so swallow the error if it's not there.
 
 try:
-    from setuptoolsss import setup
+    from setuptools import setup
     HAS_SETUPTOOLS = True
 except ImportError:
     from distutils.core import setup
