@@ -96,6 +96,13 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
+class Directories:
+    """ Holder for full paths to output and cache dirs.
+    """
+    def __init__(self, output, cache):
+        self.output = os.path.realpath(output)
+        self.cache = os.path.realpath(cache)
+
 class Range:
     """ Represents a range for use in min/max scale denominator.
     

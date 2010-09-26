@@ -12,7 +12,7 @@ import style
 # compile module
 import compile as _compile
 # compile function
-from compile import compile
+from compile import compile, Directories
 from style import stylesheet_declarations
 
 # define Cascadenik version
@@ -30,4 +30,5 @@ def load_map(map, input, target_dir, cache_dir=None):
             mkdir(cache_dir)
             chmod(cache_dir, 0755)
 
-    compile(input, target_dir, realpath(cache_dir)).to_mapnik(map, target_dir)
+    dirs = Directories(target_dir, realpath(cache_dir))
+    compile(input, target_dir, realpath(cache_dir)).to_mapnik(map, dirs)

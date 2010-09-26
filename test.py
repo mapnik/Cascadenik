@@ -22,6 +22,7 @@ from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_
 from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
 from cascadenik.compile import test2str, compile
 from cascadenik.compile import auto_detect_mapnik_version
+from cascadenik.compile import Directories
 from cascadenik.sources import DataSources
 import cascadenik.output as output
     
@@ -1960,8 +1961,9 @@ base=template
             </Map>
         """
         mmap = mapnik.Map(640, 480)
+        dirs = Directories(self.tmpdir, self.tmpdir)
         ms = compile(s, self.tmpdir, self.tmpdir)
-        ms.to_mapnik(mmap, self.tmpdir)
+        ms.to_mapnik(mmap, dirs)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
 
     def testCompile5(self):
@@ -1979,8 +1981,9 @@ base=template
             </Map>
         """.encode('utf-8')
         mmap = mapnik.Map(640, 480)
+        dirs = Directories(self.tmpdir, self.tmpdir)
         ms = compile(s, self.tmpdir, self.tmpdir)
-        ms.to_mapnik(mmap)
+        ms.to_mapnik(mmap, dirs)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
         
         

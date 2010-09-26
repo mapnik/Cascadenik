@@ -24,13 +24,13 @@ class Map:
     def __repr__(self):
         return 'Map(%s %s)' % (self.bgcolor, repr(self.layers))
 
-    def to_mapnik(self, mmap, dir=None):
+    def to_mapnik(self, mmap, dirs=None):
         """
         """
         prev_cwd = getcwd()
         
-        if dir:
-            chdir(dir)
+        if dirs:
+            chdir(dirs.output)
         
         mmap.srs = self.srs or mmap.srs
         mmap.bgcolor = str(self.bgcolor) or mmap.bgcolor
