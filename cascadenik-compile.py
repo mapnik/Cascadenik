@@ -29,7 +29,7 @@ def main(src_file, dest_file, **kwargs):
     # allow [zoom] filters to work
     mmap.srs = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null'
     load_kwargs = dict([(k, v) for (k, v) in kwargs.items() if k in ('verbose', 'datasources_local_cfg')])
-    cascadenik.load_map(mmap, src_file, target_dir=dirname(realpath(dest_file)), **load_kwargs)
+    cascadenik.load_map(mmap, src_file, dirname(realpath(dest_file)), **load_kwargs)
     
     (handle, tmp_file) = tempfile.mkstemp(suffix='.xml', prefix='cascadenik-mapnik-')
     os.close(handle)
