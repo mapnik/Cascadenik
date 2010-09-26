@@ -1802,8 +1802,7 @@ layer_srs=%(other_srs)s
         self.assertEqual(14, map.layers[0].styles[2].rules[0].symbolizers[0].size)
 
         self.assertEqual(map.layers[0].srs, '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
-        self.assertEqual(map.layers[0].datasource.parameters['file'], 'test.shp')
-        self.assertEqual(map.layers[0].datasource.parameters['base'], 'data')
+        self.assertEqual(map.layers[0].datasource.parameters['file'][-13:], 'data/test.shp')
         self.assertEqual(map.layers[0].datasource.parameters['encoding'], 'latin1')
         self.assertEqual(map.layers[0].datasource.parameters['type'], 'shape')
         return map
@@ -1880,8 +1879,9 @@ layer_srs=%(other_srs)s
 
         self.assertEqual(len(map_el.find("Layer").findall('Datasource')), 1)
         params = dict(((p.get('name'), p.text) for p in map_el.find('Layer').find('Datasource').findall('Parameter')))
-        for k,v in dict(type="shape", file="data/test.shp", encoding="latin1").items():
-            self.assertEqual(params[k], v)
+        self.assertEqual(params['type'], 'shape')
+        self.assertEqual(params['file'][-13:], 'data/test.shp')
+        self.assertEqual(params['encoding'], 'latin1')
 
     def testCompile3(self):
         """

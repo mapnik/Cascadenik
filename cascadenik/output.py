@@ -1,3 +1,5 @@
+from os import getcwd, chdir
+
 import style
 
 try:
@@ -22,9 +24,14 @@ class Map:
     def __repr__(self):
         return 'Map(%s %s)' % (self.bgcolor, repr(self.layers))
 
-    def to_mapnik(self, mmap):
+    def to_mapnik(self, mmap, dir=None):
         """
         """
+        prev_cwd = getcwd()
+        
+        if dir:
+            chdir(dir)
+        
         mmap.srs = self.srs or mmap.srs
         mmap.bgcolor = str(self.bgcolor) or mmap.bgcolor
         
@@ -61,9 +68,8 @@ class Map:
                 lay.styles.append(style.name)
 
             mmap.layers.append(lay)
-                    
-                    
         
+        chdir(prev_cwd)
 
 class Style:
     def __init__(self, name, rules):
