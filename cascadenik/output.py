@@ -3,10 +3,9 @@ from os import getcwd, chdir
 import style
 
 try:
-    import mapnik
+    import mapnik2 as mapnik
 except ImportError:
-    # *.to_mapnik() won't work, maybe that's okay?
-    pass
+    import mapnik
 
 def safe_str(s):
     return None if not s else str(s)

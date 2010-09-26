@@ -21,15 +21,12 @@ from cascadenik.compile import filtered_property_declarations, is_applicable_sel
 from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
 from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
 from cascadenik.compile import test2str, compile
-from cascadenik.compile import auto_detect_mapnik_version
+from cascadenik.compile import MAPNIK_VERSION
 from cascadenik.compile import Directories
 from cascadenik.sources import DataSources
 import cascadenik.output as output
     
-MAPNIK_AUTO_IMAGE_SUPPORT = False
-ver = auto_detect_mapnik_version()
-if ver:
-    MAPNIK_AUTO_IMAGE_SUPPORT = (ver >= 701)
+MAPNIK_AUTO_IMAGE_SUPPORT = (MAPNIK_VERSION >= 701)
 
 class ParseTests(unittest.TestCase):
     
