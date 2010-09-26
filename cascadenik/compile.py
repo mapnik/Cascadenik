@@ -906,14 +906,7 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
     if mapnik_requires_absolute_paths:
         path = os.path.realpath(path)
     
-    rel_path = os.path.relpath(path, target_dir)
-
-    if path.startswith('/'):
-        path = path
-    elif rel_path.startswith('../'):
-        path = os.path.join(target_dir, path)
-    else:
-        path = rel_path
+    path = appropriate_path(path, path, target_dir)
 
     msg('reading symbol: %s' % path)
 
@@ -1130,11 +1123,15 @@ def get_applicable_declarations(element, declarations):
 #        
 #        shutil.copy()
 
-def handle_zipped_shapefile(zipped_shp,target_dir):
+def handle_zipped_shapefile(zipped_shp, dir):
+    """
+    """
+    hash = md5(zipped_shp).hexdigest()
     zip_data = urllib.urlopen(zipped_shp).read()
     zip_file = zipfile.ZipFile(StringIO.StringIO(zip_data))
     
     infos = zip_file.infolist()
+    heads = [os.path.splitext(info.filename)[0] for info in infos]
     extensions = [os.path.splitext(info.filename)[1] for info in infos]
     basenames = [os.path.basename(info.filename) for info in infos]
     
@@ -1142,12 +1139,10 @@ def handle_zipped_shapefile(zipped_shp,target_dir):
         if required and expected not in extensions:
             raise Exception('Zip file %(zipped_shp)s missing extension "%(expected)s"' % locals())
 
-        for (info, extension, basename) in zip(infos, extensions, basenames):
+        for (info, head, extension, basename) in zip(infos, heads, extensions, basenames):
             if extension == expected:
                 file_data = zip_file.read(info.filename)
-                if not os.path.exists(target_dir):
-                    os.mkdir(target_dir)
-                file_name = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
+                file_name = os.path.normpath('%(dir)s/%(head)s-%(hash)s%(extension)s' % locals())
                 
                 file_ = open(file_name, 'wb')
                 file_.write(file_data)
@@ -1160,14 +1155,20 @@ def handle_zipped_shapefile(zipped_shp,target_dir):
 
     return local
 
-def handle_placing_shapefile(shapefile,target_dir):
-    if os.path.splitext(shapefile)[1] == '.zip':
-        return handle_zipped_shapefile(shapefile,target_dir)
-    #else:
-    #    return handle_shapefile_parts(shapefile,target_dir)
+def appropriate_path(original, path, dir):
+    """
+    """
+    if original.startswith('/'):
+        return os.path.realpath(path)
 
+    rel_path = os.path.relpath(path, dir)
 
-def localize_shapefile(src, shapefile, **kwargs):
+    if rel_path.startswith('../'):
+        return os.path.join(dir, path)
+
+    return rel_path
+
+def localize_shapefile(shp_href, target_dir, **kwargs):
     """ Given a stylesheet path, a shapefile name, and a temp directory,
         modify the shapefile name so it's an absolute path.
     
@@ -1175,72 +1176,44 @@ def localize_shapefile(src, shapefile, **kwargs):
         If it's found to look like a URL (e.g. "http://...") it's assumed
         to be a remote zip file containing .shp, .shx, and .dbf files.
     """
-    (scheme, netloc, path, params, query, fragment) = urlparse.urlparse(shapefile)
+    # support latest mapnik features of auto-detection
+    # of image sizes and jpeg reading support...
+    # http://trac.mapnik.org/ticket/508
+    version = kwargs.get('mapnik_version', None)
+    mapnik_requires_absolute_paths = (version < 601)
 
-    move_local_files = kwargs.get('move_local_files')
-    if move_local_files:
-        sys.stderr.write('WARNING: moving local unzipped shapefiles not yet supported\n')
-
-    if scheme == '':
-        # assumed to be local
-        if not os.path.splitext(shapefile)[1] == ".zip":
-            # if not a local zip
-            if kwargs.get('mapnik_version',None) >= 601:
-                # Mapnik 0.6.1 accepts relative paths, so we leave it unchanged
-                # but compiled file must maintain same relativity to the files
-                # as the stylesheet, which needs to be addressed separately
-                return shapefile
-            else:
-                msg('Warning, your Mapnik version is old and does not support relative paths to datasources')
-                return os.path.realpath(urlparse.urljoin(src, shapefile))
-
-    target_dir = kwargs.get('target_dir',tempfile.gettempdir())
+    print >> sys.stderr, '-' * 40
+    print >> sys.stderr, shp_href
     
-    # if no-cache is True we avoid caching otherwise
-    # we attempt to pull targets locally without re-downloading
-    caching = not kwargs.get('no_cache',None)
-
-    if kwargs.get('safe_urls'):
-        target_dir = os.path.join(target_dir,url2fs(shapefile))
+    scheme, n, path, p, q, f = urlparse.urlparse(shp_href)
     
-    if caching:
-        if kwargs.get('safe_urls'):
-            if not os.path.isdir(target_dir):
-                # does not exist yet
-                msg('Downloading shapefile to base64 encoded dir: %s' % target_dir)
-            else:
-                # already downloaded, we can pull shapefile name from cache
-                msg('Shapefile found, pulling from base64 encoded directory cache instead of downloading')
-                for root, dirs, files in os.walk(target_dir):
-                    for file_ in files:
-                        if os.path.splitext(file_)[1] == '.shp':
-                            return os.path.join(root, file_[:-4])
-        else:
-            # only possibility here is to test assumption 
-            # that the shapefile is the same name as the zip.
-            basename = os.path.splitext(os.path.basename(shapefile))[0]
-            possible_names = []
-            possible_names.append(os.path.join(target_dir,'%s.shp' % basename))
-            possible_names.append(os.path.join(target_dir,basename,'%s.shp' % basename))
-            found = False
-            unzipped_path = None
-            for possible in possible_names:
-                if os.path.exists(possible):
-                    found = True
-                    msg('Shapefile found locally, reading from "%s" instead of downloading' % possible)
-                    unzipped_path = possible
-                    break
-            if not found:
-                msg('Remote shapefile could not be found locally, therefore downloading from "%s"' % (shapefile))
-                msg('(searched for %s)' %  possible_names)
-            if unzipped_path:
-                return unzipped_path
-    else:
-        msg('Avoiding searching for cached local files...')
-        msg('Placing "%s" at "%s"' % (shapefile,target_dir))
+    if scheme == 'http':
+        print >> sys.stderr, 'locally cache', shp_href,
+        scheme, path = '', locally_cache_remote_file(shp_href, target_dir)
+        print >> sys.stderr, '-->', path
 
-    # assumed to be a remote zip archive with .shp, .shx, and .dbf files
-    return handle_placing_shapefile(shapefile,target_dir)
+    if scheme not in ('file', ''):
+        raise Exception("you're not helping")
+    
+    if mapnik_requires_absolute_paths:
+        path = os.path.realpath(path)
+    
+    original = path
+    path = appropriate_path(original, path, target_dir)
+    head, ext = os.path.splitext(path)
+
+    print >> sys.stderr, 'split:', head, ext
+    
+    if ext == '.zip':
+        print >> sys.stderr, 'extract from zip file I guess:',
+        path = handle_zipped_shapefile(path, target_dir)
+        print >> sys.stderr, path
+    
+    path = appropriate_path(original, path, target_dir)
+    
+    print >> sys.stderr, 'actually:', path
+
+    return path
 
 def localize_datasource(src, filename, **kwargs):
     """ Handle localizing file-based datasources other than zipped shapefiles.
@@ -1458,10 +1431,11 @@ def compile(src,**kwargs):
                     parameter_el.text = parameter_el.text.replace('\r', ' ').replace('\n', ' ')
             elif parameter_el.get('name', None) == 'file':
                 # make sure we localize any remote files
-                if parameter_el.get('type', None) == 'shape':
+                if parameter_el.get('name', None) == 'file':
                     # handle a local shapefile or fetch a remote, zipped shapefile
                     msg('Handling shapefile datasource...')
-                    parameter_el.text = localize_shapefile(src, parameter_el.text, **kwargs)
+                    shp_href = style.resolve_paths(parameter_el.text, src)
+                    parameter_el.text = localize_shapefile(shp_href, **kwargs)
                     # TODO - support datasource reprojection to make map srs
                     # TODO - support automatically indexing shapefiles
                 else: # ogr,raster, gdal, sqlite
