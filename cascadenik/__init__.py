@@ -17,6 +17,7 @@ from style import stylesheet_declarations
 
 # define Cascadenik version
 VERSION = '0.2.0'
+CACHE_DIR = '~/.cascadenik'
 
 __all__ = ['compile','_compile','style','stylesheet_declarations']
 
@@ -24,8 +25,9 @@ def load_map(map, input, target_dir, cache_dir=None, datasources_local_cfg=None,
     """
     """
     if cache_dir is None:
-        cache_dir = expanduser('~/.cascadenik')
+        cache_dir = expanduser(CACHE_DIR)
         
+        # only make the cache dir if it wasn't user-provided
         if not isdir(cache_dir):
             mkdir(cache_dir)
             chmod(cache_dir, 0755)
