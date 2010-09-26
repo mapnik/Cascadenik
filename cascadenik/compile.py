@@ -1334,7 +1334,7 @@ def compile(src, dirs, **kwargs):
      pretty:
        If True, XML output will be fully indented (otherwise indenting is haphazard).
        
-     datasources_local_cfg:
+     datasources_cfg:
        If a file or URL, uses the config to override datasources or parameters (i.e. postgis_dbname)
        defined in the map's canonical <DataSourcesConfig> entities.  This is most useful in development,
        whereby one redefines individual datasources, connection parameters, and/or local paths. 
@@ -1374,7 +1374,7 @@ def compile(src, dirs, **kwargs):
 
         base = src
 
-    expand_source_declarations(map_el, base, kwargs.get('datasources_local_cfg'))
+    expand_source_declarations(map_el, base, kwargs.get('datasources_cfg'))
     declarations = extract_declarations(map_el, base)
     
     # a list of layers and a sequential ID generator
