@@ -37,9 +37,9 @@ class DataSources(object):
             # try to init the projection
             if layer_srs:
                 try:
-                    mapnik.Projection(layer_srs)
-                except:
-                    raise Exception("Section [%s] declares an invalid layer_srs in %s." % (sect, filename))
+                    mapnik.Projection(str(layer_srs))
+                except Exception, e:
+                    raise Exception("Section [%s] declares an invalid layer_srs (%s) in %s.\n\t%s" % (sect, layer_srs, filename, e))
 
             # this layer declares a base
             if base:
