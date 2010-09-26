@@ -4,7 +4,7 @@ import mapnik
 
 class DataSources(object):
     def __init__(self):
-        self.bases = set([])
+        self.templates = set([])
         self.parser = None
         self.sources = {}
 
@@ -24,8 +24,20 @@ class DataSources(object):
             options = {}
             name = sect
             dtype = self.parser.get(sect,"type") if self.parser.has_option(sect, "type") else None
-            base = self.parser.get(sect,"base") if self.parser.has_option(sect, "base") else None
+            template = self.parser.get(sect,"template") if self.parser.has_option(sect, "template") else None
             layer_srs = self.parser.get(sect,"layer_srs") if self.parser.has_option(sect, "layer_srs") else None
+
+            # this layer declares a template template
+            if template:
+                self.templates.add(template)
+                # the template may have been declared already, or we haven't processed it yet.
+                if template in self.sources:
+                    dtype = self.sources[template]['parameters'].get('type', dtype)
+                    layer_srs = self.sources[template].get('layer_srs', layer_srs)
+                else:
+                    # TODO catch section missing errors
+                    dtype = self.parser.get(template, 'type')
+                    layer_srs = self.parser.get(template, 'layer_srs') if self.parser.has_option(template, 'layer_srs') else layer_srs
 
             # handle the most common projections
             if layer_srs and layer_srs.lower().startswith("epsg:"):
@@ -40,15 +52,6 @@ class DataSources(object):
                     mapnik.Projection(str(layer_srs))
                 except Exception, e:
                     raise Exception("Section [%s] declares an invalid layer_srs (%s) in %s.\n\t%s" % (sect, layer_srs, filename, e))
-
-            # this layer declares a base
-            if base:
-                self.bases.add(base)
-                # the base may have been declared already, or we haven't processed it yet.
-                if base in self.sources:
-                    dtype = self.sources[base]['parameters']["type"]
-                else:
-                    dtype = self.parser.get(base,"type")
                     
             if dtype:
                 options['type'] = dtype
@@ -77,8 +80,8 @@ class DataSources(object):
 
             # build an object mirroring the XML Datasource object
             conf = dict(parameters=options)
-            if base:
-                conf['base'] = base
+            if template:
+                conf['template'] = template
             if layer_srs:
                 conf['layer_srs'] = layer_srs
             self.sources[name] = conf

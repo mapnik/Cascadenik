@@ -589,7 +589,7 @@ def expand_source_declarations(map_el, base):
     # now transform the xml
 
     # add in base datasources
-    for base_name in ds.bases:
+    for base_name in ds.templates:
         b = Element("Datasource", name=base_name)
         for pname, pvalue in ds.sources[base_name]['parameters'].items():
             p = Element("Parameter", name=pname)
@@ -609,8 +609,8 @@ def expand_source_declarations(map_el, base):
         b = Element("Datasource")
         dsrc = ds.sources[layer.attrib['source_name']]
 
-        if 'base' in dsrc:
-            b.attrib['base'] = dsrc['base']
+        if 'template' in dsrc:
+            b.attrib['base'] = dsrc['template']
         
         # set the SRS if present
         if 'layer_srs' in dsrc:
