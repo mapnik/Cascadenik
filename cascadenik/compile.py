@@ -10,6 +10,7 @@ import os.path
 import zipfile
 import shutil
 
+from re import sub
 from hashlib import md5
 from datetime import datetime
 from time import strftime, localtime
@@ -964,6 +965,7 @@ def locally_cache_remote_file(href, dir):
     assert scheme == 'http', 'No gophers.'
 
     head, ext = splitext(basename(remote_path))
+    head = sub(r'[^\w\-_]', '', head)
     hash = md5(href).hexdigest()[:8]
     
     local_path = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
@@ -1240,6 +1242,7 @@ def unzip_shapefile_into(zip_path, dir):
 
         for info in infos:
             head, ext = splitext(basename(info.filename))
+            head = sub(r'[^\w\-_]', '', head)
 
             if ext == expected:
                 file_data = zip_file.read(info.filename)
