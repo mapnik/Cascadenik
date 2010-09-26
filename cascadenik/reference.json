@@ -1,0 +1,414 @@
+{ 'symbolizers' : 
+  {
+    'map': {
+      'map-bgcolor': {
+        'type': 'color_transparent',
+        'description': 'Map Background color'
+      }
+    }
+    'polygon': {
+      'fill': {
+        'css': 'polygon-fill',
+        'api': 'fill',
+        'type': 'color',
+        'availability': '0.5.1',
+        'default': 'rgb(128,128,128)',
+        'default-meaning':'grey',
+        'doc': 'Fill color to assign to a polygon',
+
+      },
+      'gamma': {
+        'css': 'polygon-gamma',
+        'api': 'gamma',
+        'type': 'float',
+        'availability': '0.7.0',
+        'default': 1,
+        'default-meaning':'fully antialiased',
+        'range':'0-1',
+        'doc': 'Level of antialiasing of polygon edges',
+      }
+      'opacity': {
+        'css': 'polygon-opacity',
+        'type': 'float',
+        'default': '1',
+        'default-meaning': 'opaque',
+      },
+      'meta-output': { 
+        'css': 'polygon-meta-output',
+        'type': 'string',
+        'default': '',
+        'default-meaning': 'No MetaWriter Output',
+
+      },
+      'meta-writer': { 
+        'css': 'polygon-meta-writer',
+        'type': 'string',
+        'default': '',
+        'default-meaning': 'No MetaWriter specified',
+      }
+    }
+    'line': {
+      'color': {
+        'css': 'line-color',
+        'type': 'color'
+      },
+      'width': {
+        'css': 'line-width',
+        'type': 'float'
+      },
+      'opacity': {
+        'css': 'line-opacity',
+        'type': 'float'
+      },
+      'join': {
+        'css': 'line-join',
+        'type': ['miter', 'round', 'bevel'] 
+      },
+      'cap': {
+        'css': 'line-cap',
+        'type': ['butt', 'round', 'square'] 
+      },
+      'dasharray': {
+        'css': 'line-dasharray',
+        'type': 'numbers'
+      },
+      'meta-output': {
+        'css': 'line-meta-output',
+        'type': 'string'
+      },
+      'meta-writer': {
+        'css': 'line-meta-writer',
+        'type': 'string'
+      }
+    },
+    'marker': {
+     'line-color': { 
+       'css': 'marker-line-color',
+       'type': 'color' 
+     },
+     'line-width': { 
+       'css': 'marker-line-width',
+       'type': 'float'
+     },
+     'line-opacity': { 
+       'css': 'marker-line-opacity',
+       'type': 'float'
+     },
+     'placement': { 
+       'css': 'marker-placement',
+       'type': ['point', 'line'] 
+     },
+     'type': { 
+       'css': 'marker-type',
+       'type': ['arrow', 'ellipse'] 
+     },
+
+     'width': { 
+       'css': 'marker-width',
+       'type': 'int' 
+     },
+
+     'height': {
+       'css': 'marker-height',
+       'type': 'int' 
+     },
+
+     'fill': { 
+       'css': 'marker-fill',
+       'type': 'color' 
+     },
+
+     'fill-opacity': { 
+       'css': 'marker-opacity',
+       'type': 'float'
+     },
+
+     'file': { 
+       'css': 'marker-file',
+       'type': 'uri'
+     },
+
+     'allow-overlap': {
+       'css': 'marker-allow-overlap',
+       'type': 'boolean 
+     },
+
+     'spacing': {
+       'css': 'marker-spacing',
+       'type': 'float',
+     }
+
+     'max-error': {
+       'css': 'marker-max-error',
+       'type': 'float'
+     },
+
+     'transform': {
+       'css': 'marker-transform',
+       'type': 'string' 
+     },
+
+     'meta-output': {
+       'css': 'marker-meta-output',
+       'type': 'string' 
+     },
+
+     'meta-writer': {
+       'css': 'marker-meta-writer',
+       'type': 'string' 
+     },
+    },
+    'shield': {
+      'name': {
+        'css': 'shield-name',
+        'type':  'none'
+      },
+      'face-name': {
+        'css': 'shield-name',
+        'type':  'string' 
+      },
+      'size': {
+        'css': 'shield-size',
+        'type':  'int' 
+      },
+      'fill': {
+        'css': 'shield-fill',
+        'type':  'color' 
+      },
+      'min-distance': {
+         'css': 'shield-min-distance',
+        'type':  'int' 
+      },
+      'spacing': {
+         'css': 'shield-spacing',
+        'type':  'int' 
+      },
+      'character-spacing': {
+         'css': 'shield-spacing',
+        'type':  'int' 
+      },
+      'line-spacing': {
+         'css': 'shield-line-spacing',
+        'type':  'int' 
+      },
+      'file': {
+         'css': 'shield-file',
+        'type':  'uri'
+      },
+      'width': {
+         'css': 'shield-width',
+        'type':  'int'
+      },
+      'height': {
+         'css': 'shield-height',
+        'type':  'int'
+      },
+      'type': {
+         'css': 'shield-type',
+        'type':  'None'
+      },
+      'meta-output': {
+         'css': 'shield-meta-output',
+        'type':  'string'
+      },
+      'meta-writer': {
+         'css': 'shield-meta-writer',
+        'type':  'string'
+      },
+    },
+    'line-pattern': {
+      'line-pattern-file': {
+        'type':  'uri'
+      },
+      'line-pattern-width': {
+        'type':  'int' 
+      },
+      'line-pattern-height': {
+        'type':  'int' 
+      },
+      'line-pattern-type': {
+        'type':  'none'
+      },
+      'line-pattern-meta-output': {
+        'type':  'string' 
+      },
+      'line-pattern-meta-writer': {
+        'type':  'string' 
+      },
+    },
+    'polygon-pattern': {
+      'polygon-pattern-file': {
+        'type': 'uri'
+      },
+      'polygon-pattern-width': {
+        'type': 'int' 
+      },
+      'polygon-pattern-height': {
+        'type': 'int' 
+      },
+      'polygon-pattern-type': {
+        'type': 'none'
+      },
+      'polygon-pattern-meta-output': {
+        'type': 'string' 
+      },
+      'polygon-pattern-meta-writer': {
+        'type': 'string' 
+      },
+    },
+    'raster': {
+      'raster-opacity': {
+        'type': 'float'
+      },
+      'raster-mode': {
+        'type': 
+          ['normal','grain_merge', 'grain_merge2',
+          'multiply', 'multiply2', 'divide', 'divide2',
+          'screen', 'hard_light'] 
+      },
+      'raster-scaling': {
+        'type': ['fast', 'bilinear', 'bilinear8']
+      },
+    },
+    'point': {
+      'point-file': {
+        'type': 'uri'
+      },
+      'point-width': {
+        'type': 'int'
+      },
+      'point-height': {
+        'type': 'int'
+      },
+      'point-type': {
+        'type': 'none'
+      },
+      'point-allow-overlap': {
+        'type': 'boolean'
+      },
+      'point-meta-output': {
+        'type': 'string' 
+      },
+      'point-meta-writer': {
+        'type': 'string' 
+      },
+    },
+    'text': {
+      'text-face-name': {
+        'type': 'string' 
+      },
+      'text-size': {
+        'type': 'integer' 
+      },
+      'text-ratio': {
+        'type': 'none'
+      },
+      'text-wrap-width': {
+        'type': 'integer' 
+      },
+      'text-spacing': {
+        'type': 'integer' 
+      },
+      'text-character-spacing': {
+        'type': 'integer' 
+      },
+      'text-line-spacing': {
+        'type': 'integer' 
+      },
+      'text-label-position-tolerance': {
+        'type': 'integer' 
+      },
+      'text-max-char-angle-delta': {
+        'type': 'integer' 
+      },
+      'text-fill': {
+        'type': 'color' 
+      },
+      'text-halo-fill': {
+        'type': 'color' 
+      },
+      'text-halo-radius': {
+        'type': 'integer' 
+      },
+      'text-dx': {
+        'type': 'integer' 
+      },
+      'text-dy': {
+        'type': 'integer' 
+      },
+      'text-avoid-edges': {
+        'type': 'boolean'
+      },
+      'text-min-distance': {
+        'type': 'integer' 
+      },
+      'text-allow-overlap': {
+        'type': 'boolean'
+      },
+      'text-placement': {
+        'type': ['point', 'line'] 
+      },
+      'text-transform': {
+        'type': ['uppercase','lowercase'] 
+      },
+      'text-meta-output': {
+        'type': 'string' 
+      },
+      'text-meta-writer': {
+        'type': 'string' 
+      },
+    },
+    'inline': {
+      'inline-color': {
+        'type': 'color' 
+      },
+      'inline-width': {
+        'type': 'float 
+      },
+      'inline-opacity': {
+        'type': 'float 
+      },
+      'inline-join': {
+        'type': ['miter', 'round', 'bevel']
+      },
+      'inline-cap': {
+        'type': ['butt', 'round', 'square']
+      },
+      'inline-dasharray': {
+        'type': 'numbers'
+      },
+      'inline-meta-output': {
+        'type': 'string' 
+      },
+      'inline-meta-writer': {
+        'type': 'string' 
+      },
+    },
+    'outline': {
+      'outline-color': {
+          'type': 'color' 
+      },
+      'outline-width': {
+        'type': 'float'
+      },
+      'outline-opacity': {
+        'type': 'float'
+      },
+      'outline-join': {
+        'type': ['miter', 'round', 'bevel'] 
+      },
+      'outline-cap': {
+        'type': ['butt', 'round', 'square'] 
+      },
+      'outline-dasharray': {
+        'type': 'numbers'
+      },
+      'outline-meta-output': {
+        'type': 'string' 
+      },
+      'outline-meta-writer': {
+        'type': 'string' 
+      },
+    }
+  }
+}
