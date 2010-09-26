@@ -1328,16 +1328,6 @@ def compile(src, dirs, **kwargs):
        Target srs for the compiled stylesheet. If provided, overrides default map 
        srs in the mml.
        
-     safe_urls:
-       If True, paths of any files placed by Cascadenik will be base64 encoded calling
-       safe64.url2fs() on the url or filesystem path.
-
-     no_cache:
-       By default remotely downloaded files will be read from the location where they
-       were unpacked ('target_dir'). If 'no_cache' is True, then remote files will be
-       downloaded even if a local copy exists in the output location, effectively
-       overwriting any previously downloaded remote files or moved local files.
-     
      pretty:
        If True, XML output will be fully indented (otherwise indenting is haphazard).
        
