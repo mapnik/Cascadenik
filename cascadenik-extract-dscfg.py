@@ -126,7 +126,7 @@ def convert(src, outmml, outconfig, opts):
             params[param.attrib['name']] = param.text
         
         params.update(layer.find("Datasource").attrib)
-        params['source_srs'] = "%%(%s)s" % srs_name
+        params['layer_srs'] = "%%(%s)s" % srs_name
         
         ds_name = add_source(sources, ds_name, params)
         
@@ -141,7 +141,7 @@ def convert(src, outmml, outconfig, opts):
         gp = {}
         name_base = None
         if params.get('type') == 'postgis':
-            param_set = ("port","host","user","source_srs","password","type","dbname","estimate_extent","extent")
+            param_set = ("port","host","user","layer_srs","password","type","dbname","estimate_extent","extent")
             name_base = "postgis_conn_%d"
 #        elif params.get('type') == 'shape':
 #            param_set = ("type","file","source_srs")
@@ -172,7 +172,7 @@ def convert(src, outmml, outconfig, opts):
         config.write(oc)
     
     map.insert(0,Element("DataSourcesConfig", src=outconfig))
-    doc.write(outmml,"utf8")
+    doc.write(outmml, encoding="utf8")
 
     
 
