@@ -826,7 +826,7 @@ class StyleRuleTests(unittest.TestCase):
         """
 
         declarations = stylesheet_declarations(s, is_gym=True)
-        rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        rules = get_polygon_rules(declarations)
         
         self.assertEqual(399999, rules[0].maxscale.value)
         self.assertEqual(color(0xCC, 0xCC, 0xCC), rules[0].symbolizers[0].color)
@@ -853,7 +853,7 @@ class StyleRuleTests(unittest.TestCase):
         """
     
         declarations = stylesheet_declarations(s, is_gym=True)
-        rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        rules = get_polygon_rules(declarations)
         
         self.assertEqual(399999, rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0x00), rules[0].symbolizers[0].color)
@@ -887,7 +887,7 @@ class StyleRuleTests(unittest.TestCase):
     
         declarations = stylesheet_declarations(s, is_gym=True)
 
-        poly_rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        poly_rules = get_polygon_rules(declarations)
         
         self.assertEqual(399999, poly_rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0x00), poly_rules[0].symbolizers[0].color)
@@ -905,7 +905,7 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(color(0x00, 0x00, 0xFF), poly_rules[3].symbolizers[0].color)
         self.assertEqual('[foo] > 1', poly_rules[3].filter.text)
         
-        line_rules = get_line_rules(declarations, target_dir=self.tmpdir)
+        line_rules = get_line_rules(declarations)
 
         self.assertEqual(399999, line_rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0xFF), line_rules[0].symbolizers[0].color)
@@ -952,7 +952,7 @@ class StyleRuleTests(unittest.TestCase):
     
         declarations = stylesheet_declarations(s, is_gym=True)
         
-        line_rules = get_line_rules(declarations, target_dir=self.tmpdir)
+        line_rules = get_line_rules(declarations)
 
         self.assertEqual(399999, line_rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0xFF), line_rules[0].symbolizers[0].color)
@@ -1042,7 +1042,7 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(10, text_rule_groups['label'][3].symbolizers[0].size)
         self.assertEqual('[foo] >= 1', text_rule_groups['label'][3].filter.text)
         
-        shield_rule_groups = get_shield_rule_groups(declarations, target_dir=self.tmpdir)
+        shield_rule_groups = get_shield_rule_groups(declarations, self.tmpdir, self.tmpdir)
         
         assert shield_rule_groups['label'][0].minscale is None
         assert shield_rule_groups['label'][0].maxscale is None
@@ -1110,7 +1110,7 @@ class StyleRuleTests(unittest.TestCase):
     
         declarations = stylesheet_declarations(s, is_gym=True)
         
-        shield_rule_groups = get_shield_rule_groups(declarations, target_dir=self.tmpdir)
+        shield_rule_groups = get_shield_rule_groups(declarations, self.tmpdir, self.tmpdir)
         
         assert shield_rule_groups['label'][0].minscale is None
         assert shield_rule_groups['label'][0].maxscale is None
@@ -1166,7 +1166,7 @@ class StyleRuleTests(unittest.TestCase):
             self.assertEqual(8, shield_rule_groups['label'][5].symbolizers[0].height)
         self.assertEqual("[bar] = 'quux' and [foo] > 1", shield_rule_groups['label'][5].filter.text)
 
-        point_rules = get_point_rules(declarations, target_dir=self.tmpdir)
+        point_rules = get_point_rules(declarations, self.tmpdir, self.tmpdir)
         
         assert point_rules[0].filter is None
         assert point_rules[0].minscale is None
@@ -1185,7 +1185,7 @@ class StyleRuleTests(unittest.TestCase):
     
         declarations = stylesheet_declarations(s, is_gym=True)
 
-        point_rules = get_point_rules(declarations, target_dir=self.tmpdir)
+        point_rules = get_point_rules(declarations, self.tmpdir, self.tmpdir)
         
         assert point_rules[0].filter is None
         assert point_rules[0].minscale is None
@@ -1195,7 +1195,7 @@ class StyleRuleTests(unittest.TestCase):
             self.assertEqual(8, point_rules[0].symbolizers[0].width)
             self.assertEqual(8, point_rules[0].symbolizers[0].height)
 
-        polygon_pattern_rules = get_polygon_pattern_rules(declarations, target_dir=self.tmpdir)
+        polygon_pattern_rules = get_polygon_pattern_rules(declarations, self.tmpdir, self.tmpdir)
         
         assert polygon_pattern_rules[0].filter is None
         assert polygon_pattern_rules[0].minscale is None
@@ -1205,7 +1205,7 @@ class StyleRuleTests(unittest.TestCase):
             self.assertEqual(8, polygon_pattern_rules[0].symbolizers[0].width)
             self.assertEqual(8, polygon_pattern_rules[0].symbolizers[0].height)
 
-        line_pattern_rules = get_line_pattern_rules(declarations, target_dir=self.tmpdir)
+        line_pattern_rules = get_line_pattern_rules(declarations, self.tmpdir, self.tmpdir)
         
         assert line_pattern_rules[0].filter is None
         assert line_pattern_rules[0].minscale is None
@@ -1224,7 +1224,7 @@ class StyleRuleTests(unittest.TestCase):
     
         declarations = stylesheet_declarations(s, is_gym=True)
         
-        line_rules = get_line_rules(declarations, target_dir=self.tmpdir)
+        line_rules = get_line_rules(declarations)
         
         self.assertEqual(4, len(line_rules))
         
@@ -1295,7 +1295,7 @@ class StyleRuleTests(unittest.TestCase):
     
         declarations = stylesheet_declarations(s, is_gym=True)
         
-        line_rules = get_line_rules(declarations, target_dir=self.tmpdir)
+        line_rules = get_line_rules(declarations)
         
         self.assertEqual('[ELEVATION] = 0', line_rules[0].filter.text)
         self.assertEqual(color(0x00, 0x00, 0x00), line_rules[0].symbolizers[0].color)
@@ -1321,7 +1321,7 @@ class StyleRuleTests(unittest.TestCase):
     
         declarations = stylesheet_declarations(s, is_gym=True)
         
-        polygon_rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        polygon_rules = get_polygon_rules(declarations)
         
         self.assertEqual("not [landuse] = 'field' and not [landuse] = 'woods' and not [landuse] = 'desert' and not [landuse] = 'forest' and not [landuse] = 'meadow'", polygon_rules[0].filter.text)
         self.assertEqual(color(0x00, 0x00, 0x66), polygon_rules[0].symbolizers[0].color)
@@ -1351,7 +1351,7 @@ class StyleRuleTests(unittest.TestCase):
         """
     
         declarations = stylesheet_declarations(s)
-        polygon_rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        polygon_rules = get_polygon_rules(declarations)
         
         self.assertEqual("[PERSONS] < 2000000", polygon_rules[0].filter.text)
         self.assertEqual(color(0x6c, 0xae, 0x4c), polygon_rules[0].symbolizers[0].color)
@@ -1380,12 +1380,12 @@ class StyleRuleTests(unittest.TestCase):
 
         declarations = stylesheet_declarations(s, is_gym=True)
 
-        polygon_rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        polygon_rules = get_polygon_rules(declarations)
         
         self.assertEqual(color(0x00, 0x00, 0x00), polygon_rules[0].symbolizers[0].color)
         self.assertEqual(0.5, polygon_rules[0].symbolizers[0].opacity)
 
-        line_rules = get_line_rules(declarations, target_dir=self.tmpdir)
+        line_rules = get_line_rules(declarations)
         
         self.assertEqual(color(0x00, 0x00, 0x00), line_rules[0].symbolizers[0].color)
         self.assertEqual(2.0, line_rules[0].symbolizers[0].width)
@@ -1489,18 +1489,18 @@ class StyleRuleTests(unittest.TestCase):
 
         declarations = stylesheet_declarations(s, is_gym=True)
 
-        point_rules = get_point_rules(declarations, target_dir=self.tmpdir)
+        point_rules = get_point_rules(declarations, self.tmpdir, self.tmpdir)
         
         self.assertEqual(16, point_rules[0].symbolizers[0].width)
         self.assertEqual(16, point_rules[0].symbolizers[0].height)
         self.assertEqual(boolean(True), point_rules[0].symbolizers[0].allow_overlap)
 
-        polygon_pattern_rules = get_polygon_pattern_rules(declarations, target_dir=self.tmpdir)
+        polygon_pattern_rules = get_polygon_pattern_rules(declarations, self.tmpdir, self.tmpdir)
         
         self.assertEqual(16, polygon_pattern_rules[0].symbolizers[0].width)
         self.assertEqual(16, polygon_pattern_rules[0].symbolizers[0].height)
 
-        line_pattern_rules = get_line_pattern_rules(declarations, target_dir=self.tmpdir)
+        line_pattern_rules = get_line_pattern_rules(declarations, self.tmpdir, self.tmpdir)
         
         self.assertEqual(16, line_pattern_rules[0].symbolizers[0].width)
         self.assertEqual(16, line_pattern_rules[0].symbolizers[0].height)
@@ -1541,7 +1541,7 @@ class StyleRuleTests(unittest.TestCase):
 
         declarations = stylesheet_declarations(s, is_gym=True)
 
-        shield_rule_groups = get_shield_rule_groups(declarations, target_dir=self.tmpdir)
+        shield_rule_groups = get_shield_rule_groups(declarations, self.tmpdir, self.tmpdir)
         
         self.assertEqual('Helvetica', shield_rule_groups['just_text'][0].symbolizers[0].face_name)
         self.assertEqual(12, shield_rule_groups['just_text'][0].symbolizers[0].size)
@@ -1724,7 +1724,7 @@ base=template
         self.doCompile1(dscfg)
         
     def doCompile1(self, s):
-        map = compile(s, dir=self.tmpdir)
+        map = compile(s, self.tmpdir, self.tmpdir)
         
         self.assertEqual(1, len(map.layers))
         self.assertEqual(3, len(map.layers[0].styles))
@@ -1791,7 +1791,7 @@ base=template
                 </Layer>
             </Map>
         """
-        map = compile(s, dir=self.tmpdir)
+        map = compile(s, self.tmpdir, self.tmpdir)
         
         mmap = mapnik.Map(640, 480)
         map.to_mapnik(mmap)
@@ -1960,8 +1960,8 @@ base=template
             </Map>
         """
         mmap = mapnik.Map(640, 480)
-        ms = compile(s, target_dir=self.tmpdir)
-        ms.to_mapnik(mmap)
+        ms = compile(s, self.tmpdir, self.tmpdir)
+        ms.to_mapnik(mmap, self.tmpdir)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
 
     def testCompile5(self):
@@ -1979,7 +1979,7 @@ base=template
             </Map>
         """.encode('utf-8')
         mmap = mapnik.Map(640, 480)
-        ms = compile(s, target_dir=self.tmpdir)
+        ms = compile(s, self.tmpdir, self.tmpdir)
         ms.to_mapnik(mmap)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
         

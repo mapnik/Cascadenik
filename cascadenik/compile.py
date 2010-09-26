@@ -954,7 +954,7 @@ def locally_cache_remote_file(href, dir):
     
     return local_path
 
-def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
+def postprocess_symbolizer_image_file(file_href, output_dir, cache_dir, **kwargs):
     """ Given a file name and an output directory name, save the image
         file to a temporary location while noting its dimensions.
     """
@@ -966,9 +966,9 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
     mapnik_requires_absolute_paths = (version < 601)
 
     scheme, n, path, p, q, f = urlparse(file_href)
-
+    
     if scheme == 'http':
-        scheme, path = '', locally_cache_remote_file(file_href, target_dir)
+        scheme, path = '', locally_cache_remote_file(file_href, cache_dir)
         
     if scheme not in ('file', '') or not os.path.exists(path):
         raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
@@ -976,21 +976,22 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
     if mapnik_requires_absolute_paths:
         path = os.path.realpath(path)
     
-    path = appropriate_path(path, path, target_dir)
+    # it's probably safe to use a relative path where the cache and output dirs match
+    original = (cache_dir == output_dir) and os.path.relpath(path, output_dir) or path
+    
+    path = appropriate_path(original, path, output_dir)
 
     msg('reading symbol: %s' % path)
 
-    target_dir = kwargs.get('target_dir',tempfile.gettempdir())
-    
     image_name, ext = splitext(path)
     
     if ext in ('.png', 'tif', 'tiff'):
-        target_ext = ext
+        output_ext = ext
     else:
-        target_ext = '.png'
+        output_ext = '.png'
 
     # new local file name
-    dest_file = '%s%s' % (image_name, target_ext)
+    dest_file = '%s%s' % (image_name, output_ext)
 
     msg('Destination file: %s' % dest_file)
         
@@ -998,11 +999,14 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
     if not mapnik_auto_image_support and not Image:
         raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
 
-    img = Image.open(path)
+    try:
+        img = Image.open(os.path.join(output_dir, path))
+    except:
+        raise Exception(str((path, original, output_dir, cache_dir, os.path.join(output_dir, path))))
 
-    return dest_file, target_ext[1:], img.size[0], img.size[1]
+    return dest_file, output_ext[1:], img.size[0], img.size[1]
 
-def get_shield_rule_groups(declarations, **kwargs):
+def get_shield_rule_groups(declarations, output_dir, cache_dir, **kwargs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1049,7 +1053,7 @@ def get_shield_rule_groups(declarations, **kwargs):
             
             file, filetype, width, height \
                 = values.has_key('shield-file') \
-                and postprocess_symbolizer_image_file(str(values['shield-file'].value), **kwargs) \
+                and postprocess_symbolizer_image_file(str(values['shield-file'].value), output_dir, cache_dir, **kwargs) \
                 or (None, None, None, None)
             
             width = values.has_key('shield-width') and values['shield-width'].value or width
@@ -1074,7 +1078,7 @@ def get_shield_rule_groups(declarations, **kwargs):
     
     return dict(groups)
 
-def get_point_rules(declarations, **kwargs):
+def get_point_rules(declarations, output_dir, cache_dir, **kwargs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1092,7 +1096,7 @@ def get_point_rules(declarations, **kwargs):
     for (filter, values) in filtered_property_declarations(declarations, property_names):
         point_file, point_type, point_width, point_height \
             = values.has_key('point-file') \
-            and postprocess_symbolizer_image_file(str(values['point-file'].value), **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['point-file'].value), output_dir, cache_dir, **kwargs) \
             or (None, None, None, None)
         
         point_width = values.has_key('point-width') and values['point-width'].value or point_width
@@ -1106,7 +1110,7 @@ def get_point_rules(declarations, **kwargs):
     
     return rules
 
-def get_polygon_pattern_rules(declarations, **kwargs):
+def get_polygon_pattern_rules(declarations, output_dir, cache_dir, **kwargs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1125,7 +1129,7 @@ def get_polygon_pattern_rules(declarations, **kwargs):
     
         poly_pattern_file, poly_pattern_type, poly_pattern_width, poly_pattern_height \
             = values.has_key('polygon-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), output_dir, cache_dir, **kwargs) \
             or (None, None, None, None)
         
         poly_pattern_width = values.has_key('polygon-pattern-width') and values['polygon-pattern-width'].value or poly_pattern_width
@@ -1137,7 +1141,7 @@ def get_polygon_pattern_rules(declarations, **kwargs):
     
     return rules
 
-def get_line_pattern_rules(declarations, **kwargs):
+def get_line_pattern_rules(declarations, output_dir, cache_dir, **kwargs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1156,7 +1160,7 @@ def get_line_pattern_rules(declarations, **kwargs):
     
         line_pattern_file, line_pattern_type, line_pattern_width, line_pattern_height \
             = values.has_key('line-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), output_dir, cache_dir, **kwargs) \
             or (None, None, None, None)
         
         line_pattern_width = values.has_key('line-pattern-width') and values['line-pattern-width'].value or line_pattern_width
@@ -1180,20 +1184,20 @@ def get_applicable_declarations(element, declarations):
             if dec.selector.matches(element_tag, element_id, element_classes)]
 
 # TODO - unfinished work around moving local shapefiles
-#def handle_shapefile_parts(shapefile,target_dir):
-#    if not os.path.exists(target_dir):
-#        os.mkdir(target_dir)
+#def handle_shapefile_parts(shapefile,output_dir):
+#    if not os.path.exists(output_dir):
+#        os.mkdir(output_dir)
 #    for (expected, required) in SHAPE_PARTS:
 #        if required and expected not in extensions:
 #            raise Exception('Shapefile %(shapefile)s missing extension "%(expected)s"' % locals())
 #        
 #        name = splitext(shapefile)[0]
-#        source = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
-#        dest = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
+#        source = os.path.normpath('%(output_dir)s/%(basename)s' % locals())
+#        dest = os.path.normpath('%(output_dir)s/%(basename)s' % locals())
 #        
 #        shutil.copy()
 
-def handle_zipped_shapefile(zip_path, dir):
+def unzip_shapefile_into(zip_path, dir):
     """
     """
     hash = md5(zip_path).hexdigest()[:8]
@@ -1242,9 +1246,9 @@ def appropriate_path(original, path, dir):
 
     return rel_path
 
-def localize_shapefile(shp_href, target_dir, **kwargs):
-    """ Given a shapefile href and a temp directory, modify the
-        shapefile name so it's an absolute path if appropriate.
+def localize_shapefile(shp_href, output_dir, cache_dir, **kwargs):
+    """ Given a shapefile href, an output directory, and a cache directory,
+        modify the shapefile name so it's an absolute path if appropriate.
     
         Shapefile is assumed to be relative to the stylesheet path.
         If it's found to look like a URL (e.g. "http://...") it's assumed
@@ -1259,7 +1263,7 @@ def localize_shapefile(shp_href, target_dir, **kwargs):
     scheme, n, path, p, q, f = urlparse(shp_href)
     
     if scheme == 'http':
-        scheme, path = '', locally_cache_remote_file(shp_href, target_dir)
+        scheme, path = '', locally_cache_remote_file(shp_href, cache_dir)
 
     if scheme not in ('file', ''):
         raise Exception("Shapefile needs to be a working, fetchable resource, not %s" % shp_href)
@@ -1267,14 +1271,17 @@ def localize_shapefile(shp_href, target_dir, **kwargs):
     if mapnik_requires_absolute_paths:
         path = os.path.realpath(path)
     
-    original, path = path, appropriate_path(path, path, target_dir)
-
-    if path.endswith('.zip'):
-        path = handle_zipped_shapefile(path, target_dir)
+    # it's probably safe to use a relative path where the cache and output dirs match
+    original = (cache_dir == output_dir) and os.path.relpath(path, output_dir) or path
     
-    return appropriate_path(original, path, target_dir)
+    path = appropriate_path(original, path, output_dir)
+    
+    if path.endswith('.zip'):
+        path = unzip_shapefile_into(path, cache_dir)
 
-def localize_file_datasource(file_href, target_dir, **kwargs):
+    return appropriate_path(original, path, output_dir)
+
+def localize_file_datasource(file_href, output_dir, cache_dir, **kwargs):
     """ Handle localizing file-based datasources other than shapefiles.
     
         This will only work for single-file based types.
@@ -1288,12 +1295,15 @@ def localize_file_datasource(file_href, target_dir, **kwargs):
     scheme, n, path, p, q, f = urlparse(file_href)
     
     if scheme == 'http':
-        scheme, path = '', locally_cache_remote_file(file_href, target_dir)
+        scheme, path = '', locally_cache_remote_file(file_href, cache_dir)
 
     if scheme not in ('file', ''):
         raise Exception("Datasource file needs to be a working, fetchable resource, not %s" % file_href)
 
-    return appropriate_path(path, path, target_dir)
+    # it's probably safe to use a relative path where the cache and output dirs match
+    original = (cache_dir == output_dir) and os.path.relpath(path, output_dir) or path
+    
+    return appropriate_path(original, path, output_dir)
 
 def auto_detect_mapnik_version():
     mapnik = None
@@ -1311,7 +1321,7 @@ def mapnik_version_string(version):
     major_version = version / 100000
     return '%s.%s.%s' % ( major_version, minor_version,patch_level)
             
-def compile(src,**kwargs):
+def compile(src, output_dir, cache_dir, **kwargs):
     """
     Compile a Cascadenik MML file, returning an XML string.
     
@@ -1328,10 +1338,6 @@ def compile(src,**kwargs):
        If True, paths of any files placed by Cascadenik will be base64 encoded calling
        safe64.url2fs() on the url or filesystem path.
 
-     target_dir:
-       If set, all file-based resources (symbols, shapefiles, etc) will be written to this
-       output directory. If not set, tempfile.gettempdir() will be used.
-     
      no_cache:
        By default remotely downloaded files will be read from the location where they
        were unpacked ('target_dir'). If 'no_cache' is True, then remote files will be
@@ -1398,16 +1404,6 @@ def compile(src,**kwargs):
             msg('prepending "file:" to %s for windows compatibility with urlopen and absolute paths' % src)
             src = 'file:%s' % src
     
-    target_dir = kwargs.get('target_dir')
-    if target_dir:
-        msg('Writing all files to "target_dir": %s' % target_dir)
-        if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
-            msg('"target_dir" does not exist, creating...')
-    else:
-        tmp_dir = tempfile.gettempdir()
-        kwargs['target_dir'] = tmp_dir
-
     try:
         # guessing src is a literal XML string?
         map_el = ElementTree.fromstring(src)
@@ -1465,7 +1461,7 @@ def compile(src,**kwargs):
             if datasource_params.get('type') == 'shape':
                 # handle a local shapefile or fetch a remote, zipped shapefile
                 msg('Handling shapefile datasource...')
-                file_param = localize_shapefile(file_param, **kwargs)
+                file_param = localize_shapefile(file_param, output_dir, cache_dir, **kwargs)
 
                 # TODO - support datasource reprojection to make map srs
                 # TODO - support automatically indexing shapefiles
@@ -1473,7 +1469,7 @@ def compile(src,**kwargs):
             else: # ogr,raster, gdal, sqlite
                 # attempt to generically handle other file based datasources
                 msg('Handling generic datasource...')
-                file_param = localize_file_datasource(file_param, **kwargs)
+                file_param = localize_file_datasource(file_param, output_dir, cache_dir, **kwargs)
 
             msg("Localized path = %s" % file_param)
             datasource_params['file'] = file_param
@@ -1490,25 +1486,25 @@ def compile(src,**kwargs):
                                    get_polygon_rules(layer_declarations, **kwargs)))
 
         styles.append(output.Style('polygon pattern style %d' % ids.next(),
-                                   get_polygon_pattern_rules(layer_declarations, **kwargs)))
+                                   get_polygon_pattern_rules(layer_declarations, output_dir, cache_dir, **kwargs)))
 
         styles.append(output.Style('raster style %d' % ids.next(),
-                           get_raster_rules(layer_declarations,**kwargs)))
+                                   get_raster_rules(layer_declarations,**kwargs)))
 
         styles.append(output.Style('line style %d' % ids.next(),
                                    get_line_rules(layer_declarations, **kwargs)))
 
         styles.append(output.Style('line pattern style %d' % ids.next(),
-                                   get_line_pattern_rules(layer_declarations, **kwargs)))
+                                   get_line_pattern_rules(layer_declarations, output_dir, cache_dir, **kwargs)))
 
-        for (shield_name, shield_rules) in get_shield_rule_groups(layer_declarations, **kwargs).items():
+        for (shield_name, shield_rules) in get_shield_rule_groups(layer_declarations, output_dir, cache_dir, **kwargs).items():
             styles.append(output.Style('shield style %d (%s)' % (ids.next(), shield_name), shield_rules))
 
         for (text_name, text_rules) in get_text_rule_groups(layer_declarations, **kwargs).items():
             styles.append(output.Style('text style %d (%s)' % (ids.next(), text_name), text_rules))
 
         styles.append(output.Style('point style %d' % ids.next(),
-                                   get_point_rules(layer_declarations, **kwargs)))
+                                   get_point_rules(layer_declarations, output_dir, cache_dir, **kwargs)))
                                    
         styles = [s for s in styles if s.rules]
         
