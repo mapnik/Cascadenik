@@ -1564,7 +1564,7 @@ class DataSourcesTests(unittest.TestCase):
 
     def gen_section(self, name, **kwargs):
         return """[%s]\n%s""" % (name, "\n".join(("%s=%s" % kwarg for kwarg in kwargs.items())))
-                                 
+
     def testSimple1(self):
         cdata = """
 [simple]
@@ -1733,8 +1733,13 @@ class CompileXMLTests(unittest.TestCase):
                         text-fill: #f90;
                     }
                 </Stylesheet>
+                <Datasource name="template">
+                     <Parameter name="type">shape</Parameter>
+                     <Parameter name="encoding">latin1</Parameter>
+                </Datasource>
+
                 <Layer>
-                    <Datasource>
+                    <Datasource base="template">
                         <Parameter name="type">shape</Parameter>
                         <Parameter name="file">data/test.shp</Parameter>
                     </Datasource>
@@ -1755,7 +1760,7 @@ class CompileXMLTests(unittest.TestCase):
         
         #print open(path, 'r').read()
         os.unlink(path)
-        
+
         self.assertEqual(3, len(map_el.findall('Style')))
         self.assertEqual(1, len(map_el.findall('Layer')))
         self.assertEqual(3, len(map_el.find('Layer').findall('StyleName')))
@@ -1772,6 +1777,11 @@ class CompileXMLTests(unittest.TestCase):
 
             if style_el.get('name').startswith('text style '):
                 self.assertEqual(1, len(style_el.find('Rule').findall('TextSymbolizer')))
+
+        self.assertEqual(len(map_el.find("Layer").findall('Datasource')), 1)
+        params = dict(((p.get('name'), p.text) for p in map_el.find('Layer').find('Datasource').findall('Parameter')))
+        for k,v in dict(type="shape", file="data/test.shp", encoding="latin1").items():
+            self.assertEqual(params[k], v)
 
     def testCompile3(self):
         """
@@ -1890,8 +1900,13 @@ class CompileXMLTests(unittest.TestCase):
                         shield-character-spacing: 18;
                     }
                 </Stylesheet>
+                <Datasource name="template">
+                     <Parameter name="type">shape</Parameter>
+                     <Parameter name="encoding">latin1</Parameter>
+                </Datasource>
+
                 <Layer>
-                    <Datasource>
+                    <Datasource base="template">
                         <Parameter name="type">shape</Parameter>
                         <Parameter name="file">data/test.shp</Parameter>
                     </Datasource>

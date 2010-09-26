@@ -1484,6 +1484,15 @@ def compile(src,**kwargs):
     
     # a list of layers and a sequential ID generator
     layers, ids = [], (i for i in xrange(1, 999999))
+
+
+    # Handle base datasources
+    # http://trac.mapnik.org/changeset/574
+    datasource_templates = {}
+    for base_el in map_el:
+        if base_el.tag != 'Datasource':
+            continue
+        datasource_templates[base_el.get('name')] = dict(((p.get('name'),p.text) for p in base_el.findall('Parameter')))
     
     for layer_el in map_el.findall('Layer'):
     
@@ -1492,27 +1501,32 @@ def compile(src,**kwargs):
             continue
 
         # build up a map of Parameters for this Layer
-        datasource_params = dict((p.get('name'),p) for p in layer_el.find('Datasource').findall("Parameter"))
+        datasource_params = dict((p.get('name'),p.text) for p in layer_el.find('Datasource').findall('Parameter'))
+
+        base = layer_el.find('Datasource').get('base')
+        if base:
+            datasource_params.update(datasource_templates[base])
 
         if datasource_params.get('table'):
             # remove line breaks from possible SQL
             # http://trac.mapnik.org/ticket/173
             if not kwargs.get('mapnik_version') >= 601:
-                datasource_params.get('table').text = datasource_params.get('table').text.replace('\r', ' ').replace('\n', ' ')
+                datasource_params['table'] = datasource_params.get('table').replace('\r', ' ').replace('\n', ' ')
         elif datasource_params.get('file') is not None:
             # make sure we localize any remote files
-            file_param_el = datasource_params.get('file')
-            if datasource_params.get('type').text == 'shape':
+            file_param = datasource_params.get('file')
+            if datasource_params.get('type') == 'shape':
                 # handle a local shapefile or fetch a remote, zipped shapefile
                 msg('Handling shapefile datasource...')
-                file_param_el.text = localize_shapefile(src, file_param_el.text, **kwargs)
+                file_param = localize_shapefile(src, file_param, **kwargs)
                 # TODO - support datasource reprojection to make map srs
                 # TODO - support automatically indexing shapefiles
             else: # ogr,raster, gdal, sqlite
                 # attempt to generically handle other file based datasources
                 msg('Handling generic datasource...')
-                file_param_el.text = localize_datasource(src, file_param_el.text, **kwargs)
-            msg("Localized path = %s" % file_param_el.text)
+                file_param = localize_datasource(src, file_param, **kwargs)
+            msg("Localized path = %s" % file_param)
+            datasource_params['file'] = file_param
             # TODO - consider custom support for other mapnik datasources:
             # sqlite, oracle, osm, kismet, gdal, raster, rasterlite
 
@@ -1548,7 +1562,6 @@ def compile(src,**kwargs):
         styles = [s for s in styles if s.rules]
         
         if styles:
-            datasource_params = dict([(p.get('name'), p.text) for p in layer_el.find('Datasource').findall('Parameter')])
             datasource = output.Datasource(**datasource_params)
             
             layer = output.Layer('layer %d' % ids.next(),
