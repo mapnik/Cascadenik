@@ -10,10 +10,10 @@ import os.path
 import zipfile
 import shutil
 
-from re import sub
 from hashlib import md5
 from datetime import datetime
 from time import strftime, localtime
+from re import sub, compile, MULTILINE
 from urlparse import urlparse, urljoin
 from operator import lt, le, eq, ge, gt
 from os.path import basename, splitext
@@ -1403,10 +1403,15 @@ def compile(src, dirs, **kwargs):
             datasource_params.update(datasource_templates[base])
 
         if datasource_params.get('table'):
-            # remove line breaks from possible SQL
+            # remove line breaks from possible SQL, using a possibly-unsafe regexp
+            # that simply blows away anything that looks like it might be a SQL comment.
             # http://trac.mapnik.org/ticket/173
             if not MAPNIK_VERSION >= 601:
-                datasource_params['table'] = datasource_params.get('table').replace('\r', ' ').replace('\n', ' ')
+                sql = datasource_params.get('table')
+                sql = compile(r'--.*$', MULTILINE).sub('', sql)
+                sql = sql.replace('\r', ' ').replace('\n', ' ')
+                datasource_params['table'] = sql
+
         elif datasource_params.get('file') is not None:
             # make sure we localize any remote files
             file_param = datasource_params.get('file')
