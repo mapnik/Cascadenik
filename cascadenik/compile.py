@@ -16,6 +16,8 @@ import shutil
 # cascadenik
 import safe64
 import style
+import sources
+
 
 HAS_PIL = False
 try:
@@ -538,15 +540,9 @@ def extract_declarations(map_el, base):
     
     for stylesheet in map_el.findall('Stylesheet'):
         map_el.remove(stylesheet)
-    
-        if 'src' in stylesheet.attrib:
-            url = urlparse.urljoin(base, stylesheet.attrib['src'])
-            styles, local_base = urllib.urlopen(url).read().decode(DEFAULT_ENCODING), url
 
-        elif stylesheet.text:
-            styles, local_base = stylesheet.text, base
-
-        else:
+        styles, local_base = fetch_embedded_or_remote_src(stylesheet, base)
+        if not styles:
             continue
             
         rulesets = style.stylesheet_rulesets(styles, base=local_base, is_gym=is_gym_projection(map_el.get('srs','')))
@@ -554,6 +550,78 @@ def extract_declarations(map_el, base):
 
     return declarations
 
+def fetch_embedded_or_remote_src(elem, base):
+    if 'src' in elem.attrib:
+        url = urlparse.urljoin(base, elem.attrib['src'])
+        return urllib.urlopen(url).read().decode(DEFAULT_ENCODING), url
+
+    elif elem.text:
+        return elem.text, base
+    
+    return None, None
+
+def expand_source_declarations(map_el, base):
+    """ This provides mechanism for externalizing and sharing data sources.  The datasource configs are
+    python files, and layers reference sections within that config:
+    
+    <DataSourcesConfig src="datasources.cfg" />
+    <Layer class="road major" source_name="planet_osm_major_roads" />
+    <Layer class="road minor" source_name="planet_osm_minor_roads" />
+    
+    See example_dscfg.mml and example.cfg at the root of the cascadenik directory for an example.
+    """
+
+    
+    
+    ds = sources.DataSources()
+
+    # build up the configuration
+    for spec in map_el.findall('DataSourcesConfig'):
+        map_el.remove(spec)
+        src_text, local_base = fetch_embedded_or_remote_src(spec, base)
+        if not src_text:
+            continue
+
+        ds.add_config(src_text, local_base)
+
+    # now transform the xml
+
+    # add in base datasources
+    for base_name in ds.bases:
+        b = Element("Datasource", name=base_name)
+        for pname, pvalue in ds.sources[base_name]['parameters'].items():
+            p = Element("Parameter", name=pname)
+            p.text = str(pvalue)
+            b.append(p)
+        map_el.insert(0, b)
+    
+    # expand layer data sources
+    for layer in map_el.findall('Layer'):
+        if 'source_name' not in layer.attrib:
+            continue
+        
+        if layer.attrib['source_name'] not in ds.sources:
+            raise Exception("Datasource '%s' referenced, but not defined in layer:\n%s" % (layer.attrib['source_name'], ElementTree.tostring(layer)))
+                
+        # create the nested datasource object 
+        b = Element("Datasource")
+        dsrc = ds.sources[layer.attrib['source_name']]
+
+        if 'base' in dsrc:
+            b.attrib['base'] = dsrc['base']
+        
+        # set the SRS if present
+        if 'layer_srs' in dsrc:
+            layer.attrib['srs'] = dsrc['layer_srs']
+        
+        for pname, pvalue in dsrc['parameters'].items():
+            p = Element("Parameter", name=pname)
+            p.text = pvalue
+            b.append(p)
+        
+        layer.append(b)
+        del layer.attrib['source_name']
+        
 def test2str(test):
     """ Return a mapnik-happy Filter expression atom for a single test
     """
@@ -1410,7 +1478,8 @@ def compile(src,**kwargs):
         doc = ElementTree.parse(urllib.urlopen(src))
         map_el = doc.getroot()
         base = src
-    
+
+    expand_source_declarations(map_el, base)
     declarations = extract_declarations(map_el, base)
     
     # a list of layers and a sequential ID generator
@@ -1421,25 +1490,28 @@ def compile(src,**kwargs):
         # nevermind with this one
         if layer_el.get('status', None) in ('off', '0', 0):
             continue
-        
-        for parameter_el in layer_el.find('Datasource').findall('Parameter'):
-            if parameter_el.get('name', None) == 'table':
-                # remove line breaks from possible SQL
-                # http://trac.mapnik.org/ticket/173
-                if not kwargs.get('mapnik_version') >= 601:
-                    parameter_el.text = parameter_el.text.replace('\r', ' ').replace('\n', ' ')
-            elif parameter_el.get('name', None) == 'file':
-                # make sure we localize any remote files
-                if parameter_el.get('type', None) == 'shape':
-                    # handle a local shapefile or fetch a remote, zipped shapefile
-                    msg('Handling shapefile datasource...')
-                    parameter_el.text = localize_shapefile(src, parameter_el.text, **kwargs)
-                    # TODO - support datasource reprojection to make map srs
-                    # TODO - support automatically indexing shapefiles
-                else: # ogr,raster, gdal, sqlite
-                    # attempt to generically handle other file based datasources
-                    msg('Handling generic datasource...')
-                    parameter_el.text = localize_datasource(src, parameter_el.text, **kwargs)
+
+        # build up a map of Parameters for this Layer
+        datasource_params = dict((p.get('name'),p) for p in layer_el.find('Datasource').findall("Parameter"))
+
+        if datasource_params.get('table'):
+            # remove line breaks from possible SQL
+            # http://trac.mapnik.org/ticket/173
+            if not kwargs.get('mapnik_version') >= 601:
+                datasource_params.get('table').text = datasource_params.get('table').text.replace('\r', ' ').replace('\n', ' ')
+        elif datasource_params.get('file') is not None:
+            # make sure we localize any remote files
+            file_param_el = datasource_params.get('file')
+            if datasource_params.get('type').text == 'shape':
+                # handle a local shapefile or fetch a remote, zipped shapefile
+                msg('Handling shapefile datasource...')
+                file_param_el.text = localize_shapefile(src, file_param_el.text, **kwargs)
+                # TODO - support datasource reprojection to make map srs
+                # TODO - support automatically indexing shapefiles
+            else: # ogr,raster, gdal, sqlite
+                # attempt to generically handle other file based datasources
+                msg('Handling generic datasource...')
+                file_param_el.text = localize_datasource(src, file_param_el.text, **kwargs)
 
             # TODO - consider custom support for other mapnik datasources:
             # sqlite, oracle, osm, kismet, gdal, raster, rasterlite
