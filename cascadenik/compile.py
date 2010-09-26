@@ -859,7 +859,7 @@ def get_text_rule_groups(declarations):
     """
     property_map = {'text-face-name': 'face_name', 'text-size': 'size', 
                     'text-ratio': 'text_ratio', 'text-wrap-width': 'wrap_width', 'text-spacing': 'spacing',
-                    'text-label-position-tolerance': 'label_position_tolerance','text-transform':'text_transform'
+                    'text-label-position-tolerance': 'label_position_tolerance','text-transform':'text_transform',
                     'text-max-char-angle-delta': 'max_char_angle_delta', 'text-fill': 'fill',
                     'text-halo-fill': 'halo_fill', 'text-halo-radius': 'halo_radius',
                     'text-dx': 'dx', 'text-dy': 'dy', 'text-character-spacing': 'character_spacing',
