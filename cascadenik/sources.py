@@ -1,31 +1,56 @@
 import ConfigParser
 import StringIO
 import mapnik
+import urlparse
+import urllib
 
 class DataSources(object):
-    def __init__(self):
+    def __init__(self, base, local_cfg):
         self.templates = set([])
-        self.parser = None
         self.sources = {}
+        self.defaults = {}
+        self.local_cfg_data = None
+        self.local_cfg_url = None
+        self.finalized = False
+        
+        # avoid circular import
+        import compile
+        self.msg = compile.msg     
+        
+        # if a local_cfg is provided, we want to get the defaults first, before reading any other
+        # configuration.
+        if local_cfg:
+            self.local_cfg_url = urlparse.urljoin(base, local_cfg)
+            self.msg("Using local datasource config: %s" % self.local_cfg_url)
+            self.set_local_cfg_data(urllib.urlopen(self.local_cfg_url).read().decode(compile.DEFAULT_ENCODING))
+            
+    def set_local_cfg_data(self, data):
+        self.local_cfg_data = data
+        locals = OverrideConfigParser({})
+        locals.loads(data)
+        self.defaults = locals.defaults()
+
+    def finalize(self):
+        if self.local_cfg_data:
+            self.msg("Loading local config data: %s" % self.local_cfg_url)
+            self.add_config(self.local_cfg_data, self.local_cfg_url)
+        self.finalized = True
 
     def get(self, name):
+        if not self.finalized:
+            self.finalize()
         return self.sources.get(name)
 
     def add_config(self, textdata, filename):
-        data = StringIO.StringIO(textdata)
-        data.seek(0)
-        if self.parser:
-            self.parser = ChainedConfigParser(self.parser)
-        else:
-            self.parser = ConfigParser.SafeConfigParser()
-        self.parser.readfp(data)
+        parser = OverrideConfigParser(self.defaults)
+        parser.loads(textdata)
 
-        for sect in self.parser.sections():
+        for sect in parser.sections():
             options = {}
             name = sect
-            dtype = self.parser.get(sect,"type") if self.parser.has_option(sect, "type") else None
-            template = self.parser.get(sect,"template") if self.parser.has_option(sect, "template") else None
-            layer_srs = self.parser.get(sect,"layer_srs") if self.parser.has_option(sect, "layer_srs") else None
+            dtype = parser.get(sect,"type") if parser.has_option(sect, "type") else None
+            template = parser.get(sect,"template") if parser.has_option(sect, "template") else None
+            layer_srs = parser.get(sect,"layer_srs") if parser.has_option(sect, "layer_srs") else None
 
             # this layer declares a template template
             if template:
@@ -36,8 +61,8 @@ class DataSources(object):
                     layer_srs = self.sources[template].get('layer_srs', layer_srs)
                 else:
                     # TODO catch section missing errors
-                    dtype = self.parser.get(template, 'type')
-                    layer_srs = self.parser.get(template, 'layer_srs') if self.parser.has_option(template, 'layer_srs') else layer_srs
+                    dtype = parser.get(template, 'type')
+                    layer_srs = parser.get(template, 'layer_srs') if parser.has_option(template, 'layer_srs') else layer_srs
 
             # handle the most common projections
             if layer_srs and layer_srs.lower().startswith("epsg:"):
@@ -63,13 +88,13 @@ class DataSources(object):
                 opt_value = None
                 try:
                     if option_type == int:
-                        opt_value = self.parser.getint(sect,option)
+                        opt_value = parser.getint(sect,option)
                     elif option_type == float:
-                        opt_value = self.parser.getfloat(sect,option)
+                        opt_value = parser.getfloat(sect,option)
                     elif option_type == bool:
-                        opt_value = self.parser.getboolean(sect,option)
+                        opt_value = parser.getboolean(sect,option)
                     else:
-                        opt_value = self.parser.get(sect,option)
+                        opt_value = parser.get(sect,option)
                 except ConfigParser.NoOptionError:
                     pass
                 except ValueError, e:
@@ -145,10 +170,16 @@ class DataSources(object):
     for v in XML_OPTIONS.values():
         v.update(dict(type=str, estimate_extent=bool, extent=str))
 
-class ChainedConfigParser(ConfigParser.SafeConfigParser):
-    def __init__(self, last):
-        ConfigParser.SafeConfigParser.__init__(self)
-        d = last.defaults()
-        d.update(self._defaults)
-        self._defaults = d 
+class OverrideConfigParser(ConfigParser.SafeConfigParser):
+    def __init__(self, overrides):
+        ConfigParser.SafeConfigParser.__init__(self, overrides)
+        self.overrides = overrides
 
+    def loads(self, textdata):
+        data = StringIO.StringIO(textdata)
+        data.seek(0)
+        self.readfp(data)
+
+    def get(self, section, option):
+        return ConfigParser.SafeConfigParser.get(self, section, option, vars=self.overrides)
+    

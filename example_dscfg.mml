@@ -7,10 +7,13 @@
 
     <DataSourcesConfig src="example.cfg" />
     <DataSourcesConfig><![CDATA[
+[DEFAULT]
+my_srs = epsg:4326
+
 [world_admin0]
 type=shape
 file=http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/110m-admin-0-countries.zip
-source_srs=%(srsWGS84)s
+layer_srs=%(my_srs)s
 
 ]]> </DataSourcesConfig>
     <!-- Layers -->

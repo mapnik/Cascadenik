@@ -1563,7 +1563,7 @@ class StyleRuleTests(unittest.TestCase):
 class DataSourcesTests(unittest.TestCase):
 
     def gen_section(self, name, **kwargs):
-        return """[%s]\n%s""" % (name, "\n".join(("%s=%s" % kwarg for kwarg in kwargs.items())))
+        return """[%s]\n%s\n""" % (name, "\n".join(("%s=%s" % kwarg for kwarg in kwargs.items())))
 
     def testSimple1(self):
         cdata = """
@@ -1572,7 +1572,7 @@ type=shape
 file=foo.shp
 garbage=junk
 """
-        dss = DataSources()
+        dss = DataSources(None, None)
         dss.add_config(cdata, __file__)
         self.assertTrue(dss.sources['simple'] != None)
 
@@ -1586,29 +1586,47 @@ garbage=junk
         self.assertRaises(Exception, dss.add_config, (self.gen_section("foo", encoding="bar"), __file__))
     
     def testChain1(self):
-        dss = DataSources()
+        dss = DataSources(None, None)
         dss.add_config(self.gen_section("t1", type="shape", file="foo"), __file__)
         dss.add_config(self.gen_section("t2", type="shape", file="foo"), __file__)
         self.assertTrue(dss.get('t1') != None)
         self.assertTrue(dss.get('t2') != None)
 
     def testDefaults1(self):
-        dss = DataSources()
-        dss.add_config(self.gen_section("DEFAULT", var="cows"), __file__)
-        dss.add_config(self.gen_section("t1", type="shape", file="%(var)s"), __file__)
+        dss = DataSources(None, None)
+        sect = self.gen_section("DEFAULT", var="cows") + "\n" + self.gen_section("t1", type="shape", file="%(var)s") 
+        #dss.add_config(self.gen_section("DEFAULT", var="cows"), __file__)
+        #dss.add_config(self.gen_section("t1", type="shape", file="%(var)s"), __file__)
+        dss.add_config(sect, __file__)
 
         self.assertEqual(dss.get('t1')['parameters']['file'], "cows")
 
-    def testChainedDefaults1(self):
-        dss = DataSources()
-        dss.add_config(self.gen_section("DEFAULT", var="cows"), __file__)
-        dss.add_config(self.gen_section("DEFAULT", var="cows2"), __file__)
-        dss.add_config(self.gen_section("t1", type="shape", file="%(var)s"), __file__)
-
+    def testLocalDefaultsFromString(self):
+        dss = DataSources(None, None)
+        dss.set_local_cfg_data(self.gen_section("DEFAULT", var="cows2"))
+        sect = self.gen_section("DEFAULT", var="cows") + "\n" + self.gen_section("t1", type="shape", file="%(var)s") 
+        dss.add_config(sect, __file__)
+        dss.finalize()
         self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
 
+    def testLocalDefaultsFromFile(self):
+        cfg = tempfile.NamedTemporaryFile('w', delete=False)
+        try:
+            cfg.write(self.gen_section("DEFAULT", var="cows2"))
+            cfg.close()
+            self.assertTrue(os.path.exists(cfg.name))
+            dss = DataSources(__file__, cfg.name)
+            sect = self.gen_section("DEFAULT", var="cows") + "\n" + self.gen_section("t1", type="shape", file="%(var)s") 
+            dss.add_config(sect, __file__)
+            self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
+        finally:
+            try:
+                os.unlink(cfg.name)
+            except: pass
+
+
     def testBase1(self):
-        dss = DataSources()
+        dss = DataSources(None, None)
         dss.add_config(self.gen_section("base", type="shape", encoding="latin1"), __file__)
         dss.add_config(self.gen_section("t2", template="base", file="foo"), __file__)
         self.assertTrue("base" in dss.templates)
@@ -1616,7 +1634,7 @@ garbage=junk
         self.assertEqual(dss.get('t2')['parameters']['file'], 'foo')
 
     def testSRS(self):
-        dss = DataSources()
+        dss = DataSources(None, None)
         dss.add_config(self.gen_section("s", type="shape", layer_srs="epsg:4326"), __file__)
         dss.add_config(self.gen_section("g", type="shape", layer_srs="epsg:900913"), __file__)
         self.assertEqual(dss.get("s")['layer_srs'], dss.PROJ4_PROJECTIONS['epsg:4326'])
@@ -1624,7 +1642,7 @@ garbage=junk
         self.assertRaises(Exception, dss.add_config, (self.gen_section("s", type="shape", layer_srs="epsg:43223432423"), __file__))
 
     def testDataTypes(self):
-        dss = DataSources()
+        dss = DataSources(None, None)
         dss.add_config(self.gen_section("s",
                                         type="postgis",
                                         cursor_size="5",
@@ -1684,6 +1702,11 @@ class CompileXMLTests(unittest.TestCase):
                         <Parameter name="file">test.shp</Parameter>
                     </Datasource>
                 </Layer>
+                <Layer srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource base="template">
+                        <Parameter name="file">test.shp</Parameter>
+                    </Datasource>
+                </Layer>
             </Map>
         """
         self.doCompile1(s)
@@ -1711,25 +1734,51 @@ class CompileXMLTests(unittest.TestCase):
                     }
                 </Stylesheet>
                 <DataSourcesConfig>
+[DEFAULT]
+default_layer_srs = epsg:4326
+other_srs = epsg:4326
+
 [template1]
 type=shape
-layer_srs=epsg:4326
+layer_srs=%(default_layer_srs)s
 encoding=latin1
 base=data
 
 [test_shp]
 file=test.shp
 template=template1
+
+[test_shp_2]
+type=shape
+encoding=latin1
+base=data
+layer_srs=%(other_srs)s
                 </DataSourcesConfig>
                 <Layer source_name="test_shp" />
+                <Layer source_name="test_shp_2" />
             </Map>
         """
-        self.doCompile1(dscfg)
+        map = self.doCompile1(dscfg)
         
-    def doCompile1(self, s):
-        map = compile(s, dir=self.tmpdir)
+        self.assertEqual(map.layers[1].srs, '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
         
-        self.assertEqual(1, len(map.layers))
+        cfg = tempfile.NamedTemporaryFile('w', delete=False)
+        try:
+            cfg.write("[DEFAULT]\nother_srs=epsg:900913")
+            cfg.close()
+            map = self.doCompile1(dscfg, datasources_local_cfg=cfg.name)
+            self.assertEqual(map.layers[1].srs, '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs')
+        finally:
+            try:
+                os.unlink(cfg.name)
+            except: pass
+
+        
+        
+    def doCompile1(self, s, **kwargs):
+        map = compile(s, dir=self.tmpdir, **kwargs)
+        
+        self.assertEqual(2, len(map.layers))
         self.assertEqual(3, len(map.layers[0].styles))
 
         self.assertEqual(1, len(map.layers[0].styles[0].rules))
@@ -1757,6 +1806,7 @@ template=template1
         self.assertEqual(map.layers[0].datasource.parameters['base'], 'data')
         self.assertEqual(map.layers[0].datasource.parameters['encoding'], 'latin1')
         self.assertEqual(map.layers[0].datasource.parameters['type'], 'shape')
+        return map
 
     def testCompile2(self):
         """

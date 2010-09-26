@@ -28,8 +28,7 @@ def main(src_file, dest_file, **kwargs):
     mmap = mapnik.Map(1, 1)
     # allow [zoom] filters to work
     mmap.srs = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null'
-    load_kwargs = {'move_local_files': kwargs.get('move_local_files', None),
-                   'target_dir': dirname(realpath(dest_file))}
+    load_kwargs = dict([(k, v) for (k, v) in kwargs.items() if k in ('target_dir', 'move_local_files', 'verbose', 'datasources_local_cfg')])
     cascadenik.load_map(mmap, src_file, **load_kwargs)
     
     (handle, tmp_file) = tempfile.mkstemp(suffix='.xml', prefix='cascadenik-mapnik-')
@@ -48,7 +47,7 @@ def main(src_file, dest_file, **kwargs):
 
 parser = optparse.OptionParser(usage="""%prog [options] <mml> <xml>""", version='%prog ' + cascadenik.VERSION)
 
-parser.set_defaults(move_local_files=False, no_cache=False, pretty=True, safe_urls=False, verbose=False)
+parser.set_defaults(move_local_files=False, no_cache=False, pretty=True, safe_urls=False, verbose=False, datasources_local_cfg=None)
 
 #parser.add_option('-d', '--dir', dest='target_dir',
 #                  help='Write file-based resources (symbols, shapefiles, etc) to this target directory (default: current working directory is used)')
@@ -79,9 +78,14 @@ parser.add_option('-v' , '--verbose', dest='verbose',
 parser.add_option('--mapnik-version',dest='mapnik_version_string',
                   help='The Mapnik version to target (default is 0.7.1 if not able to be autodetected)')
 
+parser.add_option('-l' , '--locals', dest='datasources_local_cfg',
+                  help='Use the specified .cfg file to provide local overrides to datasources and variables',
+                  type="string")
+
+
 if __name__ == '__main__':
     (options, args) = parser.parse_args()
-
+    
     if not args:
         parser.error('Please specify .mml and .xml files')
 

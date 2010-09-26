@@ -562,7 +562,7 @@ def fetch_embedded_or_remote_src(elem, base):
     
     return None, None
 
-def expand_source_declarations(map_el, base):
+def expand_source_declarations(map_el, base, local_conf):
     """ This provides mechanism for externalizing and sharing data sources.  The datasource configs are
     python files, and layers reference sections within that config:
     
@@ -575,7 +575,7 @@ def expand_source_declarations(map_el, base):
 
     
     
-    ds = sources.DataSources()
+    ds = sources.DataSources(base, local_conf)
 
     # build up the configuration
     for spec in map_el.findall('DataSourcesConfig'):
@@ -584,8 +584,8 @@ def expand_source_declarations(map_el, base):
         if not src_text:
             continue
 
-        ds.add_config(src_text, local_base)
-
+        ds.add_config(src_text, local_base)    
+    
     # now transform the xml
 
     # add in base datasources
@@ -1381,6 +1381,11 @@ def compile(src,**kwargs):
      
      pretty:
        If True, XML output will be fully indented (otherwise indenting is haphazard).
+       
+     datasources_local_cfg:
+       If a file or URL, uses the config to override datasources or parameters (i.e. postgis_dbname)
+       defined in the map's canonical <DataSourcesConfig> entities.  This is most useful in development,
+       whereby one redefines individual datasources, connection parameters, and/or local paths. 
 
      mapnik_version:
        The Mapnik release to target for optimal stylesheet compatibility.
@@ -1469,7 +1474,7 @@ def compile(src,**kwargs):
 
         base = src
 
-    expand_source_declarations(map_el, base)
+    expand_source_declarations(map_el, base, kwargs.get('datasources_local_cfg'))
     declarations = extract_declarations(map_el, base)
     
     # a list of layers and a sequential ID generator
