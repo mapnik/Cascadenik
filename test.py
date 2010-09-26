@@ -1638,8 +1638,7 @@ garbage=junk
                                             type="postgis",
                                             cursor_size="5.xx",
                                             estimate_extent="yes"), __file__))
-        
-    
+
 
 class CompileXMLTests(unittest.TestCase):
 
@@ -1675,14 +1674,56 @@ class CompileXMLTests(unittest.TestCase):
                         text-fill: #f90;
                     }
                 </Stylesheet>
+                <Datasource name="template">
+                    <Parameter name="type">shape</Parameter>
+                    <Parameter name="encoding">latin1</Parameter>                                                
+                </Datasource>
                 <Layer>
-                    <Datasource>
-                        <Parameter name="type">shape</Parameter>
+                    <Datasource base="template">
                         <Parameter name="file">data/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
         """
+        self.doCompile1(s)
+
+        # run the same test with a datasourcesconfig
+        dscfg = """<?xml version="1.0"?>
+            <Map>
+                <Stylesheet>
+                    Map { map-bgcolor: #fff; }
+                    
+                    Layer
+                    {
+                        polygon-fill: #999;
+                        line-color: #fff;
+                        line-width: 1;
+                        outline-color: #000;
+                        outline-width: 1;
+                    }
+                    
+                    Layer name
+                    {
+                        text-face-name: 'Comic Sans';
+                        text-size: 14;
+                        text-fill: #f90;
+                    }
+                </Stylesheet>
+                <DataSourcesConfig>
+[template]
+type=shape
+encoding=latin1
+
+[test_shp]
+file=data/test.shp
+base=template
+                </DataSourcesConfig>
+                <Layer source_name="test_shp" />
+            </Map>
+        """
+        self.doCompile1(dscfg)
+        
+    def doCompile1(self, s):
         map = compile(s, dir=self.tmpdir)
         
         self.assertEqual(1, len(map.layers))
@@ -1707,6 +1748,10 @@ class CompileXMLTests(unittest.TestCase):
 
         self.assertEqual('Comic Sans', map.layers[0].styles[2].rules[0].symbolizers[0].face_name)
         self.assertEqual(14, map.layers[0].styles[2].rules[0].symbolizers[0].size)
+
+        self.assertEqual(map.layers[0].datasource.parameters['file'], 'data/test.shp')
+        self.assertEqual(map.layers[0].datasource.parameters['encoding'], 'latin1')
+        self.assertEqual(map.layers[0].datasource.parameters['type'], 'shape')
 
     def testCompile2(self):
         """
