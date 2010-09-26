@@ -850,7 +850,7 @@ def locally_cache_remote_file(href, dir):
     assert scheme == 'http', 'No gophers.'
 
     head, ext = os.path.splitext(os.path.basename(remote_path))
-    hash = md5(href).hexdigest()
+    hash = md5(href).hexdigest()[:8]
     
     local_path = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
     headers = {}
@@ -1123,32 +1123,32 @@ def get_applicable_declarations(element, declarations):
 #        
 #        shutil.copy()
 
-def handle_zipped_shapefile(zipped_shp, dir):
+def handle_zipped_shapefile(zip_path, dir):
     """
     """
-    hash = md5(zipped_shp).hexdigest()
-    zip_data = urllib.urlopen(zipped_shp).read()
+    hash = md5(zip_path).hexdigest()[:8]
+    zip_data = open(zip_path).read()
     zip_file = zipfile.ZipFile(StringIO.StringIO(zip_data))
     
     infos = zip_file.infolist()
-    heads = [os.path.splitext(info.filename)[0] for info in infos]
     extensions = [os.path.splitext(info.filename)[1] for info in infos]
-    basenames = [os.path.basename(info.filename) for info in infos]
     
     for (expected, required) in SHAPE_PARTS:
         if required and expected not in extensions:
-            raise Exception('Zip file %(zipped_shp)s missing extension "%(expected)s"' % locals())
+            raise Exception('Zip file %(zip_path)s missing extension "%(expected)s"' % locals())
 
-        for (info, head, extension, basename) in zip(infos, heads, extensions, basenames):
-            if extension == expected:
+        for info in infos:
+            head, ext = os.path.splitext(os.path.basename(info.filename))
+
+            if ext == expected:
                 file_data = zip_file.read(info.filename)
-                file_name = os.path.normpath('%(dir)s/%(head)s-%(hash)s%(extension)s' % locals())
+                file_name = os.path.normpath('%(dir)s/%(head)s-%(hash)s%(ext)s' % locals())
                 
                 file_ = open(file_name, 'wb')
                 file_.write(file_data)
                 file_.close()
                 
-                if extension == '.shp':
+                if ext == '.shp':
                     local = file_name[:-4]
                 
                 break
