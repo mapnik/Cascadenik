@@ -21,4 +21,4 @@ __all__ = ['compile','_compile','style','stylesheet_declarations']
 def load_map(map, input, target_dir=None, move_local_files=False):
     """
     """
-    compile(input, target_dir=target_dir, move_local_files=move_local_files).to_mapnik(map)
+    compile(input, target_dir=target_dir, move_local_files=move_local_files).to_mapnik(map, target_dir)
