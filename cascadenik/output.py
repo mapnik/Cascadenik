@@ -3,10 +3,9 @@ from os import getcwd, chdir
 import style
 
 try:
-    import mapnik
+    import mapnik2 as mapnik
 except ImportError:
-    # *.to_mapnik() won't work, maybe that's okay?
-    pass
+    import mapnik
 
 def safe_str(s):
     return None if not s else str(s)
@@ -24,13 +23,13 @@ class Map:
     def __repr__(self):
         return 'Map(%s %s)' % (self.bgcolor, repr(self.layers))
 
-    def to_mapnik(self, mmap, dir=None):
+    def to_mapnik(self, mmap, dirs=None):
         """
         """
         prev_cwd = getcwd()
         
-        if dir:
-            chdir(dir)
+        if dirs:
+            chdir(dirs.output)
         
         mmap.srs = self.srs or mmap.srs
         mmap.bgcolor = str(self.bgcolor) or mmap.bgcolor

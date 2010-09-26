@@ -25,6 +25,10 @@ import sources
 import style
 import output
 
+try:
+    import mapnik2 as mapnik
+except ImportError:
+    import mapnik
 
 try:
     from PIL import Image
@@ -56,12 +60,25 @@ except ImportError:
 opsort = {lt: 1, le: 2, eq: 3, ge: 4, gt: 5}
 opstr = {lt: '<', le: '<=', eq: '==', ge: '>=', gt: '>'}
 
-
 VERBOSE = False
 
 def msg(msg):
     if VERBOSE:
         sys.stderr.write('Cascadenik debug: %s\n' % msg)
+
+def mapnik_version_string(version):
+    patch_level = version % 100
+    minor_version = version / 100 % 1000
+    major_version = version / 100000
+    return '%s.%s.%s' % ( major_version, minor_version,patch_level)
+            
+if hasattr(mapnik,'mapnik_version'):
+    MAPNIK_VERSION = mapnik.mapnik_version()
+    msg('Autodetected Mapnik version: %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
+
+else:
+    MAPNIK_VERSION = 701 # 0.7.1
+    msg('Failed to autodetect "mapnik_version" falling back to %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
 
 counter = 0
 
@@ -95,6 +112,33 @@ def indent(elem, level=0):
     else:
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
+
+class Directories:
+    """ Holder for full paths to output and cache dirs.
+    """
+    def __init__(self, output, cache):
+        self.output = os.path.realpath(output)
+        self.cache = os.path.realpath(cache)
+
+    def same(self):
+        return self.output == self.cache
+    
+    def output_path(self, original, path):
+        """ Modify a path so it fits expectations. Based on an original path
+            (which might come directly from a stylesheet), some possibly-modified
+            version of that path, and the output directory, return a munged version
+            of the path that's absolue if the original was absolute, relative if
+            it's inside the target directory, and absolute if it's someplace else.
+        """
+        if os.path.isabs(original):
+            return os.path.realpath(path)
+    
+        rel_path = os.path.relpath(path, self.output)
+    
+        if rel_path.startswith('../'):
+            return os.path.realpath(path)
+    
+        return rel_path
 
 class Range:
     """ Represents a range for use in min/max scale denominator.
@@ -954,21 +998,21 @@ def locally_cache_remote_file(href, dir):
     
     return local_path
 
-def postprocess_symbolizer_image_file(file_href, output_dir, cache_dir, **kwargs):
+def postprocess_symbolizer_image_file(file_href, dirs):
     """ Given a file name and an output directory name, save the image
         file to a temporary location while noting its dimensions.
     """
     # support latest mapnik features of auto-detection
     # of image sizes and jpeg reading support...
     # http://trac.mapnik.org/ticket/508
-    version = kwargs.get('mapnik_version', None)
-    mapnik_auto_image_support = (version >= 700)
-    mapnik_requires_absolute_paths = (version < 601)
+
+    mapnik_auto_image_support = (MAPNIK_VERSION >= 700)
+    mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
 
     scheme, n, path, p, q, f = urlparse(file_href)
     
     if scheme == 'http':
-        scheme, path = '', locally_cache_remote_file(file_href, cache_dir)
+        scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
         
     if scheme not in ('file', '') or not os.path.exists(path):
         raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
@@ -977,9 +1021,9 @@ def postprocess_symbolizer_image_file(file_href, output_dir, cache_dir, **kwargs
         path = os.path.realpath(path)
     
     # it's probably safe to use a relative path where the cache and output dirs match
-    original = (cache_dir == output_dir) and os.path.relpath(path, output_dir) or path
+    original = dirs.same() and os.path.relpath(path, dirs.output) or path
     
-    path = appropriate_path(original, path, output_dir)
+    path = dirs.output_path(original, path)
 
     msg('reading symbol: %s' % path)
 
@@ -999,14 +1043,11 @@ def postprocess_symbolizer_image_file(file_href, output_dir, cache_dir, **kwargs
     if not mapnik_auto_image_support and not Image:
         raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
 
-    try:
-        img = Image.open(os.path.join(output_dir, path))
-    except:
-        raise Exception(str((path, original, output_dir, cache_dir, os.path.join(output_dir, path))))
+    img = Image.open(os.path.join(dirs.output, path))
 
     return dest_file, output_ext[1:], img.size[0], img.size[1]
 
-def get_shield_rule_groups(declarations, output_dir, cache_dir, **kwargs):
+def get_shield_rule_groups(declarations, dirs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1053,7 +1094,7 @@ def get_shield_rule_groups(declarations, output_dir, cache_dir, **kwargs):
             
             file, filetype, width, height \
                 = values.has_key('shield-file') \
-                and postprocess_symbolizer_image_file(str(values['shield-file'].value), output_dir, cache_dir, **kwargs) \
+                and postprocess_symbolizer_image_file(str(values['shield-file'].value), dirs) \
                 or (None, None, None, None)
             
             width = values.has_key('shield-width') and values['shield-width'].value or width
@@ -1078,7 +1119,7 @@ def get_shield_rule_groups(declarations, output_dir, cache_dir, **kwargs):
     
     return dict(groups)
 
-def get_point_rules(declarations, output_dir, cache_dir, **kwargs):
+def get_point_rules(declarations, dirs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1096,7 +1137,7 @@ def get_point_rules(declarations, output_dir, cache_dir, **kwargs):
     for (filter, values) in filtered_property_declarations(declarations, property_names):
         point_file, point_type, point_width, point_height \
             = values.has_key('point-file') \
-            and postprocess_symbolizer_image_file(str(values['point-file'].value), output_dir, cache_dir, **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['point-file'].value), dirs) \
             or (None, None, None, None)
         
         point_width = values.has_key('point-width') and values['point-width'].value or point_width
@@ -1110,7 +1151,7 @@ def get_point_rules(declarations, output_dir, cache_dir, **kwargs):
     
     return rules
 
-def get_polygon_pattern_rules(declarations, output_dir, cache_dir, **kwargs):
+def get_polygon_pattern_rules(declarations, dirs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1129,7 +1170,7 @@ def get_polygon_pattern_rules(declarations, output_dir, cache_dir, **kwargs):
     
         poly_pattern_file, poly_pattern_type, poly_pattern_width, poly_pattern_height \
             = values.has_key('polygon-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), output_dir, cache_dir, **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), dirs) \
             or (None, None, None, None)
         
         poly_pattern_width = values.has_key('polygon-pattern-width') and values['polygon-pattern-width'].value or poly_pattern_width
@@ -1141,7 +1182,7 @@ def get_polygon_pattern_rules(declarations, output_dir, cache_dir, **kwargs):
     
     return rules
 
-def get_line_pattern_rules(declarations, output_dir, cache_dir, **kwargs):
+def get_line_pattern_rules(declarations, dirs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1160,7 +1201,7 @@ def get_line_pattern_rules(declarations, output_dir, cache_dir, **kwargs):
     
         line_pattern_file, line_pattern_type, line_pattern_width, line_pattern_height \
             = values.has_key('line-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), output_dir, cache_dir, **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), dirs) \
             or (None, None, None, None)
         
         line_pattern_width = values.has_key('line-pattern-width') and values['line-pattern-width'].value or line_pattern_width
@@ -1182,20 +1223,6 @@ def get_applicable_declarations(element, declarations):
 
     return [dec for dec in declarations
             if dec.selector.matches(element_tag, element_id, element_classes)]
-
-# TODO - unfinished work around moving local shapefiles
-#def handle_shapefile_parts(shapefile,output_dir):
-#    if not os.path.exists(output_dir):
-#        os.mkdir(output_dir)
-#    for (expected, required) in SHAPE_PARTS:
-#        if required and expected not in extensions:
-#            raise Exception('Shapefile %(shapefile)s missing extension "%(expected)s"' % locals())
-#        
-#        name = splitext(shapefile)[0]
-#        source = os.path.normpath('%(output_dir)s/%(basename)s' % locals())
-#        dest = os.path.normpath('%(output_dir)s/%(basename)s' % locals())
-#        
-#        shutil.copy()
 
 def unzip_shapefile_into(zip_path, dir):
     """
@@ -1229,24 +1256,7 @@ def unzip_shapefile_into(zip_path, dir):
 
     return local
 
-def appropriate_path(original, path, dir):
-    """ Modify a path so it fits expectations. Based on an original path
-        (which might come directly from a stylesheet), some possibly-modified
-        version of that path, and a directory, return a munged version of the
-        path that's absolue if the original was absolute, relative if it's
-        inside the target directory, and absolute if it's someplace else.
-    """
-    if os.path.isabs(original):
-        return os.path.realpath(path)
-
-    rel_path = os.path.relpath(path, dir)
-
-    if rel_path.startswith('../'):
-        return os.path.realpath(path)
-
-    return rel_path
-
-def localize_shapefile(shp_href, output_dir, cache_dir, **kwargs):
+def localize_shapefile(shp_href, dirs):
     """ Given a shapefile href, an output directory, and a cache directory,
         modify the shapefile name so it's an absolute path if appropriate.
     
@@ -1257,13 +1267,13 @@ def localize_shapefile(shp_href, output_dir, cache_dir, **kwargs):
     # support latest mapnik features of auto-detection
     # of image sizes and jpeg reading support...
     # http://trac.mapnik.org/ticket/508
-    version = kwargs.get('mapnik_version', None)
-    mapnik_requires_absolute_paths = (version < 601)
+
+    mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
 
     scheme, n, path, p, q, f = urlparse(shp_href)
     
     if scheme == 'http':
-        scheme, path = '', locally_cache_remote_file(shp_href, cache_dir)
+        scheme, path = '', locally_cache_remote_file(shp_href, dirs.cache)
 
     if scheme not in ('file', ''):
         raise Exception("Shapefile needs to be a working, fetchable resource, not %s" % shp_href)
@@ -1272,16 +1282,16 @@ def localize_shapefile(shp_href, output_dir, cache_dir, **kwargs):
         path = os.path.realpath(path)
     
     # it's probably safe to use a relative path where the cache and output dirs match
-    original = (cache_dir == output_dir) and os.path.relpath(path, output_dir) or path
+    original = dirs.same() and os.path.relpath(path, dirs.output) or path
     
-    path = appropriate_path(original, path, output_dir)
+    path = dirs.output_path(original, path)
     
     if path.endswith('.zip'):
-        path = unzip_shapefile_into(path, cache_dir)
+        path = unzip_shapefile_into(path, dirs.cache)
 
-    return appropriate_path(original, path, output_dir)
+    return dirs.output_path(original, path)
 
-def localize_file_datasource(file_href, output_dir, cache_dir, **kwargs):
+def localize_file_datasource(file_href, dirs):
     """ Handle localizing file-based datasources other than shapefiles.
     
         This will only work for single-file based types.
@@ -1289,39 +1299,23 @@ def localize_file_datasource(file_href, output_dir, cache_dir, **kwargs):
     # support latest mapnik features of auto-detection
     # of image sizes and jpeg reading support...
     # http://trac.mapnik.org/ticket/508
-    version = kwargs.get('mapnik_version', None)
-    mapnik_requires_absolute_paths = (version < 601)
+
+    mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
 
     scheme, n, path, p, q, f = urlparse(file_href)
     
     if scheme == 'http':
-        scheme, path = '', locally_cache_remote_file(file_href, cache_dir)
+        scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
 
     if scheme not in ('file', ''):
         raise Exception("Datasource file needs to be a working, fetchable resource, not %s" % file_href)
 
     # it's probably safe to use a relative path where the cache and output dirs match
-    original = (cache_dir == output_dir) and os.path.relpath(path, output_dir) or path
+    original = dirs.same() and os.path.relpath(path, dirs.output) or path
     
-    return appropriate_path(original, path, output_dir)
+    return dirs.output_path(original, path)
 
-def auto_detect_mapnik_version():
-    mapnik = None
-    try:
-        import mapnik
-    except ImportError:
-        pass
-    if mapnik:
-        if hasattr(mapnik,'mapnik_version'):
-            return mapnik.mapnik_version()
-
-def mapnik_version_string(version):
-    patch_level = version % 100
-    minor_version = version / 100 % 1000
-    major_version = version / 100000
-    return '%s.%s.%s' % ( major_version, minor_version,patch_level)
-            
-def compile(src, output_dir, cache_dir, **kwargs):
+def compile(src, dirs, **kwargs):
     """
     Compile a Cascadenik MML file, returning an XML string.
     
@@ -1352,51 +1346,13 @@ def compile(src, output_dir, cache_dir, **kwargs):
        defined in the map's canonical <DataSourcesConfig> entities.  This is most useful in development,
        whereby one redefines individual datasources, connection parameters, and/or local paths. 
 
-     mapnik_version:
-       The Mapnik release to target for optimal stylesheet compatibility.
-       
-       701 (aka '0.7.1') is the assumed default target, unless specified or autodetected.
-              
-       'mapnik_version' must be an integer matching the format of 
-       include/mapnik/version.hpp which follows the Boost method:
-       
-         MAPNIK_VERSION % 100 is the sub-minor version
-         MAPNIK_VERSION / 100 % 1000 is the minor version
-         MAPNIK_VERSION / 100000 is the major version
-       
-       If not provided the mapnik_version will be autodetected by:
-       
-       >>> import mapnik
-       >>> mapnik.mapnik_version()
-       701
-       
-       This is equivalent to:
-       
-       >>> mapnik.mapnik_version_string()
-       '0.7.1'
-       
-       To convert from the string to integer do:
-       >>> n = mapnik.mapnik_version_string().split('.')
-       >>> (int(n[0]) * 100000) + (int(n[1]) * 100) + (int(n[2]))
-       701
-       
     """
     global VERBOSE
     if kwargs.get('verbose'):
         VERBOSE = True
         sys.stderr.write('\n')
     
-    if not kwargs.get('mapnik_version',None):
-        msg('"mapnik_version" not provided, autodetecting...')
-        version = auto_detect_mapnik_version()
-        if version:
-            kwargs['mapnik_version'] = version 
-            msg('Autodetected Mapnik version: %s | %s' % (version,mapnik_version_string(version)))
-        else:
-            default_version = 701 # 0.7.1
-            msg('Failed to autodetect "mapnik_version" falling back to %s | %s' % (default_version,mapnik_version_string(default_version)))
-    else:
-        msg('Targeting mapnik version: %s | %s' % (kwargs['mapnik_version'],mapnik_version_string(kwargs['mapnik_version'])))        
+    msg('Targeting mapnik version: %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
         
     if os.path.exists(src): # local file
         # using 'file:' enables support on win32
@@ -1456,7 +1412,7 @@ def compile(src, output_dir, cache_dir, **kwargs):
         if datasource_params.get('table'):
             # remove line breaks from possible SQL
             # http://trac.mapnik.org/ticket/173
-            if not kwargs.get('mapnik_version') >= 601:
+            if not MAPNIK_VERSION >= 601:
                 datasource_params['table'] = datasource_params.get('table').replace('\r', ' ').replace('\n', ' ')
         elif datasource_params.get('file') is not None:
             # make sure we localize any remote files
@@ -1466,7 +1422,7 @@ def compile(src, output_dir, cache_dir, **kwargs):
             if datasource_params.get('type') == 'shape':
                 # handle a local shapefile or fetch a remote, zipped shapefile
                 msg('Handling shapefile datasource...')
-                file_param = localize_shapefile(file_param, output_dir, cache_dir, **kwargs)
+                file_param = localize_shapefile(file_param, dirs)
 
                 # TODO - support datasource reprojection to make map srs
                 # TODO - support automatically indexing shapefiles
@@ -1474,7 +1430,7 @@ def compile(src, output_dir, cache_dir, **kwargs):
             else: # ogr,raster, gdal, sqlite
                 # attempt to generically handle other file based datasources
                 msg('Handling generic datasource...')
-                file_param = localize_file_datasource(file_param, output_dir, cache_dir, **kwargs)
+                file_param = localize_file_datasource(file_param, dirs)
 
             msg("Localized path = %s" % file_param)
             datasource_params['file'] = file_param
@@ -1491,7 +1447,7 @@ def compile(src, output_dir, cache_dir, **kwargs):
                                    get_polygon_rules(layer_declarations, **kwargs)))
 
         styles.append(output.Style('polygon pattern style %d' % ids.next(),
-                                   get_polygon_pattern_rules(layer_declarations, output_dir, cache_dir, **kwargs)))
+                                   get_polygon_pattern_rules(layer_declarations, dirs)))
 
         styles.append(output.Style('raster style %d' % ids.next(),
                                    get_raster_rules(layer_declarations,**kwargs)))
@@ -1500,16 +1456,16 @@ def compile(src, output_dir, cache_dir, **kwargs):
                                    get_line_rules(layer_declarations, **kwargs)))
 
         styles.append(output.Style('line pattern style %d' % ids.next(),
-                                   get_line_pattern_rules(layer_declarations, output_dir, cache_dir, **kwargs)))
+                                   get_line_pattern_rules(layer_declarations, dirs)))
 
-        for (shield_name, shield_rules) in get_shield_rule_groups(layer_declarations, output_dir, cache_dir, **kwargs).items():
+        for (shield_name, shield_rules) in get_shield_rule_groups(layer_declarations, dirs).items():
             styles.append(output.Style('shield style %d (%s)' % (ids.next(), shield_name), shield_rules))
 
         for (text_name, text_rules) in get_text_rule_groups(layer_declarations, **kwargs).items():
             styles.append(output.Style('text style %d (%s)' % (ids.next(), text_name), text_rules))
 
         styles.append(output.Style('point style %d' % ids.next(),
-                                   get_point_rules(layer_declarations, output_dir, cache_dir, **kwargs)))
+                                   get_point_rules(layer_declarations, dirs)))
                                    
         styles = [s for s in styles if s.rules]
         
