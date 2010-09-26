@@ -1677,7 +1677,8 @@ class CompileXMLTests(unittest.TestCase):
                 </Stylesheet>
                 <Layer>
                     <Datasource>
-                        <Parameter name="plugin_name">example</Parameter>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">data/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
@@ -1734,7 +1735,8 @@ class CompileXMLTests(unittest.TestCase):
                 </Stylesheet>
                 <Layer>
                     <Datasource>
-                        <Parameter name="plugin_name">example</Parameter>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">data/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
@@ -1776,7 +1778,7 @@ class CompileXMLTests(unittest.TestCase):
         """
         map = output.Map(layers=[
             output.Layer('this',
-            output.Datasource(), [
+            output.Datasource(type="shape",file="data/test.shp"), [
                 output.Style('a style', [
                     output.Rule(
                         output.MinScaleDenominator(1),
@@ -1788,7 +1790,7 @@ class CompileXMLTests(unittest.TestCase):
                     ])
                 ]),
             output.Layer('that',
-            output.Datasource(), [
+            output.Datasource(type="shape",file="data/test.shp"), [
                 output.Style('another style', [
                     output.Rule(
                         output.MinScaleDenominator(101),
@@ -1890,7 +1892,8 @@ class CompileXMLTests(unittest.TestCase):
                 </Stylesheet>
                 <Layer>
                     <Datasource>
-                        <Parameter name="plugin_name">example</Parameter>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">data/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
@@ -1908,7 +1911,8 @@ class CompileXMLTests(unittest.TestCase):
                 </Stylesheet>
                 <Layer>
                     <Datasource>
-                        <Parameter name="plugin_name">example</Parameter>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">data/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>

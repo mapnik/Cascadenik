@@ -1512,7 +1512,7 @@ def compile(src,**kwargs):
                 # attempt to generically handle other file based datasources
                 msg('Handling generic datasource...')
                 file_param_el.text = localize_datasource(src, file_param_el.text, **kwargs)
-
+            msg("Localized path = %s" % file_param_el.text)
             # TODO - consider custom support for other mapnik datasources:
             # sqlite, oracle, osm, kismet, gdal, raster, rasterlite
 

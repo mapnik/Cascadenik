@@ -52,6 +52,8 @@ class Map:
 
             lay = mapnik.Layer(layer.name)
             lay.srs = layer.srs or lay.srs
+            if layer.datasource:
+                lay.datasource = layer.datasource.to_mapnik()
             lay.minzoom = layer.minzoom or lay.minzoom
             lay.maxzoom = layer.maxzoom or lay.maxzoom
             
@@ -108,7 +110,14 @@ class Layer:
 
 class Datasource:
     def __init__(self, **parameters):
-        self.parameters = parameters
+        self.parameters = {}
+        for param, value in parameters.items():
+            if isinstance(value, basestring):
+                value = safe_str(value)
+            self.parameters[param] = value
+
+    def to_mapnik(self):
+        return mapnik.Datasource(**self.parameters)
 
 class MinScaleDenominator:
     def __init__(self, value):
