@@ -2,26 +2,28 @@ import os, sys
 import math
 import urllib
 import urllib2
-import urlparse
 import tempfile
 import StringIO
 import operator
-from operator import lt, le, eq, ge, gt
 import base64
 import os.path
 import zipfile
-import style, output
 import shutil
 
 from hashlib import md5
 from datetime import datetime
 from time import strftime, localtime
+from urlparse import urlparse, urljoin
+from operator import lt, le, eq, ge, gt
+from os.path import basename, splitext
 from httplib import HTTPConnection
 
 # cascadenik
 import safe64
 import style
 import sources
+import style
+import output
 
 
 try:
@@ -70,7 +72,7 @@ def next_counter():
 
 def url2fs(url):
     """ encode a URL to be safe as a filename """
-    uri, extension = os.path.splitext(url)
+    uri, extension = splitext(url)
     return safe64.dir(uri) + extension
 
 def fs2url(url):
@@ -554,7 +556,7 @@ def extract_declarations(map_el, base):
 
 def fetch_embedded_or_remote_src(elem, base):
     if 'src' in elem.attrib:
-        url = urlparse.urljoin(base, elem.attrib['src'])
+        url = urljoin(base, elem.attrib['src'])
         return urllib.urlopen(url).read().decode(DEFAULT_ENCODING), url
 
     elif elem.text:
@@ -913,11 +915,11 @@ def locally_cache_remote_file(href, dir):
         and awareness of modification date. Assume that files are "normal"
         which is to say they have filenames with extensions.
     """
-    scheme, host, remote_path, p, q, f = urlparse.urlparse(href)
+    scheme, host, remote_path, p, q, f = urlparse(href)
     
     assert scheme == 'http', 'No gophers.'
 
-    head, ext = os.path.splitext(os.path.basename(remote_path))
+    head, ext = splitext(basename(remote_path))
     hash = md5(href).hexdigest()[:8]
     
     local_path = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
@@ -939,7 +941,7 @@ def locally_cache_remote_file(href, dir):
 
     elif resp.status in (301, 302, 303) and resp.getheader('location', False):
         # follow a redirect, totally untested.
-        redirected_href = urlparse.urljoin(href, resp.getheader('location'))
+        redirected_href = urljoin(href, resp.getheader('location'))
         redirected_path = locally_cache_remote_file(redirected_href, dir)
         os.rename(redirected_path, local_path)
     
@@ -963,7 +965,7 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
     mapnik_auto_image_support = (version >= 700)
     mapnik_requires_absolute_paths = (version < 601)
 
-    scheme, n, path, p, q, f = urlparse.urlparse(file_href)
+    scheme, n, path, p, q, f = urlparse(file_href)
 
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(file_href, target_dir)
@@ -980,7 +982,7 @@ def postprocess_symbolizer_image_file(file_href, target_dir, **kwargs):
 
     target_dir = kwargs.get('target_dir',tempfile.gettempdir())
     
-    image_name, ext = os.path.splitext(path)
+    image_name, ext = splitext(path)
     
     if ext in ('.png', 'tif', 'tiff'):
         target_ext = ext
@@ -1185,7 +1187,7 @@ def get_applicable_declarations(element, declarations):
 #        if required and expected not in extensions:
 #            raise Exception('Shapefile %(shapefile)s missing extension "%(expected)s"' % locals())
 #        
-#        name = os.path.splitext(shapefile)[0]
+#        name = splitext(shapefile)[0]
 #        source = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
 #        dest = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
 #        
@@ -1199,14 +1201,14 @@ def handle_zipped_shapefile(zip_path, dir):
     zip_file = zipfile.ZipFile(StringIO.StringIO(zip_data))
     
     infos = zip_file.infolist()
-    extensions = [os.path.splitext(info.filename)[1] for info in infos]
+    extensions = [splitext(info.filename)[1] for info in infos]
     
     for (expected, required) in SHAPE_PARTS:
         if required and expected not in extensions:
             raise Exception('Zip file %(zip_path)s missing extension "%(expected)s"' % locals())
 
         for info in infos:
-            head, ext = os.path.splitext(os.path.basename(info.filename))
+            head, ext = splitext(basename(info.filename))
 
             if ext == expected:
                 file_data = zip_file.read(info.filename)
@@ -1230,7 +1232,7 @@ def appropriate_path(original, path, dir):
         path that's absolue if the original was absolute, relative if it's
         inside the target directory, and absolute if it's someplace else.
     """
-    if original.startswith('/'):
+    if os.path.isabs(original):
         return os.path.realpath(path)
 
     rel_path = os.path.relpath(path, dir)
@@ -1254,7 +1256,7 @@ def localize_shapefile(shp_href, target_dir, **kwargs):
     version = kwargs.get('mapnik_version', None)
     mapnik_requires_absolute_paths = (version < 601)
 
-    scheme, n, path, p, q, f = urlparse.urlparse(shp_href)
+    scheme, n, path, p, q, f = urlparse(shp_href)
     
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(shp_href, target_dir)
@@ -1277,7 +1279,7 @@ def localize_datasource(src, filename, **kwargs):
     
     This will only work for single-file based types.
     """
-    (scheme, netloc, path, params, query, fragment) = urlparse.urlparse(filename)
+    (scheme, netloc, path, params, query, fragment) = urlparse(filename)
 
     move_local_files = kwargs.get('move_local_files')
     if move_local_files:
@@ -1292,7 +1294,7 @@ def localize_datasource(src, filename, **kwargs):
             return filename
         else:
             msg('Warning, your Mapnik version is old and does not support relative paths to datasources')
-            return os.path.realpath(urlparse.urljoin(src, filename))
+            return os.path.realpath(urljoin(src, filename))
 
     target_dir = kwargs.get('target_dir',tempfile.gettempdir())
     
@@ -1303,7 +1305,7 @@ def localize_datasource(src, filename, **kwargs):
     if kwargs.get('safe_urls'):
         target_dir = os.path.join(target_dir,url2fs(filename))
 
-    target_file = os.path.join(target_dir,os.path.basename(filename))
+    target_file = os.path.join(target_dir, basename(filename))
     
     if caching:
         if kwargs.get('safe_urls'):
