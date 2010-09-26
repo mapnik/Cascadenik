@@ -159,7 +159,7 @@ def convert(src, outmml, outconfig, opts):
             gp_name = name_base % len(g_params)
             g_params[repr(gp)] = gp_name,gp
         
-        params['base'] = gp_name
+        params['template'] = gp_name
         
     config = MyConfigParser(defaults)     
     

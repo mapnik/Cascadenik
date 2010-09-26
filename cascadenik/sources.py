@@ -4,7 +4,7 @@ import mapnik
 
 class DataSources(object):
     def __init__(self):
-        self.bases = set([])
+        self.templates = set([])
         self.parser = None
         self.sources = {}
 
@@ -24,8 +24,20 @@ class DataSources(object):
             options = {}
             name = sect
             dtype = self.parser.get(sect,"type") if self.parser.has_option(sect, "type") else None
-            base = self.parser.get(sect,"base") if self.parser.has_option(sect, "base") else None
+            template = self.parser.get(sect,"template") if self.parser.has_option(sect, "template") else None
             layer_srs = self.parser.get(sect,"layer_srs") if self.parser.has_option(sect, "layer_srs") else None
+
+            # this layer declares a template template
+            if template:
+                self.templates.add(template)
+                # the template may have been declared already, or we haven't processed it yet.
+                if template in self.sources:
+                    dtype = self.sources[template]['parameters'].get('type', dtype)
+                    layer_srs = self.sources[template].get('layer_srs', layer_srs)
+                else:
+                    # TODO catch section missing errors
+                    dtype = self.parser.get(template, 'type')
+                    layer_srs = self.parser.get(template, 'layer_srs') if self.parser.has_option(template, 'layer_srs') else layer_srs
 
             # handle the most common projections
             if layer_srs and layer_srs.lower().startswith("epsg:"):
@@ -40,15 +52,6 @@ class DataSources(object):
                     mapnik.Projection(str(layer_srs))
                 except Exception, e:
                     raise Exception("Section [%s] declares an invalid layer_srs (%s) in %s.\n\t%s" % (sect, layer_srs, filename, e))
-
-            # this layer declares a base
-            if base:
-                self.bases.add(base)
-                # the base may have been declared already, or we haven't processed it yet.
-                if base in self.sources:
-                    dtype = self.sources[base]['parameters']["type"]
-                else:
-                    dtype = self.parser.get(base,"type")
                     
             if dtype:
                 options['type'] = dtype
@@ -77,8 +80,8 @@ class DataSources(object):
 
             # build an object mirroring the XML Datasource object
             conf = dict(parameters=options)
-            if base:
-                conf['base'] = base
+            if template:
+                conf['template'] = template
             if layer_srs:
                 conf['layer_srs'] = layer_srs
             self.sources[name] = conf
@@ -88,11 +91,10 @@ class DataSources(object):
                          "epsg:900913" : "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"
                          }
 
-    XML_OPTIONS = {"shape" : dict(file=str,encoding=str),
+    XML_OPTIONS = {"shape" : dict(file=str,encoding=str,base=str),
                    "postgis" : dict(cursor_size=int,
                                     dbname=str,
                                     geometry_field=str,
-                                    extent=str,
                                     estimate_extent=bool,
                                     host=str,
                                     initial_size=int,
@@ -103,12 +105,45 @@ class DataSources(object):
                                     port=int,
                                     row_limit=int,
                                     table=str,
-                                    srid=str,
+                                    srid=int,
                                     user=str),
-                   "ogr" : dict(layer=str),
+                   "ogr" : dict(layer=str, file=str),
                    "osm" : dict(file=str, parser=str, url=str, bbox=str),
-                   "global": dict(type=str, estimate_extent=bool, extent=str)               
+                   "gdal": dict(file=str, base=str),
+                   "occi": dict(user=str, password=str, host=str, table=str,
+                                initial_size=int,
+                                max_size=int,
+                                estimate_extent=bool,
+                                encoding=str,
+                                geometry_field=str,
+                                use_spatial_index=bool,
+                                multiple_geometries=bool),
+                   "sqlite":dict(file=str,
+                                 table=str,
+                                 base=str,
+                                 encoding=str,
+                                 metadata=str,
+                                 geometry_field=str,
+                                 key_field=str,
+                                 row_offset=int,
+                                 row_limit=int,
+                                 wkb_format=str,
+                                 multiple_geometries=bool,
+                                 use_spatial_index=bool),
+                   "kismet":dict(host=str,
+                                 port=int,
+                                 encoding=str),
+                   "raster":dict(file=str,
+                                 lox=float,
+                                 loy=float,
+                                 hix=float,
+                                 hiy=float,
+                                 base=str),
                    }
+
+    # add in global options
+    for v in XML_OPTIONS.values():
+        v.update(dict(type=str, estimate_extent=bool, extent=str))
 
 class ChainedConfigParser(ConfigParser.SafeConfigParser):
     def __init__(self, last):

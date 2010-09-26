@@ -1610,9 +1610,9 @@ garbage=junk
     def testBase1(self):
         dss = DataSources()
         dss.add_config(self.gen_section("base", type="shape", encoding="latin1"), __file__)
-        dss.add_config(self.gen_section("t2", base="base", file="foo"), __file__)
-        self.assertTrue("base" in dss.bases)
-        self.assertEqual(dss.get('t2')['base'], 'base')
+        dss.add_config(self.gen_section("t2", template="base", file="foo"), __file__)
+        self.assertTrue("base" in dss.templates)
+        self.assertEqual(dss.get('t2')['template'], 'base')
         self.assertEqual(dss.get('t2')['parameters']['file'], 'foo')
 
     def testSRS(self):
@@ -1676,11 +1676,12 @@ class CompileXMLTests(unittest.TestCase):
                 </Stylesheet>
                 <Datasource name="template">
                     <Parameter name="type">shape</Parameter>
-                    <Parameter name="encoding">latin1</Parameter>                                                
+                    <Parameter name="encoding">latin1</Parameter>
+                    <Parameter name="base">data</Parameter>
                 </Datasource>
-                <Layer>
+                <Layer srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
                     <Datasource base="template">
-                        <Parameter name="file">data/test.shp</Parameter>
+                        <Parameter name="file">test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
@@ -1710,13 +1711,15 @@ class CompileXMLTests(unittest.TestCase):
                     }
                 </Stylesheet>
                 <DataSourcesConfig>
-[template]
+[template1]
 type=shape
+layer_srs=epsg:4326
 encoding=latin1
+base=data
 
 [test_shp]
-file=data/test.shp
-base=template
+file=test.shp
+template=template1
                 </DataSourcesConfig>
                 <Layer source_name="test_shp" />
             </Map>
@@ -1749,7 +1752,8 @@ base=template
         self.assertEqual('Comic Sans', map.layers[0].styles[2].rules[0].symbolizers[0].face_name)
         self.assertEqual(14, map.layers[0].styles[2].rules[0].symbolizers[0].size)
 
-        self.assertEqual(map.layers[0].datasource.parameters['file'], 'data/test.shp')
+        self.assertEqual(map.layers[0].srs, '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+        self.assertEqual(map.layers[0].datasource.parameters['file'], 'test.shp')
         self.assertEqual(map.layers[0].datasource.parameters['encoding'], 'latin1')
         self.assertEqual(map.layers[0].datasource.parameters['type'], 'shape')
 
