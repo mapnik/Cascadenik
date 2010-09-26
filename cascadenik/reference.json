@@ -29,7 +29,7 @@
       "opacity": {
         "css": "polygon-opacity",
         "type": "float",
-        "default": "1",
+        "default": 1,
         "default-meaning": "opaque"
       },
       "meta-output": { 
@@ -37,7 +37,6 @@
         "type": "string",
         "default": "",
         "default-meaning": "No MetaWriter Output"
-
       },
       "meta-writer": { 
         "css": "polygon-meta-writer",
@@ -49,103 +48,123 @@
     "line": {
       "color": {
         "css": "line-color",
-        "type": "color"
+        "default": "black",
+        "type": "color",
+        "doc": "The color of a drawn line"
       },
       "width": {
         "css": "line-width",
-        "type": "float"
+        "default": 1,
+        "type": "float",
+        "doc": "The width of a line"
       },
       "opacity": {
         "css": "line-opacity",
-        "type": "float"
+        "default": 1
+        "type": "float",
+        "doc": "The opacity of a line"
       },
       "join": {
         "css": "line-join",
-        "type": ["miter", "round", "bevel"] 
+        "default": "miter",
+        "type": ["miter", "round", "bevel"],
+        "doc": "The behavior of lines when joining"
       },
       "cap": {
         "css": "line-cap",
-        "type": ["butt", "round", "square"] 
+        "default": "butt",
+        "type": ["butt", "round", "square"],
+        "doc": "The display of line endings."
       },
       "dasharray": {
         "css": "line-dasharray",
-        "type": "numbers"
+        "type": "numbers",
+        "doc": "A pair of length values [a,b], where (a) is the dash length and (b) is the gap length respectively. More than two values are supported as well (e.g. to start the line not with a stroke, but with a gap).",
+        "default": "none"
       },
       "meta-output": {
         "css": "line-meta-output",
-        "type": "string"
+        "type": "string",
+        "default": "",
+        "default-meaning": "No MetaWriter Output"
       },
       "meta-writer": {
         "css": "line-meta-writer",
-        "type": "string"
+        "type": "string",
+        "default": ""
       }
     },
     "marker": {
-     "line-color": { 
-       "css": "marker-line-color",
-       "type": "color" 
-     },
-     "line-width": { 
-       "css": "marker-line-width",
-       "type": "float"
-     },
-     "line-opacity": { 
-       "css": "marker-line-opacity",
-       "type": "float"
-     },
-     "placement": { 
-       "css": "marker-placement",
-       "type": ["point", "line"] 
-     },
-     "type": { 
-       "css": "marker-type",
-       "type": ["arrow", "ellipse"] 
-     },
-
-     "width": { 
-       "css": "marker-width",
-       "type": "int" 
-     },
-     "height": {
-       "css": "marker-height",
-       "type": "int" 
-     },
-     "fill": { 
-       "css": "marker-fill",
-       "type": "color" 
-     },
-     "fill-opacity": { 
-       "css": "marker-opacity",
-       "type": "float"
-     },
-     "file": { 
-       "css": "marker-file",
-       "type": "uri"
-     },
-     "allow-overlap": {
-       "css": "marker-allow-overlap",
-       "type": "boolean"
-     },
-     "spacing": {
-       "css": "marker-spacing",
-       "type": "float"
-     },
-     "max-error": {
-       "css": "marker-max-error",
-       "type": "float"
-     },
-     "transform": {
-       "css": "marker-transform",
-       "type": "string" 
-     },
-     "meta-output": {
-       "css": "marker-meta-output",
-       "type": "string" 
-     },
-     "meta-writer": {
-       "css": "marker-meta-writer",
-       "type": "string" 
-     }
+      "line-color": { 
+        "css": "marker-line-color",
+        "type": "color" 
+      },
+      "line-width": { 
+        "css": "marker-line-width",
+        "type": "float"
+      },
+      "line-opacity": { 
+        "css": "marker-line-opacity",
+        "default": 1,
+        "type": "float"
+      },
+      "placement": { 
+        "css": "marker-placement",
+        "type": ["point", "line"] 
+      },
+      "type": { 
+        "css": "marker-type",
+        "type": ["arrow", "ellipse"] 
+      },
+      "width": { 
+        "css": "marker-width",
+        "type": "int" 
+      },
+      "height": {
+        "css": "marker-height",
+        "type": "int" 
+      },
+      "fill": { 
+        "css": "marker-fill",
+        "type": "color" 
+      },
+      "fill-opacity": { 
+        "css": "marker-opacity",
+        "default": 1,
+        "type": "float"
+      },
+      "file": { 
+        "css": "marker-file",
+        "type": "uri"
+      },
+      "allow-overlap": {
+        "css": "marker-allow-overlap",
+        "type": "boolean"
+      },
+      "spacing": {
+        "css": "marker-spacing",
+        "docs": "Space between repeated labels",
+        "type": "float"
+      },
+      "max-error": {
+        "css": "marker-max-error",
+        "type": "float"
+      },
+      "transform": {
+        "css": "marker-transform",
+        "type": "string" 
+      },
+      "meta-output": {
+        "css": "marker-meta-output",
+        "type": "string",
+        "default": "",
+        "default-meaning": "No MetaWriter Output"
+      },
+      "meta-writer": {
+        "css": "marker-meta-writer",
+        "type": "string",
+        "default": "none"
+      }
     },
     "shield": {
       "name": {
@@ -165,44 +184,57 @@
         "type":  "color" 
       },
       "min-distance": {
-         "css": "shield-min-distance",
-        "type":  "int" 
+        "css": "shield-min-distance",
+        "type":  "int",
+        "default": 0,
+        "doc": "Minimum distance to the next shield symbol, not necessarily the same shield."
       },
       "spacing": {
-         "css": "shield-spacing",
-        "type":  "int" 
+        "css": "shield-spacing",
+        "type":  "int",
+        "default": 0,
+        "doc": "The spacing between repeated occurrences of the same shield"
       },
       "character-spacing": {
-         "css": "shield-spacing",
+        "css": "shield-spacing",
         "type":  "int" 
+        "default": 0,
+        "doc": "Horizontal spacing between characters (in pixels). Currently works for point placement only, not line placement."
       },
       "line-spacing": {
-         "css": "shield-line-spacing",
+        "css": "shield-line-spacing",
+        "doc": "Vertical spacing between lines of multiline labels (in pixels)",
         "type":  "int" 
       },
       "file": {
-         "css": "shield-file",
+        "css": "shield-file",
         "type":  "uri"
       },
       "width": {
         "css": "shield-width",
-        "type":  "int"
+        "type":  "int",
+        "default": "The image's width"
       },
       "height": {
         "css": "shield-height",
-        "type":  "int"
+        "type":  "int",
+        "default": "The image's height"
       },
       "type": {
         "css": "shield-type",
-        "type":  "None"
+        "type":  "None",
+        "default": "The type of the image file: e.g. png"
       },
       "meta-output": {
         "css": "shield-meta-output",
-        "type":  "string"
+        "type":  "string",
+        "default": "",
+        "default-meaning": "No MetaWriter Output"
       },
       "meta-writer": {
         "css": "shield-meta-writer",
-        "type":  "string"
+        "type":  "string",
+        "default": ""
       }
     },
     "line-pattern": {
@@ -224,11 +256,14 @@
       },
       "meta-output": {
         "css": "line-pattern-meta-output",
-        "type":  "string" 
+        "type":  "string",
+        "default": "",
+        "default-meaning": "No MetaWriter Output"
       },
       "meta-writer": {
         "css": "line-pattern-meta-writer",
-        "type":  "string" 
+        "type":  "string",
+        "default": ""
       }
     },
     "polygon-pattern": {
@@ -250,20 +285,25 @@
       },
       "meta-output": {
         "css": "polygon-pattern-meta-output",
-        "type": "string" 
+        "type": "string",
+        "default": "",
+        "default-meaning": "No MetaWriter Output"
       },
       "meta-writer": {
         "css": "polygon-pattern-meta-writer",
-        "type": "string" 
+        "type": "string",
+        "default": ""
       }
     },
     "raster": {
       "opacity": {
         "css": "raster-opacity",
+        "default": 1,
         "type": "float"
       },
       "mode": {
         "css": "raster-mode",
+        "default": "normal",
         "type": 
           ["normal","grain_merge", "grain_merge2",
           "multiply", "multiply2", "divide", "divide2",
@@ -297,11 +337,14 @@
       },
       "meta-output": {
         "css": "point-meta-output",
-        "type": "string" 
+        "type": "string",
+        "default": "",
+        "default-meaning": "No MetaWriter Output"
       },
       "meta-writer": {
         "css": "point-meta-writer",
-        "type": "string" 
+        "type": "string",
+        "default": ""
       }
     },
     "text": {
@@ -320,6 +363,7 @@
       },
       "wrap-width": {
         "css": "text-wrap-width",
+        "doc": "Length of a chunk of text in characters before wrapping text",
         "type": "integer" 
       },
       "spacing": {
@@ -329,6 +373,7 @@
       "character-spacing": {
         "css": "text-character-spacing",
         "type": "integer" 
+        "default": 0
       },
       "line-spacing": {
         "css": "text-line-spacing",
@@ -348,6 +393,7 @@
       },
       "halo-fill": {
         "css": "text-halo-fill",
+        "docs": "Color of the text halo",
         "type": "color" 
       },
       "halo-radius": {
@@ -364,6 +410,7 @@
       },
       "avoid-edges": {
         "css": "text-avoid-edges",
+        "doc": "Tell positioning algorithm to avoid labeling near intersection edges."
         "type": "boolean"
       },
       "min-distance": {
@@ -385,17 +432,20 @@
       },
       "meta-output": {
         "css": "text-meta-output",
-        "type": ["point", "line"] 
-        "type": "string" 
+        "type": "string",
+        "default": "",
+        "default-meaning": "No MetaWriter Output"
       },
       "meta-writer": {
         "css": "text-meta-writer",
-        "type": "string" 
+        "type": "string",
+        "default": ""
       }
     },
     "inline": {
       "color": {
         "css": "inline-color",
+        "default": "black",
         "type": "color" 
       },
       "width": {
@@ -404,14 +454,17 @@
       },
       "opacity": {
         "css": "inline-opacity",
+        "default": 1,
         "type": "float"
       },
       "join": {
         "css": "inline-join",
+        "default": "miter",
         "type": ["miter", "round", "bevel"]
       },
       "cap": {
         "css": "inline-cap",
+        "default": "butt",
         "type": ["butt", "round", "square"]
       },
       "dasharray": {
@@ -420,32 +473,40 @@
       },
       "meta-output": {
         "css": "inline-meta-output",
-        "type": "string" 
+        "type": "string",
+        "default": "none",
+        "default-meaning": "No MetaWriter Output"
       },
       "meta-writer": {
         "css": "inline-meta-writer",
-        "type": "string" 
+        "type": "string",
+        "default": "none"
       }
     },
     "outline": {
       "color": {
         "css": "outline-color",
-          "type": "color" 
+        "default": "black",
+        "type": "color" 
       },
       "width": {
         "css": "outline-width",
+        "default": 1,
         "type": "float"
       },
       "opacity": {
         "css": "outline-opacity",
+        "default": 1,
         "type": "float"
       },
       "join": {
         "css": "outline-join",
+        "default": "miter",
         "type": ["miter", "round", "bevel"] 
       },
       "cap": {
         "css": "outline-cap",
+        "default": "butt",
         "type": ["butt", "round", "square"] 
       },
       "dasharray": {
@@ -454,11 +515,14 @@
       },
       "meta-output": {
         "css": "outline-meta-output",
-        "type": "string" 
+        "type": "string",
+        "default": "none",
+        "default-meaning": "No MetaWriter Output"
       },
       "meta-writer": {
         "css": "outline-meta-writer",
-        "type": "string" 
+        "type": "string",
+        "default": "none"
       }
     }
   }
