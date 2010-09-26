@@ -1156,7 +1156,11 @@ def handle_zipped_shapefile(zipped_shp, dir):
     return local
 
 def appropriate_path(original, path, dir):
-    """
+    """ Modify a path so it fits expectations. Based on an original path
+        (which might come directly from a stylesheet), some possibly-modified
+        version of that path, and a directory, return a munged version of the
+        path that's absolue if the original was absolute, relative if it's
+        inside the target directory, and absolute if it's someplace else.
     """
     if original.startswith('/'):
         return os.path.realpath(path)
@@ -1169,8 +1173,8 @@ def appropriate_path(original, path, dir):
     return rel_path
 
 def localize_shapefile(shp_href, target_dir, **kwargs):
-    """ Given a stylesheet path, a shapefile name, and a temp directory,
-        modify the shapefile name so it's an absolute path.
+    """ Given a shapefile href and a temp directory, modify the
+        shapefile name so it's an absolute path if appropriate.
     
         Shapefile is assumed to be relative to the stylesheet path.
         If it's found to look like a URL (e.g. "http://...") it's assumed
@@ -1182,15 +1186,10 @@ def localize_shapefile(shp_href, target_dir, **kwargs):
     version = kwargs.get('mapnik_version', None)
     mapnik_requires_absolute_paths = (version < 601)
 
-    print >> sys.stderr, '-' * 40
-    print >> sys.stderr, shp_href
-    
     scheme, n, path, p, q, f = urlparse.urlparse(shp_href)
     
     if scheme == 'http':
-        print >> sys.stderr, 'locally cache', shp_href,
         scheme, path = '', locally_cache_remote_file(shp_href, target_dir)
-        print >> sys.stderr, '-->', path
 
     if scheme not in ('file', ''):
         raise Exception("you're not helping")
@@ -1198,22 +1197,12 @@ def localize_shapefile(shp_href, target_dir, **kwargs):
     if mapnik_requires_absolute_paths:
         path = os.path.realpath(path)
     
-    original = path
-    path = appropriate_path(original, path, target_dir)
-    head, ext = os.path.splitext(path)
+    original, path = path, appropriate_path(path, path, target_dir)
 
-    print >> sys.stderr, 'split:', head, ext
-    
-    if ext == '.zip':
-        print >> sys.stderr, 'extract from zip file I guess:',
+    if path.endswith('.zip'):
         path = handle_zipped_shapefile(path, target_dir)
-        print >> sys.stderr, path
     
-    path = appropriate_path(original, path, target_dir)
-    
-    print >> sys.stderr, 'actually:', path
-
-    return path
+    return appropriate_path(original, path, target_dir)
 
 def localize_datasource(src, filename, **kwargs):
     """ Handle localizing file-based datasources other than zipped shapefiles.
