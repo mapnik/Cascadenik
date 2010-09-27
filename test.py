@@ -21,14 +21,12 @@ from cascadenik.compile import filtered_property_declarations, is_applicable_sel
 from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
 from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
 from cascadenik.compile import test2str, compile
-from cascadenik.compile import auto_detect_mapnik_version
+from cascadenik.compile import MAPNIK_VERSION
+from cascadenik.compile import Directories
 from cascadenik.sources import DataSources
 import cascadenik.output as output
     
-MAPNIK_AUTO_IMAGE_SUPPORT = False
-ver = auto_detect_mapnik_version()
-if ver:
-    MAPNIK_AUTO_IMAGE_SUPPORT = (ver >= 701)
+MAPNIK_AUTO_IMAGE_SUPPORT = (MAPNIK_VERSION >= 701)
 
 class ParseTests(unittest.TestCase):
     
@@ -812,6 +810,7 @@ class StyleRuleTests(unittest.TestCase):
     def setUp(self):
         # a directory for all the temp files to be created below
         self.tmpdir = tempfile.mkdtemp(prefix='cascadenik-tests-')
+        self.dirs = Directories(self.tmpdir, self.tmpdir)
 
     def tearDown(self):
         # destroy the above-created directory
@@ -1042,7 +1041,7 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(10, text_rule_groups['label'][3].symbolizers[0].size)
         self.assertEqual('[foo] >= 1', text_rule_groups['label'][3].filter.text)
         
-        shield_rule_groups = get_shield_rule_groups(declarations, self.tmpdir, self.tmpdir)
+        shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
         assert shield_rule_groups['label'][0].minscale is None
         assert shield_rule_groups['label'][0].maxscale is None
@@ -1110,7 +1109,7 @@ class StyleRuleTests(unittest.TestCase):
     
         declarations = stylesheet_declarations(s, is_gym=True)
         
-        shield_rule_groups = get_shield_rule_groups(declarations, self.tmpdir, self.tmpdir)
+        shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
         assert shield_rule_groups['label'][0].minscale is None
         assert shield_rule_groups['label'][0].maxscale is None
@@ -1166,7 +1165,7 @@ class StyleRuleTests(unittest.TestCase):
             self.assertEqual(8, shield_rule_groups['label'][5].symbolizers[0].height)
         self.assertEqual("[bar] = 'quux' and [foo] > 1", shield_rule_groups['label'][5].filter.text)
 
-        point_rules = get_point_rules(declarations, self.tmpdir, self.tmpdir)
+        point_rules = get_point_rules(declarations, self.dirs)
         
         assert point_rules[0].filter is None
         assert point_rules[0].minscale is None
@@ -1185,7 +1184,7 @@ class StyleRuleTests(unittest.TestCase):
     
         declarations = stylesheet_declarations(s, is_gym=True)
 
-        point_rules = get_point_rules(declarations, self.tmpdir, self.tmpdir)
+        point_rules = get_point_rules(declarations, self.dirs)
         
         assert point_rules[0].filter is None
         assert point_rules[0].minscale is None
@@ -1195,7 +1194,7 @@ class StyleRuleTests(unittest.TestCase):
             self.assertEqual(8, point_rules[0].symbolizers[0].width)
             self.assertEqual(8, point_rules[0].symbolizers[0].height)
 
-        polygon_pattern_rules = get_polygon_pattern_rules(declarations, self.tmpdir, self.tmpdir)
+        polygon_pattern_rules = get_polygon_pattern_rules(declarations, self.dirs)
         
         assert polygon_pattern_rules[0].filter is None
         assert polygon_pattern_rules[0].minscale is None
@@ -1205,7 +1204,7 @@ class StyleRuleTests(unittest.TestCase):
             self.assertEqual(8, polygon_pattern_rules[0].symbolizers[0].width)
             self.assertEqual(8, polygon_pattern_rules[0].symbolizers[0].height)
 
-        line_pattern_rules = get_line_pattern_rules(declarations, self.tmpdir, self.tmpdir)
+        line_pattern_rules = get_line_pattern_rules(declarations, self.dirs)
         
         assert line_pattern_rules[0].filter is None
         assert line_pattern_rules[0].minscale is None
@@ -1489,18 +1488,18 @@ class StyleRuleTests(unittest.TestCase):
 
         declarations = stylesheet_declarations(s, is_gym=True)
 
-        point_rules = get_point_rules(declarations, self.tmpdir, self.tmpdir)
+        point_rules = get_point_rules(declarations, self.dirs)
         
         self.assertEqual(16, point_rules[0].symbolizers[0].width)
         self.assertEqual(16, point_rules[0].symbolizers[0].height)
         self.assertEqual(boolean(True), point_rules[0].symbolizers[0].allow_overlap)
 
-        polygon_pattern_rules = get_polygon_pattern_rules(declarations, self.tmpdir, self.tmpdir)
+        polygon_pattern_rules = get_polygon_pattern_rules(declarations, self.dirs)
         
         self.assertEqual(16, polygon_pattern_rules[0].symbolizers[0].width)
         self.assertEqual(16, polygon_pattern_rules[0].symbolizers[0].height)
 
-        line_pattern_rules = get_line_pattern_rules(declarations, self.tmpdir, self.tmpdir)
+        line_pattern_rules = get_line_pattern_rules(declarations, self.dirs)
         
         self.assertEqual(16, line_pattern_rules[0].symbolizers[0].width)
         self.assertEqual(16, line_pattern_rules[0].symbolizers[0].height)
@@ -1541,7 +1540,7 @@ class StyleRuleTests(unittest.TestCase):
 
         declarations = stylesheet_declarations(s, is_gym=True)
 
-        shield_rule_groups = get_shield_rule_groups(declarations, self.tmpdir, self.tmpdir)
+        shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
         self.assertEqual('Helvetica', shield_rule_groups['just_text'][0].symbolizers[0].face_name)
         self.assertEqual(12, shield_rule_groups['just_text'][0].symbolizers[0].size)
@@ -1663,6 +1662,7 @@ class CompileXMLTests(unittest.TestCase):
     def setUp(self):
         # a directory for all the temp files to be created below
         self.tmpdir = tempfile.mkdtemp(prefix='cascadenik-tests-')
+        self.dirs = Directories(self.tmpdir, self.tmpdir)
 
     def tearDown(self):
         # destroy the above-created directory
@@ -1775,7 +1775,7 @@ layer_srs=%(other_srs)s
         
         
     def doCompile1(self, s, **kwargs):
-        map = compile(s, self.tmpdir, self.tmpdir, **kwargs)
+        map = compile(s, self.dirs, **kwargs)
         
         self.assertEqual(2, len(map.layers))
         self.assertEqual(3, len(map.layers[0].styles))
@@ -1844,7 +1844,7 @@ layer_srs=%(other_srs)s
                 </Layer>
             </Map>
         """
-        map = compile(s, self.tmpdir, self.tmpdir)
+        map = compile(s, self.dirs)
         
         mmap = mapnik.Map(640, 480)
         map.to_mapnik(mmap)
@@ -2013,8 +2013,8 @@ layer_srs=%(other_srs)s
             </Map>
         """
         mmap = mapnik.Map(640, 480)
-        ms = compile(s, self.tmpdir, self.tmpdir)
-        ms.to_mapnik(mmap, self.tmpdir)
+        ms = compile(s, self.dirs)
+        ms.to_mapnik(mmap, self.dirs)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
 
     def testCompile5(self):
@@ -2032,8 +2032,8 @@ layer_srs=%(other_srs)s
             </Map>
         """.encode('utf-8')
         mmap = mapnik.Map(640, 480)
-        ms = compile(s, self.tmpdir, self.tmpdir)
-        ms.to_mapnik(mmap)
+        ms = compile(s, self.dirs)
+        ms.to_mapnik(mmap, self.dirs)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
         
         

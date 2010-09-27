@@ -12,11 +12,12 @@ import style
 # compile module
 import compile as _compile
 # compile function
-from compile import compile
+from compile import compile, Directories
 from style import stylesheet_declarations
 
 # define Cascadenik version
 VERSION = '0.2.0'
+CACHE_DIR = '~/.cascadenik'
 
 __all__ = ['compile','_compile','style','stylesheet_declarations']
 
@@ -24,14 +25,12 @@ def load_map(map, input, target_dir, cache_dir=None, datasources_local_cfg=None,
     """
     """
     if cache_dir is None:
-        cache_dir = expanduser('~/.cascadenik')
+        cache_dir = expanduser(CACHE_DIR)
         
+        # only make the cache dir if it wasn't user-provided
         if not isdir(cache_dir):
             mkdir(cache_dir)
             chmod(cache_dir, 0755)
 
-    compile(input, 
-            target_dir, 
-            realpath(cache_dir),
-            datasources_local_cfg=datasources_local_cfg, 
-            verbose=verbose).to_mapnik(map, target_dir)
+    dirs = Directories(target_dir, realpath(cache_dir))
+    compile(input, dirs, datasources_local_cfg=datasources_local_cfg, verbose=verbose).to_mapnik(map, dirs)
