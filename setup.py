@@ -36,7 +36,7 @@ options = dict(name='cascadenik',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Utilities'
         ],
-        scripts=['cascadenik-compile.py','cascadenik-style.py'],
+        scripts=['cascadenik-compile.py','cascadenik-style.py', 'cascadenik-extract-dscfg.py'],
         packages=['cascadenik'],
         )
 
