@@ -7,10 +7,7 @@ import unittest
 import tempfile
 import xml.etree.ElementTree
 
-try:
-    import mapnik2 as mapnik
-except ImportError:
-    import mapnik
+import mapnik
 
 from cascadenik.style import ParseException, stylesheet_rulesets, rulesets_declarations, stylesheet_declarations
 from cascadenik.style import Selector, SelectorElement, SelectorAttributeTest
