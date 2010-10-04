@@ -19,9 +19,9 @@ from style import stylesheet_declarations
 VERSION = '0.2.0'
 CACHE_DIR = '~/.cascadenik'
 
-__all__ = ['compile','_compile','style','stylesheet_declarations']
+__all__ = ['load_map', 'compile','_compile','style','stylesheet_declarations']
 
-def load_map(map, input, target_dir, cache_dir=None, datasources_local_cfg=None, verbose=False):
+def load_map(map, input, target_dir, cache_dir=None, datasources_cfg=None, verbose=False):
     """
     """
     if cache_dir is None:
@@ -33,4 +33,4 @@ def load_map(map, input, target_dir, cache_dir=None, datasources_local_cfg=None,
             chmod(cache_dir, 0755)
 
     dirs = Directories(target_dir, realpath(cache_dir))
-    compile(input, dirs, datasources_local_cfg=datasources_local_cfg, verbose=verbose).to_mapnik(map, dirs)
+    compile(input, dirs, datasources_cfg=datasources_cfg, verbose=verbose).to_mapnik(map, dirs)
