@@ -3,6 +3,8 @@
 import os
 import sys
 import shutil
+import urllib
+import os.path
 import unittest
 import tempfile
 import xml.etree.ElementTree
@@ -810,7 +812,7 @@ class StyleRuleTests(unittest.TestCase):
     def setUp(self):
         # a directory for all the temp files to be created below
         self.tmpdir = tempfile.mkdtemp(prefix='cascadenik-tests-')
-        self.dirs = Directories(self.tmpdir, self.tmpdir)
+        self.dirs = Directories(self.tmpdir, self.tmpdir, self.tmpdir)
 
     def tearDown(self):
         # destroy the above-created directory
@@ -1662,7 +1664,7 @@ class CompileXMLTests(unittest.TestCase):
     def setUp(self):
         # a directory for all the temp files to be created below
         self.tmpdir = tempfile.mkdtemp(prefix='cascadenik-tests-')
-        self.dirs = Directories(self.tmpdir, self.tmpdir)
+        self.dirs = Directories(self.tmpdir, self.tmpdir, os.getcwd())
 
     def tearDown(self):
         # destroy the above-created directory
@@ -2035,7 +2037,99 @@ layer_srs=%(other_srs)s
         ms = compile(s, self.dirs)
         ms.to_mapnik(mmap, self.dirs)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
+
+class RelativePathTests(unittest.TestCase):
+
+    def setUp(self):
+        # a directory for all the temp files to be created below
+        self.tmpdir = tempfile.mkdtemp(prefix='cascadenik-tests-')
+
+    def tearDown(self):
+        # destroy the above-created directory
+        shutil.rmtree(self.tmpdir)
+
+    def testLocalizedPaths(self):
         
+        dirs = Directories(self.tmpdir, self.tmpdir, self.tmpdir)
+
+        mml_path = dirs.output + '/style.mml'
+        mml_file = open(mml_path, 'w')
         
+        print >> mml_file, """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer id="mission-points" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">http://cascadenik-sampledata.s3.amazonaws.com/mission-points.zip</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """
+        
+        mml_file.close()
+        
+        map = compile(mml_path, dirs)
+        
+        file_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        file_path = os.path.join(dirs.cache, file_path)
+        assert os.path.exists(file_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        shp_path = os.path.join(dirs.cache, shp_path)
+        assert os.path.exists(shp_path)
+
+    def testRelativePaths(self):
+    
+        dirs = Directories(self.tmpdir, self.tmpdir, self.tmpdir)
+
+        basepath = os.path.dirname(__file__)
+
+        for ext in ('shp', 'shx', 'prj', 'dbf'):
+            filepath = os.path.join(basepath, 'data', 'mission-points.' + ext)
+            shutil.copy(filepath, dirs.output)
+    
+        png_path = os.path.join(dirs.output, 'purple-point.png')
+        png_file = open(png_path, 'w')
+        png_file.write(urllib.urlopen('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png').read())
+        png_file.close()
+        
+        mml_path = dirs.output + '/style.mml'
+        mml_file = open(mml_path, 'w')
+        
+        print >> mml_file, """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer id="mission-points" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">mission-points</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """
+        
+        mml_file.close()
+        
+        map = compile(mml_path, dirs)
+        
+        file_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        file_path = os.path.join(dirs.cache, file_path)
+        assert os.path.exists(file_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        shp_path = os.path.join(dirs.cache, shp_path)
+        assert os.path.exists(shp_path)
+
 if __name__ == '__main__':
     unittest.main()
