@@ -1765,7 +1765,7 @@ layer_srs=%(other_srs)s
         try:
             cfg.write("[DEFAULT]\nother_srs=epsg:900913")
             cfg.close()
-            map = self.doCompile1(dscfg, datasources_local_cfg=cfg.name)
+            map = self.doCompile1(dscfg, datasources_cfg=cfg.name)
             self.assertEqual(map.layers[1].srs, '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs')
         finally:
             try:

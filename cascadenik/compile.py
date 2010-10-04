@@ -735,7 +735,7 @@ def is_applicable_selector(selector, filter):
     
     return True
 
-def get_map_attributes(declarations, **kwargs):
+def get_map_attributes(declarations):
     """
     """
     property_map = {'map-bgcolor': 'bgcolor'}    
@@ -767,7 +767,7 @@ def filtered_property_declarations(declarations, property_names):
 
     return rules
 
-def get_polygon_rules(declarations,**kwargs):
+def get_polygon_rules(declarations):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PolygonSymbolizer, add it to Map
         and refer to it in Layer.
@@ -792,7 +792,7 @@ def get_polygon_rules(declarations,**kwargs):
     
     return rules
 
-def get_raster_rules(declarations,**kwargs):
+def get_raster_rules(declarations):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a RasterSymbolizer, add it to Map
         and refer to it in Layer.
@@ -818,7 +818,7 @@ def get_raster_rules(declarations,**kwargs):
 
     return rules
 
-def get_line_rules(declarations, **kwargs):
+def get_line_rules(declarations):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         This function is wise to line-<foo>, inline-<foo>, and outline-<foo> properties,
@@ -879,7 +879,7 @@ def get_line_rules(declarations, **kwargs):
 
     return rules
 
-def get_text_rule_groups(declarations, **kwargs):
+def get_text_rule_groups(declarations):
     """ Given a list of declarations, return a list of output.Rule objects.
     """
     property_map = {'text-face-name': 'face_name',
@@ -1318,30 +1318,35 @@ def localize_file_datasource(file_href, dirs):
     
     return dirs.output_path(original, path)
 
-def compile(src, dirs, **kwargs):
-    """
-    Compile a Cascadenik MML file, returning an XML string.
+def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
+    """ Compile a Cascadenik MML file, returning a mapnik Map object.
     
-    Keyword Parameters:
-         
-     verbose:
-       If True, debugging information will be printed to stderr. (default: None)
-     
-     srs:
-       Target srs for the compiled stylesheet. If provided, overrides default map 
-       srs in the mml.
-       
-     pretty:
-       If True, XML output will be fully indented (otherwise indenting is haphazard).
-       
-     datasources_cfg:
-       If a file or URL, uses the config to override datasources or parameters (i.e. postgis_dbname)
-       defined in the map's canonical <DataSourcesConfig> entities.  This is most useful in development,
-       whereby one redefines individual datasources, connection parameters, and/or local paths. 
-
+        Parameters:
+        
+          src:
+            Path to .mml file.
+          
+          dirs:
+            Object with directory names in 'cache' and 'output' attributes.
+        
+        Keyword Parameters:
+        
+          verbose:
+            If True, debugging information will be printed to stderr.
+        
+          srs:
+            Target spatiral reference system for the compiled stylesheet.
+            If provided, overrides default map srs in the .mml file.
+        
+          datasources_cfg:
+            If a file or URL, uses the config to override datasources or parameters
+            (i.e. postgis_dbname) defined in the map's canonical <DataSourcesConfig>
+            entities.  This is most useful in development, whereby one redefines
+            individual datasources, connection parameters, and/or local paths.
     """
     global VERBOSE
-    if kwargs.get('verbose'):
+
+    if verbose:
         VERBOSE = True
         sys.stderr.write('\n')
     
@@ -1374,7 +1379,7 @@ def compile(src, dirs, **kwargs):
 
         base = src
 
-    expand_source_declarations(map_el, base, kwargs.get('datasources_cfg'))
+    expand_source_declarations(map_el, base, datasources_cfg)
     declarations = extract_declarations(map_el, base)
     
     # a list of layers and a sequential ID generator
@@ -1442,16 +1447,16 @@ def compile(src, dirs, **kwargs):
         styles = []
         
         styles.append(output.Style('polygon style %d' % ids.next(),
-                                   get_polygon_rules(layer_declarations, **kwargs)))
+                                   get_polygon_rules(layer_declarations)))
 
         styles.append(output.Style('polygon pattern style %d' % ids.next(),
                                    get_polygon_pattern_rules(layer_declarations, dirs)))
 
         styles.append(output.Style('raster style %d' % ids.next(),
-                                   get_raster_rules(layer_declarations,**kwargs)))
+                                   get_raster_rules(layer_declarations)))
 
         styles.append(output.Style('line style %d' % ids.next(),
-                                   get_line_rules(layer_declarations, **kwargs)))
+                                   get_line_rules(layer_declarations)))
 
         styles.append(output.Style('line pattern style %d' % ids.next(),
                                    get_line_pattern_rules(layer_declarations, dirs)))
@@ -1459,7 +1464,7 @@ def compile(src, dirs, **kwargs):
         for (shield_name, shield_rules) in get_shield_rule_groups(layer_declarations, dirs).items():
             styles.append(output.Style('shield style %d (%s)' % (ids.next(), shield_name), shield_rules))
 
-        for (text_name, text_rules) in get_text_rule_groups(layer_declarations, **kwargs).items():
+        for (text_name, text_rules) in get_text_rule_groups(layer_declarations).items():
             styles.append(output.Style('text style %d (%s)' % (ids.next(), text_name), text_rules))
 
         styles.append(output.Style('point style %d' % ids.next(),
@@ -1481,7 +1486,7 @@ def compile(src, dirs, **kwargs):
     map_attrs = get_map_attributes(get_applicable_declarations(map_el, declarations))
     
     # if a target srs is profiled, override whatever is in mml
-    if kwargs.get('srs'):
-        map_el.set('srs',kwargs.get('srs'))
+    if srs is not None:
+        map_el.set('srs', srs)
     
     return output.Map(map_el.attrib.get('srs', None), layers, **map_attrs)

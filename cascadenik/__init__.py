@@ -33,4 +33,4 @@ def load_map(map, input, target_dir, cache_dir=None, datasources_cfg=None, verbo
             chmod(cache_dir, 0755)
 
     dirs = Directories(target_dir, realpath(cache_dir))
-    compile(input, dirs, datasources_cfg=datasources_cfg, verbose=verbose).to_mapnik(map, dirs)
+    compile(input, dirs, verbose, datasources_cfg=datasources_cfg).to_mapnik(map, dirs)
