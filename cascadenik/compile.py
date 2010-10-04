@@ -134,7 +134,8 @@ class Directories:
         if os.path.isabs(original):
             return os.path.realpath(path)
     
-        rel_path = os.path.relpath(path, self.output)
+        join_path = os.path.join(self.output, path)
+        rel_path = os.path.relpath(join_path, self.output)
     
         if rel_path.startswith('../'):
             return os.path.realpath(path)
@@ -1016,14 +1017,17 @@ def postprocess_symbolizer_image_file(file_href, dirs):
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
         
+    # it's probably safe to use a relative path where the cache and output dirs match
+    original = dirs.same() and os.path.relpath(path, dirs.output) or path
+    
+    path = os.path.join(dirs.output, path)
+    
     if scheme not in ('file', '') or not os.path.exists(path):
         raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
     
     if mapnik_requires_absolute_paths:
         path = os.path.realpath(path)
-    
-    # it's probably safe to use a relative path where the cache and output dirs match
-    original = dirs.same() and os.path.relpath(path, dirs.output) or path
+        original = path
     
     path = dirs.output_path(original, path)
 
@@ -1278,18 +1282,23 @@ def localize_shapefile(shp_href, dirs):
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(shp_href, dirs.cache)
 
+    # it's probably safe to use a relative path where the cache and output dirs match
+    original = dirs.same() and os.path.relpath(path, dirs.output) or path
+    
+    path = os.path.join(dirs.output, path)
+
     if scheme not in ('file', ''):
         raise Exception("Shapefile needs to be a working, fetchable resource, not %s" % shp_href)
     
     if mapnik_requires_absolute_paths:
         path = os.path.realpath(path)
-    
-    # it's probably safe to use a relative path where the cache and output dirs match
-    original = dirs.same() and os.path.relpath(path, dirs.output) or path
+        original = path
     
     path = dirs.output_path(original, path)
     
     if path.endswith('.zip'):
+        # unzip_shapefile_into needs a path it can find
+        path = os.path.join(dirs.output, path)
         path = unzip_shapefile_into(path, dirs.cache)
 
     return dirs.output_path(original, path)
@@ -1310,16 +1319,22 @@ def localize_file_datasource(file_href, dirs):
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
 
+    # it's probably safe to use a relative path where the cache and output dirs match
+    original = dirs.same() and os.path.relpath(path, dirs.output) or path
+    
+    path = os.path.join(dirs.output, path)
+
     if scheme not in ('file', ''):
         raise Exception("Datasource file needs to be a working, fetchable resource, not %s" % file_href)
 
-    # it's probably safe to use a relative path where the cache and output dirs match
-    original = dirs.same() and os.path.relpath(path, dirs.output) or path
+    if mapnik_requires_absolute_paths:
+        path = os.path.realpath(path)
+        original = path
     
     return dirs.output_path(original, path)
 
 def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
-    """ Compile a Cascadenik MML file, returning a mapnik Map object.
+    """ Compile a Cascadenik MML file, returning a cascadenik.output.Map object.
     
         Parameters:
         
@@ -1359,7 +1374,7 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
     try:
         # guessing src is a literal XML string?
         map_el = ElementTree.fromstring(src)
-        base = None
+        src_base = os.getcwd()
 
     except:
         assert src[:7] in ('http://', 'file://'), 'urlopen() wants a scheme'
@@ -1367,10 +1382,10 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         # or a URL or file location?
         doc = ElementTree.parse(urllib.urlopen(src))
         map_el = doc.getroot()
-        base = src
+        src_base = src
 
-    expand_source_declarations(map_el, base, datasources_cfg)
-    declarations = extract_declarations(map_el, base)
+    expand_source_declarations(map_el, src_base, datasources_cfg)
+    declarations = extract_declarations(map_el, src_base)
     
     # a list of layers and a sequential ID generator
     layers, ids = [], (i for i in xrange(1, 999999))
@@ -1393,9 +1408,9 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         # build up a map of Parameters for this Layer
         datasource_params = dict((p.get('name'),p.text) for p in layer_el.find('Datasource').findall('Parameter'))
 
-        base = layer_el.find('Datasource').get('base')
-        if base:
-            datasource_params.update(datasource_templates[base])
+        ds_base = layer_el.find('Datasource').get('base')
+        if ds_base:
+            datasource_params.update(datasource_templates[ds_base])
 
         if datasource_params.get('table'):
             # remove line breaks from possible SQL, using a possibly-unsafe regexp
@@ -1410,7 +1425,7 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         elif datasource_params.get('file') is not None:
             # make sure we localize any remote files
             file_param = datasource_params.get('file')
-            file_param = style.resolve_paths(file_param, src)
+            file_param = style.resolve_paths(file_param, src_base)
 
             if datasource_params.get('type') == 'shape':
                 # handle a local shapefile or fetch a remote, zipped shapefile

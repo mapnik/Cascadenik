@@ -29,8 +29,7 @@ def resolve_paths(address, base):
     base_scheme, n, base_path, p, q, f = urlparse.urlparse(base)
     
     base_scheme = base_scheme or 'file'
-    base_path = base_path.startswith('/') and base_path or os.path.realpath(base_path)
-
+    
     if addr_scheme:
         # fully-qualified
         return address
@@ -45,7 +44,12 @@ def resolve_paths(address, base):
     
     elif base_scheme == 'file' and not addr_path.startswith('/'):
         # local, relative
-        return os.path.relpath(addr_path, os.path.dirname(base_path))
+
+        # realpath() here will complain if base_path doesn't exist
+        base_path = base_path.startswith('/') and base_path or os.path.realpath(base_path)
+        join_path = os.path.join(os.path.dirname(base_path), addr_path)
+
+        return os.path.relpath(join_path, os.path.dirname(base_path))
 
     else:
         # can this be reached?
