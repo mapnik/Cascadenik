@@ -31,44 +31,51 @@ class Map:
         if dirs:
             chdir(dirs.output)
         
-        mmap.srs = self.srs or mmap.srs
-        mmap.bgcolor = str(self.bgcolor) or mmap.bgcolor
-        
-        ids = (i for i in xrange(1, 999999))
-        
-        for layer in self.layers:
-            for style in layer.styles:
-
-                sty = mapnik.Style()
-                
-                for rule in style.rules:
-                    rul = mapnik.Rule('rule %d' % ids.next())
-                    rul.filter = rule.filter and mapnik.Filter(rule.filter.text) or rul.filter
-                    rul.min_scale = rule.minscale and rule.minscale.value or rul.min_scale
-                    rul.max_scale = rule.maxscale and rule.maxscale.value or rul.max_scale
-                    
-                    for symbolizer in rule.symbolizers:
-                        if not hasattr(symbolizer, 'to_mapnik'):
-                            continue
-
-                        sym = symbolizer.to_mapnik()
-                        rul.symbols.append(sym)
-                    sty.rules.append(rul)
-                mmap.append_style(style.name, sty)
-
-            lay = mapnik.Layer(layer.name)
-            lay.srs = layer.srs or lay.srs
-            if layer.datasource:
-                lay.datasource = layer.datasource.to_mapnik()
-            lay.minzoom = layer.minzoom or lay.minzoom
-            lay.maxzoom = layer.maxzoom or lay.maxzoom
+        try:
+            mmap.srs = self.srs or mmap.srs
+            mmap.bgcolor = str(self.bgcolor) or mmap.bgcolor
             
-            for style in layer.styles:
-                lay.styles.append(style.name)
-
-            mmap.layers.append(lay)
+            ids = (i for i in xrange(1, 999999))
+            
+            for layer in self.layers:
+                for style in layer.styles:
+    
+                    sty = mapnik.Style()
+                    
+                    for rule in style.rules:
+                        rul = mapnik.Rule('rule %d' % ids.next())
+                        rul.filter = rule.filter and mapnik.Filter(rule.filter.text) or rul.filter
+                        rul.min_scale = rule.minscale and rule.minscale.value or rul.min_scale
+                        rul.max_scale = rule.maxscale and rule.maxscale.value or rul.max_scale
+                        
+                        for symbolizer in rule.symbolizers:
+                            if not hasattr(symbolizer, 'to_mapnik'):
+                                continue
+    
+                            sym = symbolizer.to_mapnik()
+                            rul.symbols.append(sym)
+                        sty.rules.append(rul)
+                    mmap.append_style(style.name, sty)
+    
+                lay = mapnik.Layer(layer.name)
+                lay.srs = layer.srs or lay.srs
+                if layer.datasource:
+                    lay.datasource = layer.datasource.to_mapnik()
+                lay.minzoom = layer.minzoom or lay.minzoom
+                lay.maxzoom = layer.maxzoom or lay.maxzoom
+                
+                for style in layer.styles:
+                    lay.styles.append(style.name)
+    
+                mmap.layers.append(lay)
         
-        chdir(prev_cwd)
+        except:
+            # pass it along, but first chdir back to the previous directory
+            # in the finally clause below, to put things back the way they were.
+            raise
+        
+        finally:
+            chdir(prev_cwd)
 
 class Style:
     def __init__(self, name, rules):
