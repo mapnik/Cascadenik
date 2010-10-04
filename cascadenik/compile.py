@@ -1375,7 +1375,6 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
     try:
         # guessing src is a literal XML string?
         map_el = ElementTree.fromstring(src)
-        src_base = os.getcwd()
 
     except:
         assert src[:7] in ('http://', 'file://'), 'urlopen() wants a scheme'
@@ -1383,10 +1382,9 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         # or a URL or file location?
         doc = ElementTree.parse(urllib.urlopen(src))
         map_el = doc.getroot()
-        src_base = src
 
-    expand_source_declarations(map_el, src_base, datasources_cfg)
-    declarations = extract_declarations(map_el, src_base)
+    expand_source_declarations(map_el, dirs.input, datasources_cfg)
+    declarations = extract_declarations(map_el, dirs.input)
     
     # a list of layers and a sequential ID generator
     layers, ids = [], (i for i in xrange(1, 999999))
@@ -1409,9 +1407,9 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         # build up a map of Parameters for this Layer
         datasource_params = dict((p.get('name'),p.text) for p in layer_el.find('Datasource').findall('Parameter'))
 
-        ds_base = layer_el.find('Datasource').get('base')
-        if ds_base:
-            datasource_params.update(datasource_templates[ds_base])
+        base = layer_el.find('Datasource').get('base')
+        if base:
+            datasource_params.update(datasource_templates[base])
 
         if datasource_params.get('table'):
             # remove line breaks from possible SQL, using a possibly-unsafe regexp
@@ -1426,7 +1424,7 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         elif datasource_params.get('file') is not None:
             # make sure we localize any remote files
             file_param = datasource_params.get('file')
-            file_param = style.resolve_paths(file_param, src_base)
+            file_param = style.resolve_paths(file_param, dirs.input)
 
             if datasource_params.get('type') == 'shape':
                 # handle a local shapefile or fetch a remote, zipped shapefile
