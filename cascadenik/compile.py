@@ -117,9 +117,10 @@ def indent(elem, level=0):
 class Directories:
     """ Holder for full paths to output and cache dirs.
     """
-    def __init__(self, output, cache):
+    def __init__(self, output, cache, input):
         self.output = os.path.realpath(output)
         self.cache = os.path.realpath(cache)
+        self.input = os.path.realpath(input)
 
     def same(self):
         return self.output == self.cache
@@ -1020,7 +1021,7 @@ def postprocess_symbolizer_image_file(file_href, dirs):
     # it's probably safe to use a relative path where the cache and output dirs match
     original = dirs.same() and os.path.relpath(path, dirs.output) or path
     
-    path = os.path.join(dirs.output, path)
+    path = os.path.join(dirs.input, path)
     
     if scheme not in ('file', '') or not os.path.exists(path):
         raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
@@ -1285,7 +1286,7 @@ def localize_shapefile(shp_href, dirs):
     # it's probably safe to use a relative path where the cache and output dirs match
     original = dirs.same() and os.path.relpath(path, dirs.output) or path
     
-    path = os.path.join(dirs.output, path)
+    path = os.path.join(dirs.input, path)
 
     if scheme not in ('file', ''):
         raise Exception("Shapefile needs to be a working, fetchable resource, not %s" % shp_href)
@@ -1322,7 +1323,7 @@ def localize_file_datasource(file_href, dirs):
     # it's probably safe to use a relative path where the cache and output dirs match
     original = dirs.same() and os.path.relpath(path, dirs.output) or path
     
-    path = os.path.join(dirs.output, path)
+    path = os.path.join(dirs.input, path)
 
     if scheme not in ('file', ''):
         raise Exception("Datasource file needs to be a working, fetchable resource, not %s" % file_href)
@@ -1342,7 +1343,7 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
             Path to .mml file.
           
           dirs:
-            Object with directory names in 'cache' and 'output' attributes.
+            Object with directory names in 'cache', 'output', and 'input' attributes.
         
         Keyword Parameters:
         

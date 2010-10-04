@@ -6,7 +6,7 @@ http://code.google.com/p/mapnik-utils/wiki/Cascadenik
 
 """
 from os import mkdir, chmod
-from os.path import isdir, realpath, expanduser
+from os.path import isdir, realpath, expanduser, dirname
 
 import style
 # compile module
@@ -32,5 +32,5 @@ def load_map(map, input, target_dir, cache_dir=None, datasources_cfg=None, verbo
             mkdir(cache_dir)
             chmod(cache_dir, 0755)
 
-    dirs = Directories(target_dir, realpath(cache_dir))
+    dirs = Directories(target_dir, realpath(cache_dir), dirname(input))
     compile(input, dirs, verbose, datasources_cfg=datasources_cfg).to_mapnik(map, dirs)
