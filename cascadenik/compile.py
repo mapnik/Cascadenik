@@ -1352,31 +1352,21 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
     
     msg('Targeting mapnik version: %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
         
-    if os.path.exists(src): # local file
-        # using 'file:' enables support on win32
-        # for opening local files with urllib.urlopen
-        # Note: this must only be used with abs paths to local files
-        # otherwise urllib will think they are absolute, 
-        # therefore in the future it will likely be
-        # wiser to just open local files with open()
-        if os.path.isabs(src) and sys.platform == "win32":
-            msg('prepending "file:" to %s for windows compatibility with urlopen and absolute paths' % src)
-            src = 'file:%s' % src
+    if os.path.exists(src):
+        # It's a local file, give it the appropriate file:// scheme.
+        src = 'file://' + os.path.realpath(src)
     
     try:
         # guessing src is a literal XML string?
         map_el = ElementTree.fromstring(src)
         base = None
+
     except:
+        assert src[:7] in ('http://', 'file://'), 'urlopen() wants a scheme'
+    
         # or a URL or file location?
         doc = ElementTree.parse(urllib.urlopen(src))
         map_el = doc.getroot()
-
-        if src.startswith('http://') or src.startswith('file://'):
-            base = src
-        else:
-            base = 'file://' + os.path.realpath(src)
-
         base = src
 
     expand_source_declarations(map_el, base, datasources_cfg)
