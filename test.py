@@ -2090,14 +2090,12 @@ class RelativePathTests(unittest.TestCase):
         map = compile(mml_path, dirs)
         
         img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
-        img_path = os.path.join(dirs.output, img_path)
-        assert img_path.startswith(dirs.cache)
-        assert os.path.exists(img_path)
+        assert not os.path.isabs(img_path)
+        assert os.path.exists(os.path.join(dirs.output, img_path))
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        shp_path = os.path.join(dirs.output, shp_path)
-        assert shp_path.startswith(dirs.cache)
-        assert os.path.exists(shp_path)
+        assert not os.path.isabs(shp_path)
+        assert os.path.exists(os.path.join(dirs.output, shp_path))
 
     def testSplitPaths(self):
         
@@ -2128,12 +2126,10 @@ class RelativePathTests(unittest.TestCase):
         map = compile(mml_path, dirs)
         
         img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
-        img_path = os.path.join(dirs.output, img_path)
         assert img_path.startswith(dirs.cache)
         assert os.path.exists(img_path)
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        shp_path = os.path.join(dirs.output, shp_path)
         assert shp_path.startswith(dirs.cache)
         assert os.path.exists(shp_path)
 
@@ -2166,16 +2162,16 @@ class RelativePathTests(unittest.TestCase):
         map = compile(mml_path, dirs)
         
         img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
-        img_path = os.path.join(dirs.output, img_path)
-        assert os.path.exists(img_path)
+        assert not os.path.isabs(img_path)
+        assert os.path.exists(os.path.join(dirs.output, img_path))
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        shp_path = os.path.join(dirs.output, shp_path)
-        assert os.path.exists(shp_path)
+        assert not os.path.isabs(shp_path)
+        assert os.path.exists(os.path.join(dirs.output, shp_path))
 
     def testDistantPaths(self):
     
-        dirs = Directories(self.tmpdir1, self.tmpdir1, os.path.dirname(__file__))
+        dirs = Directories(self.tmpdir2, self.tmpdir2, self.tmpdir1)
         
         mml_path = dirs.output + '/style.mml'
         mml_file = open(mml_path, 'w')
@@ -2185,13 +2181,13 @@ class RelativePathTests(unittest.TestCase):
                 <Stylesheet>
                     Layer
                     {
-                        point-file: url("doc/purple-point.png");
+                        point-file: url("purple-point.png");
                     }
                 </Stylesheet>
                 <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
                     <Datasource>
                         <Parameter name="type">shape</Parameter>
-                        <Parameter name="file">data/mission-points</Parameter>
+                        <Parameter name="file">mission-points</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
@@ -2202,12 +2198,46 @@ class RelativePathTests(unittest.TestCase):
         map = compile(mml_path, dirs)
         
         img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
-        img_path = os.path.join(dirs.output, img_path)
         assert img_path.startswith(dirs.input)
         assert os.path.exists(img_path)
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        shp_path = os.path.join(dirs.output, shp_path)
+        assert shp_path.startswith(dirs.input)
+        assert os.path.exists(shp_path)
+
+    def testAbsolutePaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, self.tmpdir1)
+        
+        mml_path = dirs.output + '/style.mml'
+        mml_file = open(mml_path, 'w')
+        
+        print >> mml_file, """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("%s/purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">%s/mission-points</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """ % (self.tmpdir1, self.tmpdir1)
+        
+        mml_file.close()
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(dirs.input)
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
         assert shp_path.startswith(dirs.input)
         assert os.path.exists(shp_path)
 
