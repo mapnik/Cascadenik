@@ -2041,27 +2041,29 @@ layer_srs=%(other_srs)s
 class RelativePathTests(unittest.TestCase):
 
     def setUp(self):
-        # a directory for all the temp files to be created below
-        self.tmpdir = tempfile.mkdtemp(prefix='cascadenik-tests-')
+        # directories for all the temp files to be created below
+        self.tmpdir1 = tempfile.mkdtemp(prefix='cascadenik-tests-')
+        self.tmpdir2 = tempfile.mkdtemp(prefix='cascadenik-tests-')
 
         basepath = os.path.dirname(__file__)
 
         for ext in ('shp', 'shx', 'prj', 'dbf'):
             filepath = os.path.join(basepath, 'data', 'mission-points.' + ext)
-            shutil.copy(filepath, self.tmpdir)
+            shutil.copy(filepath, self.tmpdir1)
     
-        png_path = os.path.join(self.tmpdir, 'purple-point.png')
+        png_path = os.path.join(self.tmpdir1, 'purple-point.png')
         png_file = open(png_path, 'w')
         png_file.write(urllib.urlopen('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png').read())
         png_file.close()
 
     def tearDown(self):
-        # destroy the above-created directory
-        shutil.rmtree(self.tmpdir)
+        # destroy the above-created directories
+        shutil.rmtree(self.tmpdir1)
+        shutil.rmtree(self.tmpdir2)
 
     def testLocalizedPaths(self):
         
-        dirs = Directories(self.tmpdir, self.tmpdir, self.tmpdir)
+        dirs = Directories(self.tmpdir1, self.tmpdir1, self.tmpdir1)
 
         mml_path = dirs.output + '/style.mml'
         mml_file = open(mml_path, 'w')
@@ -2074,7 +2076,45 @@ class RelativePathTests(unittest.TestCase):
                         point-file: url("http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png");
                     }
                 </Stylesheet>
-                <Layer id="mission-points" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">http://cascadenik-sampledata.s3.amazonaws.com/mission-points.zip</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """
+        
+        mml_file.close()
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        img_path = os.path.join(dirs.output, img_path)
+        assert img_path.startswith(dirs.cache)
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        shp_path = os.path.join(dirs.output, shp_path)
+        assert shp_path.startswith(dirs.cache)
+        assert os.path.exists(shp_path)
+
+    def testSplitPaths(self):
+        
+        dirs = Directories(self.tmpdir1, self.tmpdir2, self.tmpdir1)
+
+        mml_path = dirs.output + '/style.mml'
+        mml_file = open(mml_path, 'w')
+        
+        print >> mml_file, """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
                     <Datasource>
                         <Parameter name="type">shape</Parameter>
                         <Parameter name="file">http://cascadenik-sampledata.s3.amazonaws.com/mission-points.zip</Parameter>
@@ -2099,7 +2139,7 @@ class RelativePathTests(unittest.TestCase):
 
     def testRelativePaths(self):
     
-        dirs = Directories(self.tmpdir, self.tmpdir, self.tmpdir)
+        dirs = Directories(self.tmpdir1, self.tmpdir1, self.tmpdir1)
         
         mml_path = dirs.output + '/style.mml'
         mml_file = open(mml_path, 'w')
@@ -2112,7 +2152,7 @@ class RelativePathTests(unittest.TestCase):
                         point-file: url("purple-point.png");
                     }
                 </Stylesheet>
-                <Layer id="mission-points" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
                     <Datasource>
                         <Parameter name="type">shape</Parameter>
                         <Parameter name="file">mission-points</Parameter>
@@ -2135,7 +2175,7 @@ class RelativePathTests(unittest.TestCase):
 
     def testDistantPaths(self):
     
-        dirs = Directories(self.tmpdir, self.tmpdir, os.path.dirname(__file__))
+        dirs = Directories(self.tmpdir1, self.tmpdir1, os.path.dirname(__file__))
         
         mml_path = dirs.output + '/style.mml'
         mml_file = open(mml_path, 'w')
@@ -2148,7 +2188,7 @@ class RelativePathTests(unittest.TestCase):
                         point-file: url("doc/purple-point.png");
                     }
                 </Stylesheet>
-                <Layer id="mission-points" srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
                     <Datasource>
                         <Parameter name="type">shape</Parameter>
                         <Parameter name="file">data/mission-points</Parameter>
