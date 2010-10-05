@@ -569,7 +569,7 @@ class SelectorParseTests(unittest.TestCase):
             text-placement: line;
         }
         '''
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         text_rule_groups = get_text_rule_groups(declarations)
         
         self.assertEqual(str, type(text_rule_groups.keys()[0]))
@@ -827,7 +827,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[zoom>10][use=cemetery] { polygon-fill: #ccc; }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         rules = get_polygon_rules(declarations)
         
         self.assertEqual(399999, rules[0].maxscale.value)
@@ -854,7 +854,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[zoom>10][foo>1] { polygon-fill: #f00; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         rules = get_polygon_rules(declarations)
         
         self.assertEqual(399999, rules[0].maxscale.value)
@@ -887,7 +887,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[foo>1] { line-color: #ff0; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         poly_rules = get_polygon_rules(declarations)
         
@@ -952,7 +952,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[zoom<=10] label { text-size: 10; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         line_rules = get_line_rules(declarations)
 
@@ -1020,7 +1020,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[bar=quux] label { shield-size: 16; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         text_rule_groups = get_text_rule_groups(declarations)
         
@@ -1110,7 +1110,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer { point-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
@@ -1185,7 +1185,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer { line-pattern-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         point_rules = get_point_rules(declarations, self.dirs)
         
@@ -1224,7 +1224,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[bar=1] { inline-width: 1; inline-color: #999; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         line_rules = get_line_rules(declarations)
         
@@ -1295,7 +1295,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[ELEVATION>900] { line-width: 3; line-color: #fff; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         line_rules = get_line_rules(declarations)
         
@@ -1321,7 +1321,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer { polygon-fill: #000; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         polygon_rules = get_polygon_rules(declarations)
         
@@ -1380,7 +1380,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         polygon_rules = get_polygon_rules(declarations)
         
@@ -1419,7 +1419,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         text_rule_groups = get_text_rule_groups(declarations)
         
@@ -1460,7 +1460,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         text_rule_groups = get_text_rule_groups(declarations)
         
@@ -1489,7 +1489,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         point_rules = get_point_rules(declarations, self.dirs)
         
@@ -1541,7 +1541,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
@@ -2261,6 +2261,37 @@ class RelativePathTests(unittest.TestCase):
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
         assert not os.path.isabs(shp_path)
         assert os.path.exists(os.path.join(dirs.output, shp_path))
+
+    def testReflexivePaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
+        
+        mml_data = """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("file://%s/purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">file://%s/mission-points</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """ % (self.tmpdir1, self.tmpdir1)
+        
+        map = compile(mml_data, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(self.tmpdir1)
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert shp_path.startswith(self.tmpdir1)
+        assert os.path.exists(shp_path)
         
 if __name__ == '__main__':
     unittest.main()
