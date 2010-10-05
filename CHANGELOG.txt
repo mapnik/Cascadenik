@@ -2,6 +2,12 @@ Cascadenik Changelog
 --------------------
 
 
+Version 1.0.0, October 4, 2010:
+----------------------------
+ 
+ * Started to write CHANGELOG for 1.0.0 but it's late.
+
+
 Version 0.2.0, August _, 2010:
 ----------------------------
  
