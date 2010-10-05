@@ -117,27 +117,23 @@ def indent(elem, level=0):
 class Directories:
     """ Holder for full paths to output and cache dirs.
     """
-    def __init__(self, output, cache, input):
+    def __init__(self, output, cache, source):
         self.output = os.path.realpath(output)
         self.cache = os.path.realpath(cache)
         
-        scheme, n, path, p, q, f = urlparse(input)
+        scheme, n, path, p, q, f = urlparse(source)
         
         if scheme == 'http':
-            self.input = input
+            self.source = source
 
         elif scheme in ('file', ''):
-            self.input = 'file://' + os.path.realpath(path)
+            self.source = 'file://' + os.path.realpath(path)
 
-    def same(self):
-        return self.output == self.cache
-    
     def output_path(self, path):
-        """ Modify a path so it fits expectations. Based on an original path
-            (which might come directly from a stylesheet), some possibly-modified
-            version of that path, and the output directory, return a munged version
-            of the path that's absolue if the original was absolute, relative if
-            it's inside the target directory, and absolute if it's someplace else.
+        """ Modify a path so it fits expectations.
+        
+            Avoid returning relative paths that start with '../' and possibly
+            return relative paths when output and cache directories match.
         """
         if os.path.isabs(path):
             if self.output == self.cache:
@@ -1023,7 +1019,7 @@ def postprocess_symbolizer_image_file(file_href, dirs):
     mapnik_auto_image_support = (MAPNIK_VERSION >= 700)
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
     
-    file_href = urljoin(dirs.input.rstrip('/')+'/', file_href)
+    file_href = urljoin(dirs.source.rstrip('/')+'/', file_href)
     scheme, n, path, p, q, f = urlparse(file_href)
     
     if scheme == 'http':
@@ -1279,7 +1275,7 @@ def localize_shapefile(shp_href, dirs):
 
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
 
-    shp_href = urljoin(dirs.input.rstrip('/')+'/', shp_href)
+    shp_href = urljoin(dirs.source.rstrip('/')+'/', shp_href)
     scheme, n, path, p, q, f = urlparse(shp_href)
     
     if scheme == 'http':
@@ -1312,7 +1308,7 @@ def localize_file_datasource(file_href, dirs):
 
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
 
-    file_href = urljoin(dirs.input.rstrip('/')+'/', file_href)
+    file_href = urljoin(dirs.source.rstrip('/')+'/', file_href)
     scheme, n, path, p, q, f = urlparse(file_href)
     
     if scheme == 'http':
@@ -1336,7 +1332,7 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
             Path to .mml file.
           
           dirs:
-            Object with directory names in 'cache', 'output', and 'input' attributes.
+            Object with directory names in 'cache', 'output', and 'source' attributes.
         
         Keyword Parameters:
         
@@ -1376,8 +1372,8 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         doc = ElementTree.parse(urllib.urlopen(src))
         map_el = doc.getroot()
 
-    expand_source_declarations(map_el, dirs.input, datasources_cfg)
-    declarations = extract_declarations(map_el, dirs.input)
+    expand_source_declarations(map_el, dirs.source, datasources_cfg)
+    declarations = extract_declarations(map_el, dirs.source)
     
     # a list of layers and a sequential ID generator
     layers, ids = [], (i for i in xrange(1, 999999))

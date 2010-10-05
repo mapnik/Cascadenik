@@ -2203,11 +2203,11 @@ class RelativePathTests(unittest.TestCase):
         map = compile(mml_path, dirs)
         
         img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
-        assert img_path.startswith(dirs.input[7:]), str((img_path, dirs.input[7:]))
+        assert img_path.startswith(dirs.source[7:]), str((img_path, dirs.source[7:]))
         assert os.path.exists(img_path)
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        assert shp_path.startswith(dirs.input[7:]), str((shp_path, dirs.input[7:]))
+        assert shp_path.startswith(dirs.source[7:]), str((shp_path, dirs.source[7:]))
         assert os.path.exists(shp_path)
 
     def testAbsolutePaths(self):
@@ -2239,11 +2239,11 @@ class RelativePathTests(unittest.TestCase):
         map = compile(mml_path, dirs)
         
         img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
-        assert img_path.startswith(dirs.input[7:])
+        assert img_path.startswith(dirs.source[7:])
         assert os.path.exists(img_path)
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        assert shp_path.startswith(dirs.input[7:])
+        assert shp_path.startswith(dirs.source[7:])
         assert os.path.exists(shp_path)
 
     def testRemotePaths(self):

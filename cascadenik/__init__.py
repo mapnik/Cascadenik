@@ -22,13 +22,13 @@ CACHE_DIR = '~/.cascadenik'
 
 __all__ = ['load_map', 'compile','_compile','style','stylesheet_declarations']
 
-def load_map(map, input, target_dir, cache_dir=None, datasources_cfg=None, verbose=False):
+def load_map(map, src_file, output_dir, cache_dir=None, datasources_cfg=None, verbose=False):
     """
     """
-    scheme, n, path, p, q, f = urlparse(input)
+    scheme, n, path, p, q, f = urlparse(src_file)
     
     if scheme in ('file', ''):
-        assert exists(input), "We'd prefer an input file that exists to one that doesn't"
+        assert exists(src_file), "We'd prefer an input file that exists to one that doesn't"
     
     if cache_dir is None:
         cache_dir = expanduser(CACHE_DIR)
@@ -38,5 +38,5 @@ def load_map(map, input, target_dir, cache_dir=None, datasources_cfg=None, verbo
             mkdir(cache_dir)
             chmod(cache_dir, 0755)
 
-    dirs = Directories(target_dir, realpath(cache_dir), dirname(input))
-    compile(input, dirs, verbose, datasources_cfg=datasources_cfg).to_mapnik(map, dirs)
+    dirs = Directories(output_dir, realpath(cache_dir), dirname(src_file))
+    compile(src_file, dirs, verbose, datasources_cfg=datasources_cfg).to_mapnik(map, dirs)
