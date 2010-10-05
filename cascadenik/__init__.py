@@ -17,7 +17,7 @@ from compile import compile, Directories
 from style import stylesheet_declarations
 
 # define Cascadenik version
-VERSION = '0.2.0'
+VERSION = '1.0.0'
 CACHE_DIR = '~/.cascadenik'
 
 __all__ = ['load_map', 'compile','_compile','style','stylesheet_declarations']
