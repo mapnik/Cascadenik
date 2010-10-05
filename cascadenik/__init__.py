@@ -7,6 +7,7 @@ http://code.google.com/p/mapnik-utils/wiki/Cascadenik
 """
 from os import mkdir, chmod
 from os.path import isdir, realpath, expanduser, dirname, exists
+from urlparse import urlparse
 
 import style
 # compile module
@@ -24,7 +25,10 @@ __all__ = ['load_map', 'compile','_compile','style','stylesheet_declarations']
 def load_map(map, input, target_dir, cache_dir=None, datasources_cfg=None, verbose=False):
     """
     """
-    assert exists(input), "We'd prefer an input file that exists to one that doesn't"
+    scheme, n, path, p, q, f = urlparse(input)
+    
+    if scheme in ('file', ''):
+        assert exists(input), "We'd prefer an input file that exists to one that doesn't"
     
     if cache_dir is None:
         cache_dir = expanduser(CACHE_DIR)

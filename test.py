@@ -4,6 +4,7 @@ import os
 import sys
 import shutil
 import urllib
+import urlparse
 import os.path
 import unittest
 import tempfile
@@ -2046,15 +2047,19 @@ class RelativePathTests(unittest.TestCase):
         self.tmpdir2 = tempfile.mkdtemp(prefix='cascadenik-tests-')
 
         basepath = os.path.dirname(__file__)
+        
+        paths = ('mission-points/mission-points.dbf',
+                 'mission-points/mission-points.prj',
+                 'mission-points/mission-points.shp',
+                 'mission-points/mission-points.shx',
+                 'purple-point.png')
 
-        for ext in ('shp', 'shx', 'prj', 'dbf'):
-            filepath = os.path.join(basepath, 'data', 'mission-points.' + ext)
-            shutil.copy(filepath, self.tmpdir1)
-    
-        png_path = os.path.join(self.tmpdir1, 'purple-point.png')
-        png_file = open(png_path, 'w')
-        png_file.write(urllib.urlopen('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png').read())
-        png_file.close()
+        for path in paths:
+            href = urlparse.urljoin('http://cascadenik-sampledata.s3.amazonaws.com', path)
+            path = os.path.join(self.tmpdir1, os.path.basename(path))
+            file = open(path, 'w')
+            file.write(urllib.urlopen(href).read())
+            file.close()
 
     def tearDown(self):
         # destroy the above-created directories
@@ -2198,11 +2203,11 @@ class RelativePathTests(unittest.TestCase):
         map = compile(mml_path, dirs)
         
         img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
-        assert img_path.startswith(dirs.input)
+        assert img_path.startswith(dirs.input[7:]), str((img_path, dirs.input[7:]))
         assert os.path.exists(img_path)
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        assert shp_path.startswith(dirs.input)
+        assert shp_path.startswith(dirs.input[7:]), str((shp_path, dirs.input[7:]))
         assert os.path.exists(shp_path)
 
     def testAbsolutePaths(self):
@@ -2234,12 +2239,28 @@ class RelativePathTests(unittest.TestCase):
         map = compile(mml_path, dirs)
         
         img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
-        assert img_path.startswith(dirs.input)
+        assert img_path.startswith(dirs.input[7:])
         assert os.path.exists(img_path)
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        assert shp_path.startswith(dirs.input)
+        assert shp_path.startswith(dirs.input[7:])
         assert os.path.exists(shp_path)
 
+    def testRemotePaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
+        
+        mml_href = 'http://cascadenik-sampledata.s3.amazonaws.com/paths-test.mml'
+        
+        map = compile(mml_href, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert not os.path.isabs(img_path)
+        assert os.path.exists(os.path.join(dirs.output, img_path))
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert not os.path.isabs(shp_path)
+        assert os.path.exists(os.path.join(dirs.output, shp_path))
+        
 if __name__ == '__main__':
     unittest.main()

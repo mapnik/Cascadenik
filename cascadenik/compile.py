@@ -120,7 +120,14 @@ class Directories:
     def __init__(self, output, cache, input):
         self.output = os.path.realpath(output)
         self.cache = os.path.realpath(cache)
-        self.input = os.path.realpath(input)
+        
+        scheme, n, path, p, q, f = urlparse(input)
+        
+        if scheme == 'http':
+            self.input = input
+
+        elif scheme in ('file', ''):
+            self.input = 'file://' + os.path.realpath(path)
 
     def same(self):
         return self.output == self.cache
@@ -1003,8 +1010,8 @@ def locally_cache_remote_file(href, dir):
     return local_path
 
 def postprocess_symbolizer_image_file(file_href, dirs):
-    """ Given a file name and an output directory name, save the image
-        file to a temporary location while noting its dimensions.
+    """ Given an image file href and a set of directories, modify the image file
+        name so it's correct with respect to the output and cache directories.
     """
     # support latest mapnik features of auto-detection
     # of image sizes and jpeg reading support...
@@ -1012,7 +1019,8 @@ def postprocess_symbolizer_image_file(file_href, dirs):
 
     mapnik_auto_image_support = (MAPNIK_VERSION >= 700)
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
-
+    
+    file_href = urljoin(dirs.input.rstrip('/')+'/', file_href)
     scheme, n, path, p, q, f = urlparse(file_href)
     
     if scheme == 'http':
@@ -1265,12 +1273,8 @@ def unzip_shapefile_into(zip_path, dir):
     return local
 
 def localize_shapefile(shp_href, dirs):
-    """ Given a shapefile href, an output directory, and a cache directory,
-        modify the shapefile name so it's an absolute path if appropriate.
-    
-        Shapefile is assumed to be relative to the stylesheet path.
-        If it's found to look like a URL (e.g. "http://...") it's assumed
-        to be a remote zip file containing .shp, .shx, and .dbf files.
+    """ Given a shapefile href and a set of directories, modify the shapefile
+        name so it's correct with respect to the output and cache directories.
     """
     # support latest mapnik features of auto-detection
     # of image sizes and jpeg reading support...
@@ -1278,6 +1282,7 @@ def localize_shapefile(shp_href, dirs):
 
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
 
+    shp_href = urljoin(dirs.input.rstrip('/')+'/', shp_href)
     scheme, n, path, p, q, f = urlparse(shp_href)
     
     if scheme == 'http':
@@ -1315,6 +1320,7 @@ def localize_file_datasource(file_href, dirs):
 
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
 
+    file_href = urljoin(dirs.input.rstrip('/')+'/', file_href)
     scheme, n, path, p, q, f = urlparse(file_href)
     
     if scheme == 'http':
@@ -1424,7 +1430,6 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         elif datasource_params.get('file') is not None:
             # make sure we localize any remote files
             file_param = datasource_params.get('file')
-            file_param = style.resolve_paths(file_param, dirs.input)
 
             if datasource_params.get('type') == 'shape':
                 # handle a local shapefile or fetch a remote, zipped shapefile

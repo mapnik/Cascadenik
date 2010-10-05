@@ -22,43 +22,10 @@ class color:
 class color_transparent(color):
     pass
 
-def resolve_paths(address, base):
-    """
-    """
-    addr_scheme, n, addr_path, p, q, f = urlparse.urlparse(address)
-    base_scheme, n, base_path, p, q, f = urlparse.urlparse(base)
-    
-    base_scheme = base_scheme or 'file'
-    
-    if addr_scheme:
-        # fully-qualified
-        return address
-    
-    elif base_scheme == 'http':
-        # remote - urljoin will know what to do in all cases
-        return urlparse.urljoin(base, address)
-    
-    elif base_scheme == 'file' and addr_path.startswith('/'):
-        # local, absolute
-        return 'file://' + addr_path
-    
-    elif base_scheme == 'file' and not addr_path.startswith('/'):
-        # local, relative
-
-        # realpath() here will complain if base_path doesn't exist
-        base_path = base_path.startswith('/') and base_path or os.path.realpath(base_path)
-        join_path = os.path.join(os.path.dirname(base_path), addr_path)
-
-        return os.path.relpath(join_path, os.path.dirname(base_path))
-
-    else:
-        # can this be reached?
-        raise Exception('Not sure what to do with uri: %s relative to %s' % (address, base))
-
 class uri:
     def __init__(self, address, base=''):
         # sometimes comes in as None
-        self.address = resolve_paths(address, base or '')
+        self.address = address
 
     def __repr__(self):
         return str(self.address) #'url("%(address)s")' % self.__dict__
