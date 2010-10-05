@@ -5,7 +5,11 @@ import sys
 import optparse
 import cascadenik
 import tempfile
-import mapnik
+
+try:
+    import mapnik2 as mapnik
+except ImportError:
+    import mapnik
 
 from os.path import realpath, dirname
 
@@ -72,7 +76,7 @@ parser.add_option('-v' , '--verbose', dest='verbose',
 if __name__ == '__main__':
     (options, args) = parser.parse_args()
     
-    if not args:
+    if not len(args) == 2:
         parser.error('Please specify .mml and .xml files')
 
     layersfile, outputfile = args[0:2]
