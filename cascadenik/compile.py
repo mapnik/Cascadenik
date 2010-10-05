@@ -566,7 +566,7 @@ def tests_filter_combinations(tests):
     # if no filters have been defined, return a blank one that matches anything
     return [Filter()]
 
-def is_gym_projection(srs):
+def is_merc_projection(srs):
     """ Return true if the map projection matches that used by VEarth, Google, OSM, etc.
     
         Is currently necessary for zoom-level shorthand for scale-denominator.
@@ -602,7 +602,7 @@ def extract_declarations(map_el, base):
         if not styles:
             continue
             
-        rulesets = style.stylesheet_rulesets(styles, is_gym_projection(map_el.get('srs','')))
+        rulesets = style.stylesheet_rulesets(styles, is_merc_projection(map_el.get('srs','')))
         declarations += style.rulesets_declarations(rulesets)
 
     return declarations
