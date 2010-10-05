@@ -589,8 +589,8 @@ def is_merc_projection(srs):
 
     return True
 
-def extract_declarations(map_el, base):
-    """ Given a Map element and a URL base string, remove and return a complete
+def extract_declarations(map_el, dirs):
+    """ Given a Map element and directories object, remove and return a complete
         list of style declarations from any Stylesheet elements found within.
     """
     declarations = []
@@ -598,7 +598,8 @@ def extract_declarations(map_el, base):
     for stylesheet in map_el.findall('Stylesheet'):
         map_el.remove(stylesheet)
 
-        styles, local_base = fetch_embedded_or_remote_src(stylesheet, base)
+        styles, base = fetch_embedded_or_remote_src(stylesheet, dirs)
+
         if not styles:
             continue
             
@@ -607,17 +608,19 @@ def extract_declarations(map_el, base):
 
     return declarations
 
-def fetch_embedded_or_remote_src(elem, base):
+def fetch_embedded_or_remote_src(elem, dirs):
+    """
+    """
     if 'src' in elem.attrib:
-        url = urljoin(base, elem.attrib['src'])
-        return urllib.urlopen(url).read().decode(DEFAULT_ENCODING), url
+        src_href = urljoin(dirs.source.rstrip('/')+'/', elem.attrib['src'])
+        return urllib.urlopen(src_href).read().decode(DEFAULT_ENCODING), src_href
 
     elif elem.text:
-        return elem.text, base
+        return elem.text, dirs.source.rstrip('/')+'/'
     
     return None, None
 
-def expand_source_declarations(map_el, base, local_conf):
+def expand_source_declarations(map_el, dirs, local_conf):
     """ This provides mechanism for externalizing and sharing data sources.  The datasource configs are
     python files, and layers reference sections within that config:
     
@@ -630,12 +633,12 @@ def expand_source_declarations(map_el, base, local_conf):
 
     
     
-    ds = sources.DataSources(base, local_conf)
+    ds = sources.DataSources(dirs.source, local_conf)
 
     # build up the configuration
     for spec in map_el.findall('DataSourcesConfig'):
         map_el.remove(spec)
-        src_text, local_base = fetch_embedded_or_remote_src(spec, base)
+        src_text, local_base = fetch_embedded_or_remote_src(spec, dirs)
         if not src_text:
             continue
 
@@ -1374,8 +1377,8 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         doc = ElementTree.parse(urllib.urlopen(src))
         map_el = doc.getroot()
 
-    expand_source_declarations(map_el, dirs.source, datasources_cfg)
-    declarations = extract_declarations(map_el, dirs.source)
+    expand_source_declarations(map_el, dirs, datasources_cfg)
+    declarations = extract_declarations(map_el, dirs)
     
     # a list of layers and a sequential ID generator
     layers, ids = [], (i for i in xrange(1, 999999))

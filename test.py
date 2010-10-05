@@ -2043,15 +2043,18 @@ class RelativePathTests(unittest.TestCase):
 
     def setUp(self):
         # directories for all the temp files to be created below
-        self.tmpdir1 = tempfile.mkdtemp(prefix='cascadenik-tests-')
-        self.tmpdir2 = tempfile.mkdtemp(prefix='cascadenik-tests-')
+        self.tmpdir1 = tempfile.mkdtemp(prefix='cascadenik-tests1-')
+        self.tmpdir2 = tempfile.mkdtemp(prefix='cascadenik-tests2-')
 
         basepath = os.path.dirname(__file__)
         
-        paths = ('mission-points/mission-points.dbf',
+        paths = ('paths-test2.mml',
+                 'paths-test2.mss',
+                 'mission-points/mission-points.dbf',
                  'mission-points/mission-points.prj',
                  'mission-points/mission-points.shp',
                  'mission-points/mission-points.shx',
+                 'mission-points.zip',
                  'purple-point.png')
 
         for path in paths:
@@ -2261,6 +2264,54 @@ class RelativePathTests(unittest.TestCase):
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
         assert not os.path.isabs(shp_path)
         assert os.path.exists(os.path.join(dirs.output, shp_path))
+
+    def testRemoteLinkedSheetPaths(self):
+    
+        dirs = Directories(self.tmpdir1, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
+        
+        mml_href = 'http://cascadenik-sampledata.s3.amazonaws.com/paths-test2.mml'
+        
+        map = compile(mml_href, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(dirs.cache), str((img_path, dirs.cache))
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert shp_path.startswith(dirs.cache), str((shp_path, dirs.cache))
+        assert os.path.exists(shp_path)
+
+    def testLocalLinkedSheetPaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, self.tmpdir1)
+        
+        mml_path = os.path.join(self.tmpdir1, 'paths-test2.mml')
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(dirs.source[7:]), str((img_path, dirs.source[7:]))
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert not os.path.isabs(shp_path)
+        assert os.path.exists(os.path.join(dirs.output, shp_path))
+
+    def testSplitLinkedSheetPaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir1, self.tmpdir1)
+        
+        mml_path = os.path.join(self.tmpdir1, 'paths-test2.mml')
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(dirs.source[7:]), str((img_path, dirs.source[7:]))
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert shp_path.startswith(dirs.cache), str((shp_path, dirs.cache))
+        assert os.path.exists(shp_path)
 
     def testReflexivePaths(self):
     

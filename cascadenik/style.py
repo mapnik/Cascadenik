@@ -771,7 +771,7 @@ def stylesheet_declarations(string, is_merc):
     """
     return rulesets_declarations(stylesheet_rulesets(string, is_merc))
 
-def stylesheet_rulesets(string, is_merc):
+def stylesheet_rulesets(string, is_merc=False):
     """ Parse a string representing a stylesheet into a list of rulesets.
     
         Required boolean is_merc indicates whether the projection should
