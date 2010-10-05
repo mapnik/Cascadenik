@@ -1,8 +1,12 @@
 import ConfigParser
 import StringIO
-import mapnik
 import urlparse
 import urllib
+
+try:
+    import mapnik2 as mapnik
+except ImportError:
+    import mapnik
 
 class DataSources(object):
     def __init__(self, base, local_cfg):
