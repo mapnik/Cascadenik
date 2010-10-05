@@ -1329,10 +1329,12 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         Parameters:
         
           src:
-            Path to .mml file.
+            Path to .mml file, or raw .mml file content.
           
           dirs:
             Object with directory names in 'cache', 'output', and 'source' attributes.
+            dirs.source is expected to be fully-qualified, e.g. "http://example.com"
+            or "file:///home/example".
         
         Keyword Parameters:
         

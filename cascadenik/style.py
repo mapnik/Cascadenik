@@ -763,7 +763,11 @@ class Value:
         return str(self.value)
 
 def stylesheet_declarations(string, is_gym):
-    """
+    """ Parse a string representing a stylesheet into a list of declarations.
+    
+        Required boolean is_gym indicates whether the projection should be
+        interpreted as spherical mercator, which influences how "[zoom=x]"
+        attribute are handled.
     """
     return rulesets_declarations(stylesheet_rulesets(string, is_gym))
 
