@@ -1352,7 +1352,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[PERSONS > 4000000] { polygon-fill: #88000F; }
         """
     
-        declarations = stylesheet_declarations(s)
+        declarations = stylesheet_declarations(s, False)
         polygon_rules = get_polygon_rules(declarations)
         
         self.assertEqual("[PERSONS] < 2000000", polygon_rules[0].filter.text)
@@ -2171,7 +2171,7 @@ class RelativePathTests(unittest.TestCase):
         assert os.path.exists(os.path.join(dirs.output, img_path))
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        assert not os.path.isabs(shp_path)
+        assert not os.path.isabs(shp_path), shp_path
         assert os.path.exists(os.path.join(dirs.output, shp_path))
 
     def testDistantPaths(self):

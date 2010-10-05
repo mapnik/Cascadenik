@@ -23,8 +23,7 @@ class color_transparent(color):
     pass
 
 class uri:
-    def __init__(self, address, base=''):
-        # sometimes comes in as None
+    def __init__(self, address):
         self.address = address
 
     def __repr__(self):
@@ -763,12 +762,12 @@ class Value:
     def __str__(self):
         return str(self.value)
 
-def stylesheet_declarations(string, base=None, is_gym=False):
+def stylesheet_declarations(string, is_gym):
     """
     """
-    return rulesets_declarations(stylesheet_rulesets(string, base, is_gym))
+    return rulesets_declarations(stylesheet_rulesets(string, is_gym))
 
-def stylesheet_rulesets(string, base=None, is_gym=False):
+def stylesheet_rulesets(string, is_gym=False):
     """ Parse a string representing a stylesheet into a list of rulesets.
     
         Optionally, accept a base string so we know where linked files come from,
@@ -849,7 +848,7 @@ def stylesheet_rulesets(string, base=None, is_gym=False):
             
                 if nname == 'CHAR' and value == ';':
                     # end of declaration
-                    declaration['value'] = postprocess_value(declaration['value'], declaration['property'], base, line, col)
+                    declaration['value'] = postprocess_value(declaration['value'], declaration['property'], line, col)
                     in_declaration = False
     
                 elif nname not in ('COMMENT'):
@@ -1008,7 +1007,7 @@ def postprocess_property(tokens, line=0, col=0):
     
     return Property(tokens[0][1])
 
-def postprocess_value(tokens, property, base=None, line=0, col=0):
+def postprocess_value(tokens, property, line=0, col=0):
     """
     """
     tokens = trim_extra(tokens)
@@ -1099,7 +1098,7 @@ def postprocess_value(tokens, property, base=None, line=0, col=0):
         elif raw.startswith('url(') and raw.endswith(')'):
             raw = raw[4:-1]
 
-        value = uri(raw, base)
+        value = uri(raw)
             
     elif properties[property.name] is boolean:
         if tokens[0][0] != 'IDENT' or tokens[0][1] not in ('true', 'false'):

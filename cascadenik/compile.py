@@ -606,7 +606,7 @@ def extract_declarations(map_el, base):
         if not styles:
             continue
             
-        rulesets = style.stylesheet_rulesets(styles, base=local_base, is_gym=is_gym_projection(map_el.get('srs','')))
+        rulesets = style.stylesheet_rulesets(styles, is_gym_projection(map_el.get('srs','')))
         declarations += style.rulesets_declarations(rulesets)
 
     return declarations
