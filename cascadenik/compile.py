@@ -132,23 +132,26 @@ class Directories:
     def same(self):
         return self.output == self.cache
     
-    def output_path(self, original, path):
+    def output_path(self, path):
         """ Modify a path so it fits expectations. Based on an original path
             (which might come directly from a stylesheet), some possibly-modified
             version of that path, and the output directory, return a munged version
             of the path that's absolue if the original was absolute, relative if
             it's inside the target directory, and absolute if it's someplace else.
         """
-        if os.path.isabs(original):
-            return os.path.realpath(path)
+        if os.path.isabs(path):
+            if self.output == self.cache:
+                # worth seeing if an absolute path can be avoided
+                path = os.path.relpath(path, self.output)
+
+            else:
+                return os.path.realpath(path)
     
-        join_path = os.path.join(self.output, path)
-        rel_path = os.path.relpath(join_path, self.output)
+        if path.startswith('../'):
+            joined = os.path.join(self.output, path)
+            return os.path.realpath(joined)
     
-        if rel_path.startswith('../'):
-            return os.path.realpath(path)
-    
-        return rel_path
+        return path
 
 class Range:
     """ Represents a range for use in min/max scale denominator.
@@ -1026,19 +1029,19 @@ def postprocess_symbolizer_image_file(file_href, dirs):
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
         
-    # it's probably safe to use a relative path where the cache and output dirs match
-    original = dirs.same() and os.path.relpath(path, dirs.output) or path
-    
-    path = os.path.join(dirs.input, path)
-    
     if scheme not in ('file', '') or not os.path.exists(path):
         raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
+        
+    if not mapnik_auto_image_support and not Image:
+        raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
+
+    img = Image.open(path)
     
     if mapnik_requires_absolute_paths:
         path = os.path.realpath(path)
-        original = path
     
-    path = dirs.output_path(original, path)
+    else:
+        path = dirs.output_path(path)
 
     msg('reading symbol: %s' % path)
 
@@ -1053,12 +1056,6 @@ def postprocess_symbolizer_image_file(file_href, dirs):
     dest_file = '%s%s' % (image_name, output_ext)
 
     msg('Destination file: %s' % dest_file)
-        
-    # throw error if we need to detect image sizes and can't because pil is missing
-    if not mapnik_auto_image_support and not Image:
-        raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
-
-    img = Image.open(os.path.join(dirs.output, path))
 
     return dest_file, output_ext[1:], img.size[0], img.size[1]
 
@@ -1288,11 +1285,6 @@ def localize_shapefile(shp_href, dirs):
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(shp_href, dirs.cache)
 
-    # it's probably safe to use a relative path where the cache and output dirs match
-    original = dirs.same() and os.path.relpath(path, dirs.output) or path
-    
-    path = os.path.join(dirs.input, path)
-
     if scheme not in ('file', ''):
         raise Exception("Shapefile needs to be a working, fetchable resource, not %s" % shp_href)
     
@@ -1300,14 +1292,14 @@ def localize_shapefile(shp_href, dirs):
         path = os.path.realpath(path)
         original = path
     
-    path = dirs.output_path(original, path)
+    path = dirs.output_path(path)
     
     if path.endswith('.zip'):
         # unzip_shapefile_into needs a path it can find
         path = os.path.join(dirs.output, path)
         path = unzip_shapefile_into(path, dirs.cache)
 
-    return dirs.output_path(original, path)
+    return dirs.output_path(path)
 
 def localize_file_datasource(file_href, dirs):
     """ Handle localizing file-based datasources other than shapefiles.
@@ -1326,19 +1318,14 @@ def localize_file_datasource(file_href, dirs):
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
 
-    # it's probably safe to use a relative path where the cache and output dirs match
-    original = dirs.same() and os.path.relpath(path, dirs.output) or path
-    
-    path = os.path.join(dirs.input, path)
-
     if scheme not in ('file', ''):
         raise Exception("Datasource file needs to be a working, fetchable resource, not %s" % file_href)
 
     if mapnik_requires_absolute_paths:
-        path = os.path.realpath(path)
-        original = path
+        return os.path.realpath(path)
     
-    return dirs.output_path(original, path)
+    else:
+        return dirs.output_path(path)
 
 def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
     """ Compile a Cascadenik MML file, returning a cascadenik.output.Map object.
