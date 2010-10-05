@@ -13,7 +13,7 @@ except ImportError:
     
 readme = file('README.txt','rb').read()
 
-VERSION = '0.2.0'
+VERSION = '1.0.0'
 
 options = dict(name='cascadenik',
         version = VERSION,
