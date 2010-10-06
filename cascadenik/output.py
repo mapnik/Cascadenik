@@ -8,7 +8,7 @@ except ImportError:
     import mapnik
 
 def safe_str(s):
-    return None if not s else str(s)
+    return None if not s else unicode(s).encode('utf-8')
 
 class Map:
     def __init__(self, srs=None, layers=None, bgcolor=None):
