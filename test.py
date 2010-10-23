@@ -1436,6 +1436,24 @@ class StyleRuleTests(unittest.TestCase):
 
         line_pattern_rules = get_line_pattern_rules(declarations, self.dirs)
 
+    def testStyleRules13a(self):
+        """ SVG symbol files """
+        s = """
+            Layer
+            {
+                point-file: url('file:///Users/rcoup/Downloads/cowbell.svg');
+
+                polygon-pattern-file: url('file:///Users/rcoup/Downloads/cowbell.svg');
+
+                line-pattern-file: url('file:///Users/rcoup/Downloads/cowbell.svg');
+            }
+        """
+        declarations = stylesheet_declarations(s, is_merc=True)
+
+        point_rules = get_point_rules(declarations, self.dirs)
+        polygon_pattern_rules = get_polygon_pattern_rules(declarations, self.dirs)
+        line_pattern_rules = get_line_pattern_rules(declarations, self.dirs)
+
     def testStyleRules14(self):
         s = """
             Layer just_text

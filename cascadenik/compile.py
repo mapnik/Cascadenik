@@ -1079,27 +1079,9 @@ def postprocess_symbolizer_image_file(file_href, dirs):
         scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
         
     if scheme not in ('file', '') or not os.path.exists(path):
-        raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
-        
-    img = Image.open(path)
+        raise Exception("Image file needs to be a working, fetchable resource, not: %s" % file_href)
     
-    path = dirs.output_path(path)
-
-    msg('reading symbol: %s' % path)
-
-    image_name, ext = splitext(path)
-    
-    if ext in ('.png', 'tif', 'tiff'):
-        output_ext = ext
-    else:
-        output_ext = '.png'
-
-    # new local file name
-    dest_file = '%s%s' % (image_name, output_ext)
-
-    msg('Destination file: %s' % dest_file)
-
-    return dest_file, output_ext[1:], img.size[0], img.size[1]
+    return dirs.output_path(path)
 
 def get_shield_rule_groups(declarations, dirs):
     """ Given a list of declarations, return a list of output.Rule objects.
@@ -1146,10 +1128,9 @@ def get_shield_rule_groups(declarations, dirs):
             fontset = values.has_key('shield-fontset') and values['shield-fontset'].value or None
             size = values.has_key('shield-size') and values['shield-size'].value or None
             
-            file, filetype, width, height \
-                = values.has_key('shield-file') \
+            file = values.has_key('shield-file') \
                 and postprocess_symbolizer_image_file(str(values['shield-file'].value), dirs) \
-                or (None, None, None, None)
+                or None
             
             color = values.has_key('shield-fill') and values['shield-fill'].value or None
             min_distance = values.has_key('shield-min-distance') and values['shield-min-distance'].value or None
@@ -1185,10 +1166,9 @@ def get_point_rules(declarations, dirs):
     rules = []
     
     for (filter, values) in filtered_property_declarations(declarations, property_names):
-        point_file, point_type, point_width, point_height \
-            = values.has_key('point-file') \
+        point_file = values.has_key('point-file') \
             and postprocess_symbolizer_image_file(str(values['point-file'].value), dirs) \
-            or (None, None, None, None)
+            or None
         
         point_allow_overlap = values.has_key('point-allow-overlap') and values['point-allow-overlap'].value or None
         
@@ -1215,10 +1195,9 @@ def get_polygon_pattern_rules(declarations, dirs):
     
     for (filter, values) in filtered_property_declarations(declarations, property_names):
     
-        poly_pattern_file, poly_pattern_type, poly_pattern_width, poly_pattern_height \
-            = values.has_key('polygon-pattern-file') \
+        poly_pattern_file = values.has_key('polygon-pattern-file') \
             and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), dirs) \
-            or (None, None, None, None)
+            or None
         
         symbolizer = poly_pattern_file and output.PolygonPatternSymbolizer(poly_pattern_file)
         
@@ -1243,10 +1222,9 @@ def get_line_pattern_rules(declarations, dirs):
     
     for (filter, values) in filtered_property_declarations(declarations, property_names):
     
-        line_pattern_file, line_pattern_type, line_pattern_width, line_pattern_height \
-            = values.has_key('line-pattern-file') \
+        line_pattern_file = values.has_key('line-pattern-file') \
             and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), dirs) \
-            or (None, None, None, None)
+            or None
         
         symbolizer = line_pattern_file and output.LinePatternSymbolizer(line_pattern_file)
         
