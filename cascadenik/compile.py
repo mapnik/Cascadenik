@@ -2,35 +2,39 @@ import os, sys
 import math
 import urllib
 import urllib2
-import urlparse
 import tempfile
 import StringIO
 import operator
-from operator import lt, le, eq, ge, gt
 import base64
 import os.path
 import zipfile
-import style, output
 import shutil
+
+from hashlib import md5
+from datetime import datetime
+from time import strftime, localtime
+from re import sub, compile, MULTILINE
+from urlparse import urlparse, urljoin
+from operator import lt, le, eq, ge, gt
+from os.path import basename, splitext
+from httplib import HTTPConnection
 
 # cascadenik
 import safe64
 import style
+import sources
+import style
+import output
 
-HAS_PIL = False
+try:
+    import mapnik2 as mapnik
+except ImportError:
+    import mapnik
+
 try:
     from PIL import Image
-    HAS_PIL = True
 except ImportError:
-    try:
-        import Image
-        HAS_PIL = True
-    except ImportError:
-        pass
-
-if not HAS_PIL:
-    warn = 'Warning: PIL (Python Imaging Library) is required for proper handling of image symbolizers when using JPEG format images or not running Mapnik >=0.7.0\n'
-    sys.stderr.write(warn)
+    import Image
 
 DEFAULT_ENCODING = 'utf-8'
 
@@ -50,12 +54,48 @@ except ImportError:
 opsort = {lt: 1, le: 2, eq: 3, ge: 4, gt: 5}
 opstr = {lt: '<', le: '<=', eq: '==', ge: '>=', gt: '>'}
 
-
 VERBOSE = False
+
+# Upgrade Python versions less than 2.5...
+if not hasattr(os.path, "relpath"):
+    # If this is being run on earlier versions of Python than 2.6, monkeypatch 
+    # in something resembling missing standard library functionality.
+    from posixpath import curdir
+    def relpath(path, start=curdir):
+        """Return a relative version of a path"""
+        import posixpath
+        from posixpath import sep, pardir, join
+        
+        if not path:
+            raise ValueError("no path specified")
+        start_list = posixpath.abspath(start).split(sep)
+        path_list = posixpath.abspath(path).split(sep)
+        # Work out how much of the filepath is shared by start and path.
+        i = len(posixpath.commonprefix([start_list, path_list]))
+        rel_list = [pardir] * (len(start_list)-i) + path_list[i:]
+        if not rel_list:
+            return curdir
+        return join(*rel_list)
+
+    os.path.relpath = relpath
 
 def msg(msg):
     if VERBOSE:
         sys.stderr.write('Cascadenik debug: %s\n' % msg)
+
+def mapnik_version_string(version):
+    patch_level = version % 100
+    minor_version = version / 100 % 1000
+    major_version = version / 100000
+    return '%s.%s.%s' % ( major_version, minor_version,patch_level)
+            
+if hasattr(mapnik,'mapnik_version'):
+    MAPNIK_VERSION = mapnik.mapnik_version()
+    msg('Autodetected Mapnik version: %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
+
+else:
+    MAPNIK_VERSION = 701 # 0.7.1
+    msg('Failed to autodetect "mapnik_version" falling back to %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
 
 counter = 0
 
@@ -66,7 +106,7 @@ def next_counter():
 
 def url2fs(url):
     """ encode a URL to be safe as a filename """
-    uri, extension = os.path.splitext(url)
+    uri, extension = splitext(url)
     return safe64.dir(uri) + extension
 
 def fs2url(url):
@@ -89,6 +129,41 @@ def indent(elem, level=0):
     else:
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
+
+class Directories:
+    """ Holder for full paths to output and cache dirs.
+    """
+    def __init__(self, output, cache, source):
+        self.output = os.path.realpath(output)
+        self.cache = os.path.realpath(cache)
+        
+        scheme, n, path, p, q, f = urlparse(source)
+        
+        if scheme == 'http':
+            self.source = source
+
+        elif scheme in ('file', ''):
+            self.source = 'file://' + os.path.realpath(path)
+
+    def output_path(self, path):
+        """ Modify a path so it fits expectations.
+        
+            Avoid returning relative paths that start with '../' and possibly
+            return relative paths when output and cache directories match.
+        """
+        if os.path.isabs(path):
+            if self.output == self.cache:
+                # worth seeing if an absolute path can be avoided
+                path = os.path.relpath(path, self.output)
+
+            else:
+                return os.path.realpath(path)
+    
+        if path.startswith('../'):
+            joined = os.path.join(self.output, path)
+            return os.path.realpath(joined)
+    
+        return path
 
 class Range:
     """ Represents a range for use in min/max scale denominator.
@@ -507,7 +582,7 @@ def tests_filter_combinations(tests):
     # if no filters have been defined, return a blank one that matches anything
     return [Filter()]
 
-def is_gym_projection(srs):
+def is_merc_projection(srs):
     """ Return true if the map projection matches that used by VEarth, Google, OSM, etc.
     
         Is currently necessary for zoom-level shorthand for scale-denominator.
@@ -530,30 +605,99 @@ def is_gym_projection(srs):
 
     return True
 
-def extract_declarations(map_el, base):
-    """ Given a Map element and a URL base string, remove and return a complete
+def extract_declarations(map_el, dirs):
+    """ Given a Map element and directories object, remove and return a complete
         list of style declarations from any Stylesheet elements found within.
     """
     declarations = []
     
     for stylesheet in map_el.findall('Stylesheet'):
         map_el.remove(stylesheet)
-    
-        if 'src' in stylesheet.attrib:
-            url = urlparse.urljoin(base, stylesheet.attrib['src'])
-            styles, local_base = urllib.urlopen(url).read().decode(DEFAULT_ENCODING), url
 
-        elif stylesheet.text:
-            styles, local_base = stylesheet.text, base
+        styles, base = fetch_embedded_or_remote_src(stylesheet, dirs)
 
-        else:
+        if not styles:
             continue
             
-        rulesets = style.stylesheet_rulesets(styles, base=local_base, is_gym=is_gym_projection(map_el.get('srs','')))
+        rulesets = style.stylesheet_rulesets(styles, is_merc_projection(map_el.get('srs','')))
         declarations += style.rulesets_declarations(rulesets)
 
     return declarations
 
+def fetch_embedded_or_remote_src(elem, dirs):
+    """
+    """
+    if 'src' in elem.attrib:
+        src_href = urljoin(dirs.source.rstrip('/')+'/', elem.attrib['src'])
+        return urllib.urlopen(src_href).read().decode(DEFAULT_ENCODING), src_href
+
+    elif elem.text:
+        return elem.text, dirs.source.rstrip('/')+'/'
+    
+    return None, None
+
+def expand_source_declarations(map_el, dirs, local_conf):
+    """ This provides mechanism for externalizing and sharing data sources.  The datasource configs are
+    python files, and layers reference sections within that config:
+    
+    <DataSourcesConfig src="datasources.cfg" />
+    <Layer class="road major" source_name="planet_osm_major_roads" />
+    <Layer class="road minor" source_name="planet_osm_minor_roads" />
+    
+    See example_dscfg.mml and example.cfg at the root of the cascadenik directory for an example.
+    """
+
+    
+    
+    ds = sources.DataSources(dirs.source, local_conf)
+
+    # build up the configuration
+    for spec in map_el.findall('DataSourcesConfig'):
+        map_el.remove(spec)
+        src_text, local_base = fetch_embedded_or_remote_src(spec, dirs)
+        if not src_text:
+            continue
+
+        ds.add_config(src_text, local_base)    
+    
+    # now transform the xml
+
+    # add in base datasources
+    for base_name in ds.templates:
+        b = Element("Datasource", name=base_name)
+        for pname, pvalue in ds.sources[base_name]['parameters'].items():
+            p = Element("Parameter", name=pname)
+            p.text = str(pvalue)
+            b.append(p)
+        map_el.insert(0, b)
+    
+    # expand layer data sources
+    for layer in map_el.findall('Layer'):
+        if 'source_name' not in layer.attrib:
+            continue
+        
+        if layer.attrib['source_name'] not in ds.sources:
+            raise Exception("Datasource '%s' referenced, but not defined in layer:\n%s" % (layer.attrib['source_name'], ElementTree.tostring(layer)))
+                
+        # create the nested datasource object 
+        b = Element("Datasource")
+        dsrc = ds.sources[layer.attrib['source_name']]
+
+        if 'template' in dsrc:
+            b.attrib['base'] = dsrc['template']
+        
+        # set the SRS if present
+        if 'layer_srs' in dsrc:
+            layer.attrib['srs'] = dsrc['layer_srs']
+        
+        for pname, pvalue in dsrc['parameters'].items():
+            p = Element("Parameter", name=pname)
+            p.text = pvalue
+            b.append(p)
+        
+        layer.append(b)
+        del layer.attrib['source_name']
+        
 def test2str(test):
     """ Return a mapnik-happy Filter expression atom for a single test
     """
@@ -618,7 +762,7 @@ def is_applicable_selector(selector, filter):
     
     return True
 
-def get_map_attributes(declarations, **kwargs):
+def get_map_attributes(declarations):
     """
     """
     property_map = {'map-bgcolor': 'bgcolor'}
@@ -650,7 +794,7 @@ def filtered_property_declarations(declarations, property_names):
 
     return rules
 
-def get_polygon_rules(declarations,**kwargs):
+def get_polygon_rules(declarations):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a PolygonSymbolizer, add it to Map
         and refer to it in Layer.
@@ -675,7 +819,7 @@ def get_polygon_rules(declarations,**kwargs):
     
     return rules
 
-def get_raster_rules(declarations,**kwargs):
+def get_raster_rules(declarations):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a RasterSymbolizer, add it to Map
         and refer to it in Layer.
@@ -802,7 +946,7 @@ def get_line_rules(declarations, **kwargs):
 
     return rules
 
-def get_text_rule_groups(declarations, **kwargs):
+def get_text_rule_groups(declarations):
     """ Given a list of declarations, return a list of output.Rule objects.
     """
     property_map = {'text-face-name': 'face_name',
@@ -878,77 +1022,86 @@ def get_text_rule_groups(declarations, **kwargs):
     
     return dict(groups)
 
-def postprocess_symbolizer_image_file(file_name, temp_name, **kwargs):
-    """ Given a file name, an output directory name, and a temporary
-        file name, save the file to a temporary location as a PNG
-        while noting its dimensions.
+def locally_cache_remote_file(href, dir):
+    """ Locally cache a remote resource using a predictable file name
+        and awareness of modification date. Assume that files are "normal"
+        which is to say they have filenames with extensions.
     """
-    # read the image to get some more details
-    img_path = file_name
-
-    msg('reading symbol: %s' % img_path)
-
-    target_dir = kwargs.get('target_dir',tempfile.gettempdir())
+    scheme, host, remote_path, p, q, f = urlparse(href)
     
-    move_local_files = kwargs.get('move_local_files')
+    assert scheme == 'http', 'No gophers.'
 
-    # todo - use urlparse logic?
-    is_local = os.path.exists(img_path)
-    # if not url throw error?
+    head, ext = splitext(basename(remote_path))
+    head = sub(r'[^\w\-_]', '', head)
+    hash = md5(href).hexdigest()[:8]
     
-    image_name, ext = os.path.splitext(img_path)
-    if os.path.exists(img_path) and not move_local_files:
-        path = img_path
-    elif dir:
-        path = os.path.join(target_dir, os.path.basename(img_path))
+    local_path = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
+    headers = {}
     
-    mapnik_formats = ('.png','tif','tiff','.jpg','.jpeg')
-    supported_type = ext in mapnik_formats
-    if supported_type:
-        target_ext = ext
+    if os.path.exists(local_path):
+        t = localtime(os.stat(local_path).st_mtime)
+        headers['If-Modified-Since'] = strftime('%a, %d %b %Y %H:%M:%S %Z', t)
+    
+    conn = HTTPConnection(host)
+    conn.request('GET', remote_path, headers=headers)
+    resp = conn.getresponse()
+    
+    if resp.status in range(200, 210):
+        # hurrah, it worked
+        f = open(local_path, 'wb')
+        f.write(resp.read())
+        f.close()
+
+    elif resp.status in (301, 302, 303) and resp.getheader('location', False):
+        # follow a redirect, totally untested.
+        redirected_href = urljoin(href, resp.getheader('location'))
+        redirected_path = locally_cache_remote_file(redirected_href, dir)
+        os.rename(redirected_path, local_path)
+    
+    elif resp.status == 304:
+        # hurrah, it's cached
+        pass
+
     else:
-        target_ext = '.png'
+        raise Exception("Failed to get remote resource %s: %s" % (href, resp.status))
+    
+    return local_path
 
-    if move_local_files or not is_local:
-        target_name = os.path.basename('%s%s' % (image_name,target_ext))
-        if not is_local and kwargs.get('safe_urls'):
-            # note we use/encode the raw url 'image_path' here...
-            target_dir = os.path.join(target_dir,url2fs(img_path))
-        dest_file = os.path.join(target_dir,target_name)
+def postprocess_symbolizer_image_file(file_href, dirs):
+    """ Given an image file href and a set of directories, modify the image file
+        name so it's correct with respect to the output and cache directories.
+    """
+    
+    file_href = urljoin(dirs.source.rstrip('/')+'/', file_href)
+    scheme, n, path, p, q, f = urlparse(file_href)
+    
+    if scheme == 'http':
+        scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
+        
+    if scheme not in ('file', '') or not os.path.exists(path):
+        raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
+        
+    img = Image.open(path)
+    
+    path = dirs.output_path(path)
+
+    msg('reading symbol: %s' % path)
+
+    image_name, ext = splitext(path)
+    
+    if ext in ('.png', 'tif', 'tiff'):
+        output_ext = ext
     else:
-        # local file and we're not moving it
-        dest_file = '%s%s' % (image_name,target_ext)
+        output_ext = '.png'
+
+    # new local file name
+    dest_file = '%s%s' % (image_name, output_ext)
 
     msg('Destination file: %s' % dest_file)
-        
-    # are we caching, eg pulling from already downloaded files
-    caching = not kwargs.get('no_cache')
-    if not is_local and caching:
-        if os.path.exists(dest_file):
-            img_path = dest_file
-            supported_type = os.path.splitext(img_path)[1] in mapnik_formats
-            is_local = True
-            msg('found locally cached file: %s' %  dest_file)
 
-    # okay, we actually need read the data into memory now
-    if is_local:
-        img_data = open(img_path,'rb').read()
-    else:
-        #if os.path.isabs(img_path) and sys.platform == "win32":
-        #    img_path = 'file:%s' % img_path
-        img_data = urllib.urlopen(img_path).read()
-    
-    im = Image.open(StringIO.StringIO(img_data))
+    return dest_file, output_ext[1:], img.size[0], img.size[1]
 
-    if not os.path.exists(target_dir):
-        os.mkdir(target_dir)
-
-    im.save(dest_file)
-    os.chmod(dest_file, 0644)
-
-    return dest_file, target_ext[1:], im.size[0], im.size[1]
-
-def get_shield_rule_groups(declarations, **kwargs):
+def get_shield_rule_groups(declarations, dirs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -995,7 +1148,7 @@ def get_shield_rule_groups(declarations, **kwargs):
             
             file, filetype, width, height \
                 = values.has_key('shield-file') \
-                and postprocess_symbolizer_image_file(str(values['shield-file'].value), 'shield', **kwargs) \
+                and postprocess_symbolizer_image_file(str(values['shield-file'].value), dirs) \
                 or (None, None, None, None)
             
             color = values.has_key('shield-fill') and values['shield-fill'].value or None
@@ -1017,7 +1170,7 @@ def get_shield_rule_groups(declarations, **kwargs):
     
     return dict(groups)
 
-def get_point_rules(declarations, **kwargs):
+def get_point_rules(declarations, dirs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1034,7 +1187,7 @@ def get_point_rules(declarations, **kwargs):
     for (filter, values) in filtered_property_declarations(declarations, property_names):
         point_file, point_type, point_width, point_height \
             = values.has_key('point-file') \
-            and postprocess_symbolizer_image_file(str(values['point-file'].value), 'point', **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['point-file'].value), dirs) \
             or (None, None, None, None)
         
         point_allow_overlap = values.has_key('point-allow-overlap') and values['point-allow-overlap'].value or None
@@ -1046,7 +1199,7 @@ def get_point_rules(declarations, **kwargs):
     
     return rules
 
-def get_polygon_pattern_rules(declarations, **kwargs):
+def get_polygon_pattern_rules(declarations, dirs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1064,7 +1217,7 @@ def get_polygon_pattern_rules(declarations, **kwargs):
     
         poly_pattern_file, poly_pattern_type, poly_pattern_width, poly_pattern_height \
             = values.has_key('polygon-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), 'polygon-pattern', **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), dirs) \
             or (None, None, None, None)
         
         symbolizer = poly_pattern_file and output.PolygonPatternSymbolizer(poly_pattern_file)
@@ -1074,7 +1227,7 @@ def get_polygon_pattern_rules(declarations, **kwargs):
     
     return rules
 
-def get_line_pattern_rules(declarations, **kwargs):
+def get_line_pattern_rules(declarations, dirs):
     """ Given a list of declarations, return a list of output.Rule objects.
         
         Optionally provide an output directory for local copies of image files.
@@ -1092,7 +1245,7 @@ def get_line_pattern_rules(declarations, **kwargs):
     
         line_pattern_file, line_pattern_type, line_pattern_width, line_pattern_height \
             = values.has_key('line-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), 'line-pattern', **kwargs) \
+            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), dirs) \
             or (None, None, None, None)
         
         symbolizer = line_pattern_file and output.LinePatternSymbolizer(line_pattern_file)
@@ -1113,333 +1266,173 @@ def get_applicable_declarations(element, declarations):
     return [dec for dec in declarations
             if dec.selector.matches(element_tag, element_id, element_classes)]
 
-# TODO - unfinished work around moving local shapefiles
-#def handle_shapefile_parts(shapefile,target_dir):
-#    if not os.path.exists(target_dir):
-#        os.mkdir(target_dir)
-#    for (expected, required) in SHAPE_PARTS:
-#        if required and expected not in extensions:
-#            raise Exception('Shapefile %(shapefile)s missing extension "%(expected)s"' % locals())
-#        
-#        name = os.path.splitext(shapefile)[0]
-#        source = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
-#        dest = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
-#        
-#        shutil.copy()
-
-def handle_zipped_shapefile(zipped_shp,target_dir):
-    zip_data = urllib.urlopen(zipped_shp).read()
+def unzip_shapefile_into(zip_path, dir):
+    """
+    """
+    hash = md5(zip_path).hexdigest()[:8]
+    zip_data = open(zip_path).read()
     zip_file = zipfile.ZipFile(StringIO.StringIO(zip_data))
     
     infos = zip_file.infolist()
-    extensions = [os.path.splitext(info.filename)[1] for info in infos]
-    basenames = [os.path.basename(info.filename) for info in infos]
+    extensions = [splitext(info.filename)[1] for info in infos]
     
     for (expected, required) in SHAPE_PARTS:
         if required and expected not in extensions:
-            raise Exception('Zip file %(zipped_shp)s missing extension "%(expected)s"' % locals())
+            raise Exception('Zip file %(zip_path)s missing extension "%(expected)s"' % locals())
 
-        for (info, extension, basename) in zip(infos, extensions, basenames):
-            if extension == expected:
+        for info in infos:
+            head, ext = splitext(basename(info.filename))
+            head = sub(r'[^\w\-_]', '', head)
+
+            if ext == expected:
                 file_data = zip_file.read(info.filename)
-                if not os.path.exists(target_dir):
-                    os.mkdir(target_dir)
-                file_name = os.path.normpath('%(target_dir)s/%(basename)s' % locals())
+                file_name = os.path.normpath('%(dir)s/%(head)s-%(hash)s%(ext)s' % locals())
                 
                 file_ = open(file_name, 'wb')
                 file_.write(file_data)
                 file_.close()
                 
-                if extension == '.shp':
+                if ext == '.shp':
                     local = file_name[:-4]
                 
                 break
 
     return local
 
-def handle_placing_shapefile(shapefile,target_dir):
-    if os.path.splitext(shapefile)[1] == '.zip':
-        return handle_zipped_shapefile(shapefile,target_dir)
-    #else:
-    #    return handle_shapefile_parts(shapefile,target_dir)
-
-
-def localize_shapefile(src, shapefile, **kwargs):
-    """ Given a stylesheet path, a shapefile name, and a temp directory,
-        modify the shapefile name so it's an absolute path.
-    
-        Shapefile is assumed to be relative to the stylesheet path.
-        If it's found to look like a URL (e.g. "http://...") it's assumed
-        to be a remote zip file containing .shp, .shx, and .dbf files.
+def localize_shapefile(shp_href, dirs):
+    """ Given a shapefile href and a set of directories, modify the shapefile
+        name so it's correct with respect to the output and cache directories.
     """
-    (scheme, netloc, path, params, query, fragment) = urlparse.urlparse(shapefile)
-
-    move_local_files = kwargs.get('move_local_files')
-    if move_local_files:
-        sys.stderr.write('WARNING: moving local unzipped shapefiles not yet supported\n')
-
-    if scheme == '':
-        # assumed to be local
-        if not os.path.splitext(shapefile)[1] == ".zip":
-            # if not a local zip
-            # Mapnik 0.6.1+ accepts relative paths, so we leave it unchanged
-            # but compiled file must maintain same relativity to the files
-            # as the stylesheet, which needs to be addressed separately
-            return shapefile
-
-    target_dir = kwargs.get('target_dir',tempfile.gettempdir())
+    shp_href = urljoin(dirs.source.rstrip('/')+'/', shp_href)
+    scheme, n, path, p, q, f = urlparse(shp_href)
     
-    # if no-cache is True we avoid caching otherwise
-    # we attempt to pull targets locally without re-downloading
-    caching = not kwargs.get('no_cache',None)
+    if scheme == 'http':
+        scheme, path = '', locally_cache_remote_file(shp_href, dirs.cache)
 
-    if kwargs.get('safe_urls'):
-        target_dir = os.path.join(target_dir,url2fs(shapefile))
+    if scheme not in ('file', ''):
+        raise Exception("Shapefile needs to be a working, fetchable resource, not %s" % shp_href)
     
-    if caching:
-        if kwargs.get('safe_urls'):
-            if not os.path.isdir(target_dir):
-                # does not exist yet
-                msg('Downloading shapefile to base64 encoded dir: %s' % target_dir)
-            else:
-                # already downloaded, we can pull shapefile name from cache
-                msg('Shapefile found, pulling from base64 encoded directory cache instead of downloading')
-                for root, dirs, files in os.walk(target_dir):
-                    for file_ in files:
-                        if os.path.splitext(file_)[1] == '.shp':
-                            return os.path.join(root, file_[:-4])
-        else:
-            # only possibility here is to test assumption 
-            # that the shapefile is the same name as the zip.
-            basename = os.path.splitext(os.path.basename(shapefile))[0]
-            possible_names = []
-            possible_names.append(os.path.join(target_dir,'%s.shp' % basename))
-            possible_names.append(os.path.join(target_dir,basename,'%s.shp' % basename))
-            found = False
-            unzipped_path = None
-            for possible in possible_names:
-                if os.path.exists(possible):
-                    found = True
-                    msg('Shapefile found locally, reading from "%s" instead of downloading' % possible)
-                    unzipped_path = possible
-                    break
-            if not found:
-                msg('Remote shapefile could not be found locally, therefore downloading from "%s"' % (shapefile))
-                msg('(searched for %s)' %  possible_names)
-            if unzipped_path:
-                return unzipped_path
-    else:
-        msg('Avoiding searching for cached local files...')
-        msg('Placing "%s" at "%s"' % (shapefile,target_dir))
-
-    # assumed to be a remote zip archive with .shp, .shx, and .dbf files
-    return handle_placing_shapefile(shapefile,target_dir)
-
-def localize_datasource(src, filename, **kwargs):
-    """ Handle localizing file-based datasources other than zipped shapefiles.
+    path = dirs.output_path(path)
     
-    This will only work for single-file based types.
+    if path.endswith('.zip'):
+        # unzip_shapefile_into needs a path it can find
+        path = os.path.join(dirs.output, path)
+        path = unzip_shapefile_into(path, dirs.cache)
+
+    return dirs.output_path(path)
+
+def localize_file_datasource(file_href, dirs):
+    """ Handle localizing file-based datasources other than shapefiles.
+    
+        This will only work for single-file based types.
     """
-    (scheme, netloc, path, params, query, fragment) = urlparse.urlparse(filename)
-
-    move_local_files = kwargs.get('move_local_files')
-    if move_local_files:
-        sys.stderr.write('WARNING: moving local datasource files not yet supported\n')
-
-    if scheme == '':
-        # assumed to be local
-        # Mapnik 0.6.1+ accepts relative paths, so we leave it unchanged
-        # but compiled file must maintain same relativity to the files
-        # as the stylesheet, which needs to be addressed separately
-        return filename
-
-    target_dir = kwargs.get('target_dir',tempfile.gettempdir())
+    file_href = urljoin(dirs.source.rstrip('/')+'/', file_href)
+    scheme, n, path, p, q, f = urlparse(file_href)
     
-    # if no-cache is True we avoid caching otherwise
-    # we attempt to pull targets locally without re-downloading
-    caching = not kwargs.get('no_cache',None)
+    if scheme == 'http':
+        scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
 
-    if kwargs.get('safe_urls'):
-        target_dir = os.path.join(target_dir,url2fs(filename))
+    if scheme not in ('file', ''):
+        raise Exception("Datasource file needs to be a working, fetchable resource, not %s" % file_href)
 
-    target_file = os.path.join(target_dir,os.path.basename(filename))
+    return dirs.output_path(path)
+
+def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
+    """ Compile a Cascadenik MML file, returning a cascadenik.output.Map object.
     
-    if caching:
-        if kwargs.get('safe_urls'):
-            if not os.path.isdir(target_dir):
-                # does not exist yet
-                msg('Downloading %s to base64 encoded dir: %s' % (filename,target_dir))
-            else:
-                # already downloaded, we can pull shapefile name from cache
-                msg('File found, pulling from base64 encoded directory cache instead of downloading')
-                return target_file
-        else:
-            # TODO - should we support zipped archives for non-shapefile datasources?
-            if os.path.exists(target_file):
-                return target_file
-    else:
-        msg('Avoiding searching for cached local files...')
-        msg('Placing "%s" at "%s"' % (filename,target_dir))
-
-    if not os.path.exists(target_dir):
-        os.mkdir(target_dir)
-    # use urllib2 here so 404's throw
-    remote_file_data = urllib2.urlopen(filename).read()
-    file_ = open(target_file, 'wb')
-    file_.write(remote_file_data)
-    file_.close()
-    return target_file
-
-def auto_detect_mapnik_version():
-    import mapnik2 as mapnik
-    return mapnik.mapnik_version()
-
-def mapnik_version_string(version):
-    patch_level = version % 100
-    minor_version = version / 100 % 1000
-    major_version = version / 100000
-    return '%s.%s.%s' % ( major_version, minor_version,patch_level)
-            
-def compile(src,**kwargs):
-    """
-    Compile a Cascadenik MML file, returning an XML string.
-    
-    Keyword Parameters:
-         
-     verbose:
-       If True, debugging information will be printed to stderr. (default: None)
-     
-     srs:
-       Target srs for the compiled stylesheet. If provided, overrides default map 
-       srs in the mml.
-       
-     safe_urls:
-       If True, paths of any files placed by Cascadenik will be base64 encoded calling
-       safe64.url2fs() on the url or filesystem path.
-
-     target_dir:
-       If set, all file-based resources (symbols, shapefiles, etc) will be written to this
-       output directory. If not set, tempfile.gettempdir() will be used.
-     
-     move_local_files:
-       If True, not just remote files but also locally referenced files (currently only
-       symbols) will be move to the 'target_dir'. Support for datasources will be added
-       in the future. (default: None)
+        Parameters:
         
-     no_cache:
-       By default remotely downloaded files will be read from the location where they
-       were unpacked ('target_dir'). If 'no_cache' is True, then remote files will be
-       downloaded even if a local copy exists in the output location, effectively
-       overwriting any previously downloaded remote files or moved local files.
-     
-     pretty:
-       If True, XML output will be fully indented (otherwise indenting is haphazard).
-
-     mapnik_version:
-       The Mapnik release to target for optimal stylesheet compatibility.
-       
-       800 (aka '0.8.0') is the assumed default target, unless specified or autodetected.
-              
-       'mapnik_version' must be an integer matching the format of 
-       include/mapnik/version.hpp which follows the Boost method:
-       
-         MAPNIK_VERSION % 100 is the sub-minor version
-         MAPNIK_VERSION / 100 % 1000 is the minor version
-         MAPNIK_VERSION / 100000 is the major version
-       
-       If not provided the mapnik_version will be autodetected by:
-       
-       >>> import mapnik2 as mapnik
-       >>> mapnik.mapnik_version()
-       800
-       
-       This is equivalent to:
-       
-       >>> mapnik.mapnik_version_string()
-       '0.8.0'
-       
-       To convert from the string to integer do:
-       >>> n = mapnik.mapnik_version_string().split('.')
-       >>> (int(n[0]) * 100000) + (int(n[1]) * 100) + (int(n[2]))
-       701
-       
+          src:
+            Path to .mml file, or raw .mml file content.
+          
+          dirs:
+            Object with directory names in 'cache', 'output', and 'source' attributes.
+            dirs.source is expected to be fully-qualified, e.g. "http://example.com"
+            or "file:///home/example".
+        
+        Keyword Parameters:
+        
+          verbose:
+            If True, debugging information will be printed to stderr.
+        
+          srs:
+            Target spatiral reference system for the compiled stylesheet.
+            If provided, overrides default map srs in the .mml file.
+        
+          datasources_cfg:
+            If a file or URL, uses the config to override datasources or parameters
+            (i.e. postgis_dbname) defined in the map's canonical <DataSourcesConfig>
+            entities.  This is most useful in development, whereby one redefines
+            individual datasources, connection parameters, and/or local paths.
     """
     global VERBOSE
-    if kwargs.get('verbose'):
+
+    if verbose:
         VERBOSE = True
         sys.stderr.write('\n')
     
-    if not kwargs.get('mapnik_version',None):
-        msg('"mapnik_version" not provided, autodetecting...')
-        version = auto_detect_mapnik_version()
-        if version:
-            kwargs['mapnik_version'] = version 
-            msg('Autodetected Mapnik version: %s | %s' % (version,mapnik_version_string(version)))
-        else:
-            default_version = 800 # 0.8.0
-            msg('Failed to autodetect "mapnik_version" falling back to %s | %s' % (default_version,mapnik_version_string(default_version)))
-    else:
-        msg('Targeting mapnik version: %s | %s' % (kwargs['mapnik_version'],mapnik_version_string(kwargs['mapnik_version'])))        
-        
-    if os.path.exists(src): # local file
-        # using 'file:' enables support on win32
-        # for opening local files with urllib.urlopen
-        # Note: this must only be used with abs paths to local files
-        # otherwise urllib will think they are absolute, 
-        # therefore in the future it will likely be
-        # wiser to just open local files with open()
-        if os.path.isabs(src) and sys.platform == "win32":
-            msg('prepending "file:" to %s for windows compatibility with urlopen and absolute paths' % src)
-            src = 'file:%s' % src
+    if os.path.exists(src):
+        # It's a local file, give it the appropriate file:// scheme.
+        src = 'file://' + os.path.realpath(src)
     
-    target_dir = kwargs.get('target_dir')
-    if target_dir:
-        msg('Writing all files to "target_dir": %s' % target_dir)
-        if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
-            msg('"target_dir" does not exist, creating...')
-    else:
-        tmp_dir = tempfile.gettempdir()
-        kwargs['target_dir'] = tmp_dir
-        if kwargs.get('move_local_files'):
-            msg('Writing all files to temporary directory: %s' % tmp_dir)
-        else:       
-            msg('Writing all remote files to temporary directory: %s' % tmp_dir)    
-
     try:
         # guessing src is a literal XML string?
         map_el = ElementTree.fromstring(src)
-        base = None
+
     except:
+        assert src[:7] in ('http://', 'file://'), 'urlopen() wants a scheme'
+    
         # or a URL or file location?
         doc = ElementTree.parse(urllib.urlopen(src))
         map_el = doc.getroot()
-        base = src
-    
-    declarations = extract_declarations(map_el, base)
+
+    expand_source_declarations(map_el, dirs, datasources_cfg)
+    declarations = extract_declarations(map_el, dirs)
     
     # a list of layers and a sequential ID generator
     layers, ids = [], (i for i in xrange(1, 999999))
+
+
+    # Handle base datasources
+    # http://trac.mapnik.org/changeset/574
+    datasource_templates = {}
+    for base_el in map_el:
+        if base_el.tag != 'Datasource':
+            continue
+        datasource_templates[base_el.get('name')] = dict(((p.get('name'),p.text) for p in base_el.findall('Parameter')))
     
     for layer_el in map_el.findall('Layer'):
     
         # nevermind with this one
         if layer_el.get('status', None) in ('off', '0', 0):
             continue
-        
-        for parameter_el in layer_el.find('Datasource').findall('Parameter'):
-            if parameter_el.get('name', None) == 'file':
-                # make sure we localize any remote files
-                if parameter_el.get('type', None) == 'shape':
-                    # handle a local shapefile or fetch a remote, zipped shapefile
-                    msg('Handling shapefile datasource...')
-                    parameter_el.text = localize_shapefile(src, parameter_el.text, **kwargs)
-                    # TODO - support datasource reprojection to make map srs
-                    # TODO - support automatically indexing shapefiles
-                else: # ogr,raster, gdal, sqlite
-                    # attempt to generically handle other file based datasources
-                    msg('Handling generic datasource...')
-                    parameter_el.text = localize_datasource(src, parameter_el.text, **kwargs)
+
+        # build up a map of Parameters for this Layer
+        datasource_params = dict((p.get('name'),p.text) for p in layer_el.find('Datasource').findall('Parameter'))
+
+        base = layer_el.find('Datasource').get('base')
+        if base:
+            datasource_params.update(datasource_templates[base])
+
+        if datasource_params.get('file') is not None:
+            # make sure we localize any remote files
+            file_param = datasource_params.get('file')
+
+            if datasource_params.get('type') == 'shape':
+                # handle a local shapefile or fetch a remote, zipped shapefile
+                msg('Handling shapefile datasource...')
+                file_param = localize_shapefile(file_param, dirs)
+
+                # TODO - support datasource reprojection to make map srs
+                # TODO - support automatically indexing shapefiles
+
+            else: # ogr,raster, gdal, sqlite
+                # attempt to generically handle other file based datasources
+                msg('Handling generic datasource...')
+                file_param = localize_file_datasource(file_param, dirs)
+
+            msg("Localized path = %s" % file_param)
+            datasource_params['file'] = file_param
 
             # TODO - consider custom support for other mapnik datasources:
             # sqlite, oracle, osm, kismet, gdal, raster, rasterlite
@@ -1450,33 +1443,32 @@ def compile(src,**kwargs):
         styles = []
         
         styles.append(output.Style('polygon style %d' % ids.next(),
-                                   get_polygon_rules(layer_declarations, **kwargs)))
+                                   get_polygon_rules(layer_declarations)))
 
         styles.append(output.Style('polygon pattern style %d' % ids.next(),
-                                   get_polygon_pattern_rules(layer_declarations, **kwargs)))
+                                   get_polygon_pattern_rules(layer_declarations, dirs)))
 
         styles.append(output.Style('raster style %d' % ids.next(),
-                           get_raster_rules(layer_declarations,**kwargs)))
+                                   get_raster_rules(layer_declarations)))
 
         styles.append(output.Style('line style %d' % ids.next(),
-                                   get_line_rules(layer_declarations, **kwargs)))
+                                   get_line_rules(layer_declarations)))
 
         styles.append(output.Style('line pattern style %d' % ids.next(),
-                                   get_line_pattern_rules(layer_declarations, **kwargs)))
+                                   get_line_pattern_rules(layer_declarations, dirs)))
 
-        for (shield_name, shield_rules) in get_shield_rule_groups(layer_declarations, **kwargs).items():
+        for (shield_name, shield_rules) in get_shield_rule_groups(layer_declarations, dirs).items():
             styles.append(output.Style('shield style %d (%s)' % (ids.next(), shield_name), shield_rules))
 
-        for (text_name, text_rules) in get_text_rule_groups(layer_declarations, **kwargs).items():
+        for (text_name, text_rules) in get_text_rule_groups(layer_declarations).items():
             styles.append(output.Style('text style %d (%s)' % (ids.next(), text_name), text_rules))
 
         styles.append(output.Style('point style %d' % ids.next(),
-                                   get_point_rules(layer_declarations, **kwargs)))
+                                   get_point_rules(layer_declarations, dirs)))
                                    
         styles = [s for s in styles if s.rules]
         
         if styles:
-            datasource_params = dict([(p.get('name'), p.text) for p in layer_el.find('Datasource').findall('Parameter')])
             datasource = output.Datasource(**datasource_params)
             
             layer = output.Layer('layer %d' % ids.next(),
@@ -1490,7 +1482,7 @@ def compile(src,**kwargs):
     map_attrs = get_map_attributes(get_applicable_declarations(map_el, declarations))
     
     # if a target srs is profiled, override whatever is in mml
-    if kwargs.get('srs'):
-        map_el.set('srs',kwargs.get('srs'))
+    if srs is not None:
+        map_el.set('srs', srs)
     
     return output.Map(map_el.attrib.get('srs', None), layers, **map_attrs)

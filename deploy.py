@@ -27,7 +27,7 @@ from subprocess import call as subcall
 DEBUG = False
 
 app = 'cascadenik'
-version = '0.2.0'
+version = '1.0.0'
 tag_dir= '../../../tags/%s' % app
 
 def call(cmd):

@@ -5,7 +5,7 @@ import sys
 # but setuptools is often broken, so swallow the error if it's not there.
 
 try:
-    from setuptoolsss import setup
+    from setuptools import setup
     HAS_SETUPTOOLS = True
 except ImportError:
     from distutils.core import setup
@@ -13,7 +13,7 @@ except ImportError:
     
 readme = file('README.txt','rb').read()
 
-VERSION = '0.2.0'
+VERSION = '1.0.0'
 
 options = dict(name='cascadenik',
         version = VERSION,
@@ -36,7 +36,8 @@ options = dict(name='cascadenik',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Utilities'
         ],
-        scripts=['cascadenik-compile.py','cascadenik-style.py'],
+        zip_safe=False,
+        scripts=['cascadenik-compile.py','cascadenik-style.py', 'cascadenik-extract-dscfg.py'],
         packages=['cascadenik'],
         )
 

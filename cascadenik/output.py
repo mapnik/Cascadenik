@@ -1,3 +1,5 @@
+from os import getcwd, chdir
+
 import style
 import warnings
 
@@ -6,59 +8,69 @@ try:
 except ImportError:
     warnings.warn("mapnik library not available, *.to_mapnik() won't work")
 
+def safe_str(s):
+    return None if not s else unicode(s).encode('utf-8')
+
 class Map:
     def __init__(self, srs=None, layers=None, bgcolor=None):
-        assert srs is None or type(srs) is str
+        assert srs is None or isinstance(srs, basestring)
         assert layers is None or type(layers) in (list, tuple)
         assert bgcolor is None or bgcolor.__class__ is style.color or bgcolor == 'transparent'
         
-        self.srs = srs
+        self.srs = safe_str(srs)
         self.layers = layers or []
         self.bgcolor = bgcolor
 
     def __repr__(self):
         return 'Map(%s %s)' % (self.bgcolor, repr(self.layers))
 
-    def to_mapnik(self, mmap):
+    def to_mapnik(self, mmap, dirs=None):
         """
         """
-        mmap.srs = self.srs or mmap.srs
-        mmap.bgcolor = str(self.bgcolor) or mmap.bgcolor
+        prev_cwd = getcwd()
         
-        ids = (i for i in xrange(1, 999999))
+        if dirs:
+            chdir(dirs.output)
         
-        for layer in self.layers:
-            for style in layer.styles:
-
-                sty = mapnik.Style()
-                
-                for rule in style.rules:
-                    rul = mapnik.Rule('rule %d' % ids.next())
-                    rul.filter = rule.filter and mapnik.Expression(rule.filter.text) or rul.filter
-                    rul.min_scale = rule.minscale and rule.minscale.value or rul.min_scale
-                    rul.max_scale = rule.maxscale and rule.maxscale.value or rul.max_scale
-                    
-                    for symbolizer in rule.symbolizers:
-                        if not hasattr(symbolizer, 'to_mapnik'):
-                            continue
-
-                        sym = symbolizer.to_mapnik()
-                        rul.symbols.append(sym)
-                    sty.rules.append(rul)
-                mmap.append_style(style.name, sty)
-
-            lay = mapnik.Layer(layer.name)
-            lay.srs = layer.srs or lay.srs
-            lay.minzoom = layer.minzoom or lay.minzoom
-            lay.maxzoom = layer.maxzoom or lay.maxzoom
+        try:
+            mmap.srs = self.srs or mmap.srs
+            mmap.bgcolor = str(self.bgcolor) or mmap.bgcolor
             
-            for style in layer.styles:
-                lay.styles.append(style.name)
+            ids = (i for i in xrange(1, 999999))
+            
+            for layer in self.layers:
+                for style in layer.styles:
 
-            mmap.layers.append(lay)
+                    sty = mapnik.Style()
                     
-                    
-        
+                    for rule in style.rules:
+                        rul = mapnik.Rule('rule %d' % ids.next())
+                        rul.filter = rule.filter and mapnik.Expression(rule.filter.text) or rul.filter
+                        rul.min_scale = rule.minscale and rule.minscale.value or rul.min_scale
+                        rul.max_scale = rule.maxscale and rule.maxscale.value or rul.max_scale
+                        
+                        for symbolizer in rule.symbolizers:
+                            if not hasattr(symbolizer, 'to_mapnik'):
+                                continue
+
+                            sym = symbolizer.to_mapnik()
+                            rul.symbols.append(sym)
+                        sty.rules.append(rul)
+                    mmap.append_style(style.name, sty)
+
+                lay = mapnik.Layer(layer.name)
+                lay.srs = layer.srs or lay.srs
+                lay.minzoom = layer.minzoom or lay.minzoom
+                lay.maxzoom = layer.maxzoom or lay.maxzoom
+                
+                for style in layer.styles:
+                    lay.styles.append(style.name)
+    
+                mmap.layers.append(lay)
+        finally:
+            # pass it along, but first chdir back to the previous directory
+            # in the finally clause below, to put things back the way they were.
+            chdir(prev_cwd)
 
 class Style:
     def __init__(self, name, rules):
@@ -87,16 +99,16 @@ class Rule:
 
 class Layer:
     def __init__(self, name, datasource, styles=None, srs=None, minzoom=None, maxzoom=None):
-        assert type(name) is str
+        assert isinstance(name, basestring)
         assert styles is None or type(styles) in (list, tuple)
-        assert srs is None or type(srs) is str
+        assert srs is None or isinstance(srs, basestring)
         assert minzoom is None or type(minzoom) in (int, float)
         assert maxzoom is None or type(maxzoom) in (int, float)
         
-        self.name = name
+        self.name = safe_str(name)
         self.datasource = datasource
         self.styles = styles or []
-        self.srs = srs
+        self.srs = safe_str(srs)
         self.minzoom = minzoom
         self.maxzoom = maxzoom
 
@@ -105,7 +117,14 @@ class Layer:
 
 class Datasource:
     def __init__(self, **parameters):
-        self.parameters = parameters
+        self.parameters = {}
+        for param, value in parameters.items():
+            if isinstance(value, basestring):
+                value = safe_str(value)
+            self.parameters[param] = value
+
+    def to_mapnik(self):
+        return mapnik.Datasource(**self.parameters)
 
 class MinScaleDenominator:
     def __init__(self, value):
@@ -153,12 +172,12 @@ class PolygonSymbolizer:
 class RasterSymbolizer:
     def __init__(self, mode=None, opacity=None, scaling=None):
         assert opacity is None or type(opacity) in (int, float)
-        assert mode is None or type(mode) is str
-        assert scaling is None or type(scaling) is str
+        assert mode is None or isinstance(mode, basestring)
+        assert scaling is None or isinstance(scaling, basestring)
 
-        self.mode = mode
+        self.mode = safe_str(mode)
         self.opacity = opacity or 1.0
-        self.scaling = scaling
+        self.scaling = safe_str(scaling)
 
     def __repr__(self):
         return 'Raster(%s, %s, %s)' % (self.mode, self.opacity, self.scaling)
@@ -176,15 +195,15 @@ class LineSymbolizer:
         assert color.__class__ is style.color
         assert type(width) in (int, float)
         assert opacity is None or type(opacity) in (int, float)
-        assert join is None or type(join) is str
-        assert cap is None or type(cap) is str
+        assert join is None or isinstance(join, basestring)
+        assert cap is None or isinstance(cap, basestring)
         assert dashes is None or dashes.__class__ is style.numbers
 
         self.color = color
         self.width = width
         self.opacity = opacity
-        self.join = join
-        self.cap = cap
+        self.join = safe_str(join)
+        self.cap = safe_str(cap)
         self.dashes = dashes
 
     def __repr__(self):
@@ -216,9 +235,9 @@ class TextSymbolizer:
         min_distance=None, allow_overlap=None, placement=None, \
         character_spacing=None, line_spacing=None, text_transform=None, fontset=None):
 
-        assert type(name) is str
-        assert face_name is None or type(face_name) is str
-        assert fontset is None or type(fontset) is str
+        assert isinstance(name, basestring)
+        assert face_name is None or isinstance(face_name, basestring)
+        assert fontset is None or isinstance(fontset, basestring)
         assert type(size) is int
         assert color.__class__ is style.color
         assert wrap_width is None or type(wrap_width) is int
@@ -234,14 +253,14 @@ class TextSymbolizer:
         assert avoid_edges is None or avoid_edges.__class__ is style.boolean
         assert min_distance is None or type(min_distance) is int
         assert allow_overlap is None or allow_overlap.__class__ is style.boolean
-        assert placement is None or type(placement) is str
-        assert text_transform is None or type(text_transform) is str
+        assert placement is None or isinstance(placement, basestring)
+        assert text_transform is None or isinstance(text_transform, basestring)
 
         assert face_name or fontset, "Must specify either face_name or fontset"
 
-        self.name = name
-        self.face_name = face_name or ''
-        self.fontset = fontset
+        self.name = safe_str(name)
+        self.face_name = safe_str(face_name) or ''
+        self.fontset = safe_str(fontset)
         self.size = size
         self.color = color
 
@@ -294,9 +313,9 @@ class ShieldSymbolizer:
         
         assert ((face_name or fontset) and size) or file
         
-        assert type(name) is str
-        assert face_name is None or type(face_name) is str
-        assert fontset is None or type(fontset) is str
+        assert isinstance(name, basestring)
+        assert face_name is None or isinstance(face_name, basestring)
+        assert fontset is None or isinstance(fontset, basestring)
         assert size is None or type(size) is int
 
         assert color is None or color.__class__ is style.color
@@ -305,11 +324,11 @@ class ShieldSymbolizer:
         assert spacing is None or type(spacing) is int
         assert min_distance is None or type(min_distance) is int
 
-        self.name = name
-        self.face_name = face_name or ''
-        self.fontset = fontset
+        self.name = safe_str(name)
+        self.face_name = safe_str(face_name) or ''
+        self.fontset = safe_str(fontset)
         self.size = size
-        self.file = file
+        self.file = safe_str(file)
 
         self.color = color
         self.character_spacing = character_spacing
@@ -339,9 +358,9 @@ class ShieldSymbolizer:
 
 class BasePointSymbolizer(object):
     def __init__(self, file):
-        assert type(file) is str
+        assert isinstance(file, basestring)
 
-        self.file = file
+        self.file = safe_str(file)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self.file)

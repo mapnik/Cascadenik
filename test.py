@@ -3,6 +3,9 @@
 import os
 import sys
 import shutil
+import urllib
+import urlparse
+import os.path
 import unittest
 import tempfile
 import xml.etree.ElementTree
@@ -18,6 +21,9 @@ from cascadenik.compile import filtered_property_declarations, is_applicable_sel
 from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
 from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
 from cascadenik.compile import test2str, compile
+
+from cascadenik.compile import Directories
+from cascadenik.sources import DataSources
 import cascadenik.output as output
     
 class ParseTests(unittest.TestCase):
@@ -558,7 +564,7 @@ class SelectorParseTests(unittest.TestCase):
             text-placement: line;
         }
         '''
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         text_rule_groups = get_text_rule_groups(declarations)
         
         self.assertEqual(str, type(text_rule_groups.keys()[0]))
@@ -801,7 +807,8 @@ class StyleRuleTests(unittest.TestCase):
 
     def setUp(self):
         # a directory for all the temp files to be created below
-        self.tmpdir = tempfile.mkdtemp(prefix='cascadenik-tests-')
+        self.tmpdir = os.path.realpath(tempfile.mkdtemp(prefix='cascadenik-tests-'))
+        self.dirs = Directories(self.tmpdir, self.tmpdir, self.tmpdir)
 
     def tearDown(self):
         # destroy the above-created directory
@@ -815,8 +822,8 @@ class StyleRuleTests(unittest.TestCase):
             Layer[zoom>10][use=cemetery] { polygon-fill: #ccc; }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
-        rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        declarations = stylesheet_declarations(s, is_merc=True)
+        rules = get_polygon_rules(declarations)
         
         self.assertEqual(399999, rules[0].maxscale.value)
         self.assertEqual(color(0xCC, 0xCC, 0xCC), rules[0].symbolizers[0].color)
@@ -842,8 +849,8 @@ class StyleRuleTests(unittest.TestCase):
             Layer[zoom>10][foo>1] { polygon-fill: #f00; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
-        rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        declarations = stylesheet_declarations(s, is_merc=True)
+        rules = get_polygon_rules(declarations)
         
         self.assertEqual(399999, rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0x00), rules[0].symbolizers[0].color)
@@ -875,9 +882,9 @@ class StyleRuleTests(unittest.TestCase):
             Layer[foo>1] { line-color: #ff0; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
-        poly_rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        poly_rules = get_polygon_rules(declarations)
         
         self.assertEqual(399999, poly_rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0x00), poly_rules[0].symbolizers[0].color)
@@ -895,7 +902,7 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(color(0x00, 0x00, 0xFF), poly_rules[3].symbolizers[0].color)
         self.assertEqual('[foo] > 1', poly_rules[3].filter.text)
         
-        line_rules = get_line_rules(declarations, target_dir=self.tmpdir)
+        line_rules = get_line_rules(declarations)
 
         self.assertEqual(399999, line_rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0xFF), line_rules[0].symbolizers[0].color)
@@ -940,9 +947,9 @@ class StyleRuleTests(unittest.TestCase):
             Layer[zoom<=10] label { text-size: 10; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
-        line_rules = get_line_rules(declarations, target_dir=self.tmpdir)
+        line_rules = get_line_rules(declarations)
 
         self.assertEqual(399999, line_rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0xFF), line_rules[0].symbolizers[0].color)
@@ -1008,7 +1015,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[bar=quux] label { shield-size: 16; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         text_rule_groups = get_text_rule_groups(declarations)
         
@@ -1032,7 +1039,7 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(10, text_rule_groups['label'][3].symbolizers[0].size)
         self.assertEqual('[foo] >= 1', text_rule_groups['label'][3].filter.text)
         
-        shield_rule_groups = get_shield_rule_groups(declarations, target_dir=self.tmpdir)
+        shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
         assert shield_rule_groups['label'][0].minscale is None
         assert shield_rule_groups['label'][0].maxscale is None
@@ -1080,9 +1087,9 @@ class StyleRuleTests(unittest.TestCase):
             Layer { point-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
-        shield_rule_groups = get_shield_rule_groups(declarations, target_dir=self.tmpdir)
+        shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
         assert shield_rule_groups['label'][0].minscale is None
         assert shield_rule_groups['label'][0].maxscale is None
@@ -1120,7 +1127,7 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(16, shield_rule_groups['label'][5].symbolizers[0].size)
         self.assertEqual("[bar] = 'quux' and [foo] > 1", shield_rule_groups['label'][5].filter.text)
 
-        point_rules = get_point_rules(declarations, target_dir=self.tmpdir)
+        point_rules = get_point_rules(declarations, self.dirs)
         
         assert point_rules[0].filter is None
         assert point_rules[0].minscale is None
@@ -1133,21 +1140,21 @@ class StyleRuleTests(unittest.TestCase):
             Layer { line-pattern-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
-        point_rules = get_point_rules(declarations, target_dir=self.tmpdir)
+        point_rules = get_point_rules(declarations, self.dirs)
         
         assert point_rules[0].filter is None
         assert point_rules[0].minscale is None
         assert point_rules[0].maxscale is None
 
-        polygon_pattern_rules = get_polygon_pattern_rules(declarations, target_dir=self.tmpdir)
+        polygon_pattern_rules = get_polygon_pattern_rules(declarations, self.dirs)
         
         assert polygon_pattern_rules[0].filter is None
         assert polygon_pattern_rules[0].minscale is None
         assert polygon_pattern_rules[0].maxscale is None
 
-        line_pattern_rules = get_line_pattern_rules(declarations, target_dir=self.tmpdir)
+        line_pattern_rules = get_line_pattern_rules(declarations, self.dirs)
         
         assert line_pattern_rules[0].filter is None
         assert line_pattern_rules[0].minscale is None
@@ -1160,9 +1167,9 @@ class StyleRuleTests(unittest.TestCase):
             Layer[bar=1] { inline-width: 1; inline-color: #999; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
-        line_rules = get_line_rules(declarations, target_dir=self.tmpdir)
+        line_rules = get_line_rules(declarations)
         
         self.assertEqual(4, len(line_rules))
         
@@ -1231,9 +1238,9 @@ class StyleRuleTests(unittest.TestCase):
             Layer[ELEVATION>900] { line-width: 3; line-color: #fff; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
-        line_rules = get_line_rules(declarations, target_dir=self.tmpdir)
+        line_rules = get_line_rules(declarations)
         
         self.assertEqual('[ELEVATION] = 0', line_rules[0].filter.text)
         self.assertEqual(color(0x00, 0x00, 0x00), line_rules[0].symbolizers[0].color)
@@ -1257,9 +1264,9 @@ class StyleRuleTests(unittest.TestCase):
             Layer { polygon-fill: #000; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
-        polygon_rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        polygon_rules = get_polygon_rules(declarations)
         
         self.assertEqual("not [landuse] = 'field' and not [landuse] = 'woods' and not [landuse] = 'desert' and not [landuse] = 'forest' and not [landuse] = 'meadow'", polygon_rules[0].filter.text)
         self.assertEqual(color(0x00, 0x00, 0x66), polygon_rules[0].symbolizers[0].color)
@@ -1288,8 +1295,8 @@ class StyleRuleTests(unittest.TestCase):
             Layer[PERSONS > 4000000] { polygon-fill: #88000F; }
         """
     
-        declarations = stylesheet_declarations(s)
-        polygon_rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        declarations = stylesheet_declarations(s, False)
+        polygon_rules = get_polygon_rules(declarations)
         
         self.assertEqual("[PERSONS] < 2000000", polygon_rules[0].filter.text)
         self.assertEqual(color(0x6c, 0xae, 0x4c), polygon_rules[0].symbolizers[0].color)
@@ -1316,14 +1323,14 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
-        polygon_rules = get_polygon_rules(declarations, target_dir=self.tmpdir)
+        polygon_rules = get_polygon_rules(declarations)
         
         self.assertEqual(color(0x00, 0x00, 0x00), polygon_rules[0].symbolizers[0].color)
         self.assertEqual(0.5, polygon_rules[0].symbolizers[0].opacity)
 
-        line_rules = get_line_rules(declarations, target_dir=self.tmpdir)
+        line_rules = get_line_rules(declarations)
         
         self.assertEqual(color(0x00, 0x00, 0x00), line_rules[0].symbolizers[0].color)
         self.assertEqual(2.0, line_rules[0].symbolizers[0].width)
@@ -1355,7 +1362,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         text_rule_groups = get_text_rule_groups(declarations)
         
@@ -1396,7 +1403,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         text_rule_groups = get_text_rule_groups(declarations)
         
@@ -1419,15 +1426,15 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
-        point_rules = get_point_rules(declarations, target_dir=self.tmpdir)
+        point_rules = get_point_rules(declarations, self.dirs)
         
         self.assertEqual(boolean(True), point_rules[0].symbolizers[0].allow_overlap)
 
-        polygon_pattern_rules = get_polygon_pattern_rules(declarations, target_dir=self.tmpdir)
+        polygon_pattern_rules = get_polygon_pattern_rules(declarations, self.dirs)
 
-        line_pattern_rules = get_line_pattern_rules(declarations, target_dir=self.tmpdir)
+        line_pattern_rules = get_line_pattern_rules(declarations, self.dirs)
 
     def testStyleRules14(self):
         s = """
@@ -1459,9 +1466,9 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
-        shield_rule_groups = get_shield_rule_groups(declarations, target_dir=self.tmpdir)
+        shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
         self.assertEqual('Helvetica', shield_rule_groups['just_text'][0].symbolizers[0].face_name)
         self.assertEqual(12, shield_rule_groups['just_text'][0].symbolizers[0].size)
@@ -1476,11 +1483,105 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['both'][0].symbolizers[0].color)
         self.assertEqual(5, shield_rule_groups['both'][0].symbolizers[0].min_distance)
 
+class DataSourcesTests(unittest.TestCase):
+
+    def gen_section(self, name, **kwargs):
+        return """[%s]\n%s\n""" % (name, "\n".join(("%s=%s" % kwarg for kwarg in kwargs.items())))
+
+    def testSimple1(self):
+        cdata = """
+[simple]
+type=shape
+file=foo.shp
+garbage=junk
+"""
+        dss = DataSources(None, None)
+        dss.add_config(cdata, __file__)
+        self.assertTrue(dss.sources['simple'] != None)
+
+        ds = dss.sources['simple']
+        self.assertTrue(ds['parameters'] != None)
+        p = ds['parameters']
+        self.assertEqual(p['type'],'shape')
+        self.assertEqual(p['file'],'foo.shp')
+        self.assertTrue(p.get('garbage') == None)
+
+        self.assertRaises(Exception, dss.add_config, (self.gen_section("foo", encoding="bar"), __file__))
+    
+    def testChain1(self):
+        dss = DataSources(None, None)
+        dss.add_config(self.gen_section("t1", type="shape", file="foo"), __file__)
+        dss.add_config(self.gen_section("t2", type="shape", file="foo"), __file__)
+        self.assertTrue(dss.get('t1') != None)
+        self.assertTrue(dss.get('t2') != None)
+
+    def testDefaults1(self):
+        dss = DataSources(None, None)
+        sect = self.gen_section("DEFAULT", var="cows") + "\n" + self.gen_section("t1", type="shape", file="%(var)s") 
+        #dss.add_config(self.gen_section("DEFAULT", var="cows"), __file__)
+        #dss.add_config(self.gen_section("t1", type="shape", file="%(var)s"), __file__)
+        dss.add_config(sect, __file__)
+
+        self.assertEqual(dss.get('t1')['parameters']['file'], "cows")
+
+    def testLocalDefaultsFromString(self):
+        dss = DataSources(None, None)
+        dss.set_local_cfg_data(self.gen_section("DEFAULT", var="cows2"))
+        sect = self.gen_section("DEFAULT", var="cows") + "\n" + self.gen_section("t1", type="shape", file="%(var)s") 
+        dss.add_config(sect, __file__)
+        dss.finalize()
+        self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
+
+    def testLocalDefaultsFromFile(self):
+        cfgn = tempfile.NamedTemporaryFile('w')
+        cfg = open(cfgn.name, 'w')
+        cfg.write(self.gen_section("DEFAULT", var="cows2"))
+        cfg.close()
+        self.assertTrue(os.path.exists(cfg.name))
+        dss = DataSources(__file__, cfg.name)
+        sect = self.gen_section("DEFAULT", var="cows") + "\n" + self.gen_section("t1", type="shape", file="%(var)s") 
+        dss.add_config(sect, __file__)
+        self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
+
+    def testBase1(self):
+        dss = DataSources(None, None)
+        dss.add_config(self.gen_section("base", type="shape", encoding="latin1"), __file__)
+        dss.add_config(self.gen_section("t2", template="base", file="foo"), __file__)
+        self.assertTrue("base" in dss.templates)
+        self.assertEqual(dss.get('t2')['template'], 'base')
+        self.assertEqual(dss.get('t2')['parameters']['file'], 'foo')
+
+    def testSRS(self):
+        dss = DataSources(None, None)
+        dss.add_config(self.gen_section("s", type="shape", layer_srs="epsg:4326"), __file__)
+        dss.add_config(self.gen_section("g", type="shape", layer_srs="epsg:900913"), __file__)
+        self.assertEqual(dss.get("s")['layer_srs'], dss.PROJ4_PROJECTIONS['epsg:4326'])
+        self.assertEqual(dss.get("g")['layer_srs'], dss.PROJ4_PROJECTIONS['epsg:900913'])
+        self.assertRaises(Exception, dss.add_config, (self.gen_section("s", type="shape", layer_srs="epsg:43223432423"), __file__))
+
+    def testDataTypes(self):
+        dss = DataSources(None, None)
+        dss.add_config(self.gen_section("s",
+                                        type="postgis",
+                                        cursor_size="5",
+                                        estimate_extent="yes"), __file__)
+        self.assertEqual(dss.get("s")['parameters']['cursor_size'], 5)
+        self.assertEqual(dss.get("s")['parameters']['estimate_extent'], True)
+
+        self.assertRaises(Exception,
+                          dss.add_config,
+                          (self.gen_section("f",
+                                            type="postgis",
+                                            cursor_size="5.xx",
+                                            estimate_extent="yes"), __file__))
+
+
 class CompileXMLTests(unittest.TestCase):
 
     def setUp(self):
         # a directory for all the temp files to be created below
-        self.tmpdir = tempfile.mkdtemp(prefix='cascadenik-tests-')
+        self.tmpdir = os.path.realpath(tempfile.mkdtemp(prefix='cascadenik-tests-'))
+        self.dirs = Directories(self.tmpdir, self.tmpdir, os.getcwd())
 
     def tearDown(self):
         # destroy the above-created directory
@@ -1510,16 +1611,86 @@ class CompileXMLTests(unittest.TestCase):
                         text-fill: #f90;
                     }
                 </Stylesheet>
-                <Layer>
-                    <Datasource>
-                        <Parameter name="plugin_name">example</Parameter>
+                <Datasource name="template">
+                    <Parameter name="type">shape</Parameter>
+                    <Parameter name="encoding">latin1</Parameter>
+                    <Parameter name="base">data</Parameter>
+                </Datasource>
+                <Layer srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource base="template">
+                        <Parameter name="file">test.shp</Parameter>
+                    </Datasource>
+                </Layer>
+                <Layer srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource base="template">
+                        <Parameter name="file">test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
         """
-        map = compile(s, dir=self.tmpdir)
+        self.doCompile1(s)
+
+        # run the same test with a datasourcesconfig
+        dscfg = """<?xml version="1.0"?>
+            <Map>
+                <Stylesheet>
+                    Map { map-bgcolor: #fff; }
+                    
+                    Layer
+                    {
+                        polygon-fill: #999;
+                        line-color: #fff;
+                        line-width: 1;
+                        outline-color: #000;
+                        outline-width: 1;
+                    }
+                    
+                    Layer name
+                    {
+                        text-face-name: 'Comic Sans';
+                        text-size: 14;
+                        text-fill: #f90;
+                    }
+                </Stylesheet>
+                <DataSourcesConfig>
+[DEFAULT]
+default_layer_srs = epsg:4326
+other_srs = epsg:4326
+
+[template1]
+type=shape
+layer_srs=%(default_layer_srs)s
+encoding=latin1
+base=data
+
+[test_shp]
+file=test.shp
+template=template1
+
+[test_shp_2]
+type=shape
+encoding=latin1
+base=data
+layer_srs=%(other_srs)s
+                </DataSourcesConfig>
+                <Layer source_name="test_shp" />
+                <Layer source_name="test_shp_2" />
+            </Map>
+        """
+        map = self.doCompile1(dscfg)        
+        self.assertEqual(map.layers[1].srs, '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
         
-        self.assertEqual(1, len(map.layers))
+        cfgn = tempfile.NamedTemporaryFile('w')
+        cfg = open(cfgn.name, 'w')
+        cfg.write("[DEFAULT]\nother_srs=epsg:900913")
+        cfg.close()
+        map = self.doCompile1(dscfg, datasources_cfg=cfg.name)
+        self.assertEqual(map.layers[1].srs, '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs')
+        
+    def doCompile1(self, s, **kwargs):
+        map = compile(s, self.dirs, **kwargs)
+        
+        self.assertEqual(2, len(map.layers))
         self.assertEqual(3, len(map.layers[0].styles))
 
         self.assertEqual(1, len(map.layers[0].styles[0].rules))
@@ -1541,6 +1712,12 @@ class CompileXMLTests(unittest.TestCase):
 
         self.assertEqual('Comic Sans', map.layers[0].styles[2].rules[0].symbolizers[0].face_name)
         self.assertEqual(14, map.layers[0].styles[2].rules[0].symbolizers[0].size)
+
+        self.assertEqual(map.layers[0].srs, '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+        self.assertEqual(os.path.basename(map.layers[0].datasource.parameters['file']), 'test.shp')
+        self.assertEqual(map.layers[0].datasource.parameters['encoding'], 'latin1')
+        self.assertEqual(map.layers[0].datasource.parameters['type'], 'shape')
+        return map
 
     def testCompile2(self):
         """
@@ -1567,14 +1744,20 @@ class CompileXMLTests(unittest.TestCase):
                         text-fill: #f90;
                     }
                 </Stylesheet>
+                <Datasource name="template">
+                     <Parameter name="type">shape</Parameter>
+                     <Parameter name="encoding">latin1</Parameter>
+                </Datasource>
+
                 <Layer>
-                    <Datasource>
-                        <Parameter name="plugin_name">example</Parameter>
+                    <Datasource base="template">
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">data/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
         """
-        map = compile(s, dir=self.tmpdir)
+        map = compile(s, self.dirs)
         
         mmap = mapnik.Map(640, 480)
         map.to_mapnik(mmap)
@@ -1588,7 +1771,7 @@ class CompileXMLTests(unittest.TestCase):
         
         #print open(path, 'r').read()
         os.unlink(path)
-        
+
         self.assertEqual(3, len(map_el.findall('Style')))
         self.assertEqual(1, len(map_el.findall('Layer')))
         self.assertEqual(3, len(map_el.find('Layer').findall('StyleName')))
@@ -1606,12 +1789,18 @@ class CompileXMLTests(unittest.TestCase):
             if style_el.get('name').startswith('text style '):
                 self.assertEqual(1, len(style_el.find('Rule').findall('TextSymbolizer')))
 
+        self.assertEqual(len(map_el.find("Layer").findall('Datasource')), 1)
+        params = dict(((p.get('name'), p.text) for p in map_el.find('Layer').find('Datasource').findall('Parameter')))
+        self.assertEqual(params['type'], 'shape')
+        self.assertEqual(params['file'][-13:], 'data/test.shp')
+        self.assertEqual(params['encoding'], 'latin1')
+
     def testCompile3(self):
         """
         """
         map = output.Map(layers=[
             output.Layer('this',
-            output.Datasource(), [
+            output.Datasource(type="shape",file="data/test.shp"), [
                 output.Style('a style', [
                     output.Rule(
                         output.MinScaleDenominator(1),
@@ -1623,7 +1812,7 @@ class CompileXMLTests(unittest.TestCase):
                     ])
                 ]),
             output.Layer('that',
-            output.Datasource(), [
+            output.Datasource(type="shape",file="data/test.shp"), [
                 output.Style('another style', [
                     output.Rule(
                         output.MinScaleDenominator(101),
@@ -1721,16 +1910,22 @@ class CompileXMLTests(unittest.TestCase):
                         shield-character-spacing: 18;
                     }
                 </Stylesheet>
+                <Datasource name="template">
+                     <Parameter name="type">shape</Parameter>
+                     <Parameter name="encoding">latin1</Parameter>
+                </Datasource>
+
                 <Layer>
-                    <Datasource>
-                        <Parameter name="plugin_name">example</Parameter>
+                    <Datasource base="template">
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">data/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
         """
         mmap = mapnik.Map(640, 480)
-        ms = compile(s, target_dir=self.tmpdir)
-        ms.to_mapnik(mmap)
+        ms = compile(s, self.dirs)
+        ms.to_mapnik(mmap, self.dirs)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
 
     def testCompile5(self):
@@ -1741,16 +1936,321 @@ class CompileXMLTests(unittest.TestCase):
                 </Stylesheet>
                 <Layer>
                     <Datasource>
-                        <Parameter name="plugin_name">example</Parameter>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">data/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
         """.encode('utf-8')
         mmap = mapnik.Map(640, 480)
-        ms = compile(s, target_dir=self.tmpdir)
-        ms.to_mapnik(mmap)
+        ms = compile(s, self.dirs)
+        ms.to_mapnik(mmap, self.dirs)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
+
+class RelativePathTests(unittest.TestCase):
+
+    def setUp(self):
+        # directories for all the temp files to be created below
+        self.tmpdir1 = os.path.realpath(tempfile.mkdtemp(prefix='cascadenik-tests1-'))
+        self.tmpdir2 = os.path.realpath(tempfile.mkdtemp(prefix='cascadenik-tests2-'))
+
+        basepath = os.path.dirname(__file__)
         
+        paths = ('paths-test2.mml',
+                 'paths-test2.mss',
+                 'mission-points/mission-points.dbf',
+                 'mission-points/mission-points.prj',
+                 'mission-points/mission-points.shp',
+                 'mission-points/mission-points.shx',
+                 'mission-points.zip',
+                 'purple-point.png')
+
+        for path in paths:
+            href = urlparse.urljoin('http://cascadenik-sampledata.s3.amazonaws.com', path)
+            path = os.path.join(self.tmpdir1, os.path.basename(path))
+            file = open(path, 'w')
+            file.write(urllib.urlopen(href).read())
+            file.close()
+
+    def tearDown(self):
+        # destroy the above-created directories
+        shutil.rmtree(self.tmpdir1)
+        shutil.rmtree(self.tmpdir2)
+
+    def testLocalizedPaths(self):
+        
+        dirs = Directories(self.tmpdir1, self.tmpdir1, self.tmpdir1)
+
+        mml_path = dirs.output + '/style.mml'
+        mml_file = open(mml_path, 'w')
+        
+        print >> mml_file, """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">http://cascadenik-sampledata.s3.amazonaws.com/mission-points.zip</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """
+        
+        mml_file.close()
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert not os.path.isabs(img_path)
+        assert os.path.exists(os.path.join(dirs.output, img_path))
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert not os.path.isabs(shp_path)
+        assert os.path.exists(os.path.join(dirs.output, shp_path))
+
+    def testSplitPaths(self):
+        
+        dirs = Directories(self.tmpdir1, self.tmpdir2, self.tmpdir1)
+
+        mml_path = dirs.output + '/style.mml'
+        mml_file = open(mml_path, 'w')
+        
+        print >> mml_file, """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">http://cascadenik-sampledata.s3.amazonaws.com/mission-points.zip</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """
+        
+        mml_file.close()
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert os.path.realpath(img_path).startswith(dirs.cache)
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert os.path.realpath(shp_path).startswith(dirs.cache)
+        assert os.path.exists(shp_path)
+
+    def testRelativePaths(self):
+    
+        dirs = Directories(self.tmpdir1, self.tmpdir1, self.tmpdir1)
+        
+        mml_path = dirs.output + '/style.mml'
+        mml_file = open(mml_path, 'w')
+        
+        print >> mml_file, """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">mission-points</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """
+        
+        mml_file.close()
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert not os.path.isabs(img_path)
+        assert os.path.exists(os.path.join(dirs.output, img_path))
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert not os.path.isabs(shp_path), shp_path
+        assert os.path.exists(os.path.join(dirs.output, shp_path))
+
+    def testDistantPaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, self.tmpdir1)
+        
+        mml_path = dirs.output + '/style.mml'
+        mml_file = open(mml_path, 'w')
+        
+        print >> mml_file, """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">mission-points</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """
+        
+        mml_file.close()
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert os.path.realpath(img_path).startswith(dirs.source[7:]), str((img_path, dirs.source[7:]))
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert os.path.realpath(shp_path).startswith(dirs.source[7:]), str((shp_path, dirs.source[7:]))
+        assert os.path.exists(shp_path)
+
+    def testAbsolutePaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, self.tmpdir1)
+        
+        mml_path = dirs.output + '/style.mml'
+        mml_file = open(mml_path, 'w')
+        
+        print >> mml_file, """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("%s/purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">%s/mission-points</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """ % (self.tmpdir1, self.tmpdir1)
+        
+        mml_file.close()
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert os.path.realpath(img_path).startswith(dirs.source[7:])
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert os.path.realpath(shp_path).startswith(dirs.source[7:])
+        assert os.path.exists(shp_path)
+
+    def testRemotePaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
+        
+        mml_href = 'http://cascadenik-sampledata.s3.amazonaws.com/paths-test.mml'
+        
+        map = compile(mml_href, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert not os.path.isabs(img_path)
+        assert os.path.exists(os.path.join(dirs.output, img_path))
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert not os.path.isabs(shp_path)
+        assert os.path.exists(os.path.join(dirs.output, shp_path))
+
+    def testRemoteLinkedSheetPaths(self):
+    
+        dirs = Directories(self.tmpdir1, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
+        
+        mml_href = 'http://cascadenik-sampledata.s3.amazonaws.com/paths-test2.mml'
+        
+        map = compile(mml_href, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert os.path.realpath(img_path).startswith(dirs.cache), str((img_path, dirs.cache))
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert os.path.realpath(shp_path).startswith(dirs.cache), str((shp_path, dirs.cache))
+        assert os.path.exists(shp_path)
+
+    def testLocalLinkedSheetPaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, self.tmpdir1)
+        
+        mml_path = os.path.join(self.tmpdir1, 'paths-test2.mml')
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert os.path.realpath(img_path).startswith(dirs.source[7:]), str((img_path, dirs.source[7:]))
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert not os.path.isabs(shp_path)
+        assert os.path.exists(os.path.join(dirs.output, shp_path))
+
+    def testSplitLinkedSheetPaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir1, self.tmpdir1)
+        
+        mml_path = os.path.join(self.tmpdir1, 'paths-test2.mml')
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert os.path.realpath(img_path).startswith(dirs.source[7:]), str((img_path, dirs.source[7:]))
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert os.path.realpath(shp_path).startswith(dirs.cache), str((shp_path, dirs.cache))
+        assert os.path.exists(shp_path)
+
+    def testReflexivePaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
+        
+        mml_data = """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("file://%s/purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">file://%s/mission-points</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """ % (self.tmpdir1, self.tmpdir1)
+        
+        map = compile(mml_data, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert os.path.realpath(img_path).startswith(self.tmpdir1), "%s %s" % (img_path, self.tmpdir1)
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert os.path.realpath(shp_path).startswith(self.tmpdir1), "%s %s" % (shp_path, self.tmpdir1)
+        assert os.path.exists(shp_path)
         
 if __name__ == '__main__':
     unittest.main()
