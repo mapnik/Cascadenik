@@ -1545,10 +1545,12 @@ class StyleRuleTests(unittest.TestCase):
 
         shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
-        self.assertEqual('Helvetica', shield_rule_groups['just_text'][0].symbolizers[0].face_name)
-        self.assertEqual(12, shield_rule_groups['just_text'][0].symbolizers[0].size)
-        self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['just_text'][0].symbolizers[0].color)
-        self.assertEqual(5, shield_rule_groups['just_text'][0].symbolizers[0].min_distance)
+        # Mapnik does not allow for ShieldSymbolizer with only test (at least as of 0.7.2)
+        # so skipping this test...
+        #self.assertEqual('Helvetica', shield_rule_groups['just_text'][0].symbolizers[0].face_name)
+        #self.assertEqual(12, shield_rule_groups['just_text'][0].symbolizers[0].size)
+        #self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['just_text'][0].symbolizers[0].color)
+        #self.assertEqual(5, shield_rule_groups['just_text'][0].symbolizers[0].min_distance)
 
         self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].width)
         self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].height)
