@@ -59,6 +59,7 @@ class Map:
                     mmap.append_style(style.name, sty)
 
                 lay = mapnik.Layer(layer.name)
+                lay.datasource = layer.datasource.to_mapnik()
                 lay.srs = layer.srs or lay.srs
                 lay.minzoom = layer.minzoom or lay.minzoom
                 lay.maxzoom = layer.maxzoom or lay.maxzoom
@@ -124,7 +125,9 @@ class Datasource:
             self.parameters[param] = value
 
     def to_mapnik(self):
-        return mapnik.Datasource(**self.parameters)
+        kwargs = self.parameters.copy()
+        kwargs['bind'] = False # prevent early-binding
+        return mapnik.Datasource(**kwargs)
 
 class MinScaleDenominator:
     def __init__(self, value):
