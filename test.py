@@ -1509,15 +1509,6 @@ class StyleRuleTests(unittest.TestCase):
 
     def testStyleRules14(self):
         s = """
-            Layer just_text
-            {
-                shield-face-name: 'Helvetica';
-                shield-size: 12;
-                
-                shield-fill: #f00;
-                shield-min-distance: 5;
-            }
-
             Layer just_image
             {
                 shield-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png');
@@ -1545,16 +1536,13 @@ class StyleRuleTests(unittest.TestCase):
 
         shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
-        # Mapnik does not allow for ShieldSymbolizer with only test (at least as of 0.7.2)
-        # so skipping this test...
-        #self.assertEqual('Helvetica', shield_rule_groups['just_text'][0].symbolizers[0].face_name)
-        #self.assertEqual(12, shield_rule_groups['just_text'][0].symbolizers[0].size)
-        #self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['just_text'][0].symbolizers[0].color)
-        #self.assertEqual(5, shield_rule_groups['just_text'][0].symbolizers[0].min_distance)
-
-        self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].width)
-        self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].height)
-        self.assertEqual(5, shield_rule_groups['just_image'][0].symbolizers[0].min_distance)
+        # Also Mapnik's python bindings should be able to allow a ShieldSymbolizer without text
+        # put this is not properly exposed in the latest release (0.7.1)
+        # So, disabling this test until we actually add support in Mapnik 0.7.x
+        # http://trac.mapnik.org/ticket/652
+        #self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].width)
+        #self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].height)
+        #self.assertEqual(5, shield_rule_groups['just_image'][0].symbolizers[0].min_distance)
         
         self.assertEqual('', shield_rule_groups['both'][0].symbolizers[0].face_name)
         self.assertEqual('SuperFonts', shield_rule_groups['both'][0].symbolizers[0].fontset)
