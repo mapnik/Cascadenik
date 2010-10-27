@@ -33,7 +33,8 @@ class Map:
         
         try:
             mmap.srs = self.srs or mmap.srs
-            mmap.bgcolor = str(self.bgcolor) or mmap.bgcolor
+            if self.bgcolor:
+                mmap.background = mapnik.Color(str(self.bgcolor))
             
             ids = (i for i in xrange(1, 999999))
             
