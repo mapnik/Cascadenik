@@ -1139,7 +1139,7 @@ def get_shield_rule_groups(declarations, dirs):
             line_spacing = values.has_key('shield-line-spacing') and values['shield-line-spacing'].value or None
             spacing = values.has_key('shield-spacing') and values['shield-spacing'].value or None
             
-            if file or ((face_name or fontset) and size):
+            if file and (face_name or fontset):
                 symbolizer = output.ShieldSymbolizer(text_name, face_name, size, 
                                             file, color, min_distance,
                                             character_spacing, line_spacing, spacing,

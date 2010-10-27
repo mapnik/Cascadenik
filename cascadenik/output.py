@@ -314,7 +314,7 @@ class ShieldSymbolizer:
         color=None, min_distance=None, character_spacing=None, \
         line_spacing=None, spacing=None, fontset=None):
         
-        assert ((face_name or fontset) and size) or file
+        assert (face_name or fontset) and file
         
         assert isinstance(name, basestring)
         assert face_name is None or isinstance(face_name, basestring)
@@ -330,7 +330,7 @@ class ShieldSymbolizer:
         self.name = safe_str(name)
         self.face_name = safe_str(face_name) or ''
         self.fontset = safe_str(fontset)
-        self.size = size
+        self.size = size or 10
         self.file = safe_str(file)
 
         self.color = color
@@ -346,10 +346,10 @@ class ShieldSymbolizer:
         sym = mapnik.ShieldSymbolizer(
                 mapnik.Expression(self.name), 
                 self.face_name, 
-                self.size, 
+                self.size or 10, 
                 mapnik.Color(str(self.color)) if self.color else None, 
                 mapnik.PathExpression(self.file))
-        
+
         sym.character_spacing = self.character_spacing or sym.character_spacing
         sym.line_spacing = self.line_spacing or sym.line_spacing
         sym.spacing = self.spacing or sym.line_spacing
