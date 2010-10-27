@@ -282,8 +282,9 @@ class TextSymbolizer:
         self.avoid_edges = avoid_edges
         self.min_distance = min_distance
         self.allow_overlap = allow_overlap
-        self.placement = placement
-        self.text_transform = text_transform
+        self.placement = mapnik.label_placement.names.get(placement,mapnik.label_placement.POINT_PLACEMENT)
+        # transform not available till mapnik2
+        #self.text_transform = text_transform
 
     def __repr__(self):
         return 'Text(%s, %s)' % (self.face_name, self.size)
@@ -303,6 +304,7 @@ class TextSymbolizer:
         sym.avoid_edges = self.avoid_edges.value if self.avoid_edges else sym.avoid_edges
         sym.minimum_distance = self.min_distance or sym.minimum_distance
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
+        sym.label_placement = self.placement
         if self.fontset:
             sym.fontset = self.fontset.value
         
