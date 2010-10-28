@@ -34,7 +34,8 @@ class Map:
         
         try:
             mmap.srs = self.srs or mmap.srs
-            mmap.bgcolor = str(self.bgcolor) or mmap.bgcolor
+            if self.bgcolor:
+                mmap.background = mapnik.Color(str(self.bgcolor))
             
             ids = (i for i in xrange(1, 999999))
             
@@ -280,7 +281,7 @@ class TextSymbolizer:
         self.avoid_edges = avoid_edges
         self.min_distance = min_distance
         self.allow_overlap = allow_overlap
-        self.placement = placement
+        self.placement = mapnik.label_placement.names.get(placement,mapnik.label_placement.POINT_PLACEMENT)
         self.text_transform = text_transform
 
     def __repr__(self):
@@ -302,6 +303,7 @@ class TextSymbolizer:
         sym.minimum_distance = self.min_distance or sym.minimum_distance
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
         sym.text_transform = self.text_transform if self.text_transform else sym.text_transform
+        sym.label_placement = self.placement
         if self.fontset:
             sym.fontset = self.fontset.value
         
