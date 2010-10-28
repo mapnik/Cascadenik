@@ -749,7 +749,7 @@ def is_applicable_selector(selector, filter):
 def get_map_attributes(declarations):
     """
     """
-    property_map = {'map-bgcolor': 'bgcolor'}    
+    property_map = {'map-bgcolor': 'background'}    
     
     return dict([(property_map[dec.property.name], dec.value.value)
                  for dec in declarations
@@ -893,18 +893,35 @@ def get_line_rules(declarations):
 def get_text_rule_groups(declarations):
     """ Given a list of declarations, return a list of output.Rule objects.
     """
-    property_map = {'text-face-name': 'face_name',
+    property_map = {'text-anchor-dx': 'anchor_dx', # does nothing
+                    'text-anchor-dy': 'anchor_dy', # does nothing
+                    'text-align': 'horizontal_alignment',
+                    'text-allow-overlap': 'allow_overlap',
+                    'text-avoid-edges': 'avoid_edges',
+                    'text-character-spacing': 'character_spacing',
+                    'text-dx': 'dx',
+                    'text-dy': 'dy',
+                    'text-face-name': 'face_name',
+                    'text-fill': 'fill',
                     'text-fontset': 'fontset',
-                    'text-size': 'size', 
-                    'text-ratio': 'text_ratio', 'text-wrap-width': 'wrap_width', 'text-spacing': 'spacing',
-                    'text-label-position-tolerance': 'label_position_tolerance','text-transform':'text_transform',
-                    'text-max-char-angle-delta': 'max_char_angle_delta', 'text-fill': 'fill',
-                    'text-halo-fill': 'halo_fill', 'text-halo-radius': 'halo_radius',
-                    'text-dx': 'dx', 'text-dy': 'dy', 'text-character-spacing': 'character_spacing',
+                    'text-force-odd-labels': 'force_odd_labels',
+                    'text-halo-fill': 'halo_fill',
+                    'text-halo-radius': 'halo_radius',
+                    'text-justify-align': 'justify_alignment',
+                    'text-label-position-tolerance': 'label_position_tolerance',
                     'text-line-spacing': 'line_spacing',
-                    'text-avoid-edges': 'avoid_edges', 'text-min-distance': 'min_distance',
-                    'text-allow-overlap': 'allow_overlap', 'text-placement': 'placement',
-                    'text-meta-output': 'meta-output', 'text-meta-writer': 'meta-writer'}
+                    'text-max-char-angle-delta': 'max_char_angle_delta',
+                    'text-min-distance': 'minimum_distance',
+                    'text-placement': 'label_placement',
+                    'text-ratio': 'text_ratio',
+                    'text-size': 'size', 
+                    'text-spacing': 'spacing',
+                    'text-transform': 'text_convert',
+                    'text-vertical-align': 'vertical_alignment',
+                    'text-wrap-width': 'wrap_width',
+                    'text-meta-output': 'meta-output',
+                    'text-meta-writer': 'meta-writer'
+                    }
 
     property_names = property_map.keys()
     
@@ -940,7 +957,7 @@ def get_text_rule_groups(declarations):
             
             ratio = values.has_key('text-ratio') and values['text-ratio'].value or None
             wrap_width = values.has_key('text-wrap-width') and values['text-wrap-width'].value or None
-            spacing = values.has_key('text-spacing') and values['text-spacing'].value or None
+            label_spacing = values.has_key('text-spacing') and values['text-spacing'].value or None
             label_position_tolerance = values.has_key('text-label-position-tolerance') and values['text-label-position-tolerance'].value or None
             max_char_angle_delta = values.has_key('text-max-char-angle-delta') and values['text-max-char-angle-delta'].value or None
             halo_color = values.has_key('text-halo-fill') and values['text-halo-fill'].value or None
@@ -948,17 +965,27 @@ def get_text_rule_groups(declarations):
             dx = values.has_key('text-dx') and values['text-dx'].value or None
             dy = values.has_key('text-dy') and values['text-dy'].value or None
             avoid_edges = values.has_key('text-avoid-edges') and values['text-avoid-edges'].value or None
-            min_distance = values.has_key('text-min-distance') and values['text-min-distance'].value or None
+            minimum_distance = values.has_key('text-min-distance') and values['text-min-distance'].value or None
             allow_overlap = values.has_key('text-allow-overlap') and values['text-allow-overlap'].value or None
-            placement = values.has_key('text-placement') and values['text-placement'].value or None
+            label_placement = values.has_key('text-placement') and values['text-placement'].value or None
             text_transform = values.has_key('text-transform') and values['text-transform'].value or None
+            anchor_dx = values.has_key('text-anchor-dx') and values['text-anchor-dx'].value or None
+            anchor_dy = values.has_key('text-anchor-dy') and values['text-anchor-dy'].value or None
+            horizontal_alignment = values.has_key('text-horizontal-align') and values['text-horizontal-align'].value or None
+            vertical_alignment = values.has_key('text-vertical-align') and values['text-vertical-align'].value or None
+            justify_alignment = values.has_key('text-justify-align') and values['text-justify-align'].value or None
+            force_odd_labels = values.has_key('text-force-odd-labels') and values['text-force-odd-labels'].value or None
+            line_spacing = values.has_key('text-line-spacing') and values['text-line-spacing'].value or None
+            character_spacing = values.has_key('text-character-spacing') and values['text-character-spacing'].value or None
             
             if (face_name or fontset) and size and color:
                 symbolizer = output.TextSymbolizer(text_name, face_name, size, color, \
-                                              wrap_width, spacing, label_position_tolerance, \
+                                              wrap_width, label_spacing, label_position_tolerance, \
                                               max_char_angle_delta, halo_color, halo_radius, dx, dy, \
-                                              avoid_edges, min_distance, allow_overlap, placement, \
-                                              text_transform, fontset=fontset)
+                                              avoid_edges, minimum_distance, allow_overlap, label_placement, \
+                                              line_spacing, character_spacing, text_transform, fontset,
+                                              anchor_dx, anchor_dy,horizontal_alignment, \
+                                              vertical_alignment, justify_alignment, force_odd_labels)
             
                 rules.append(make_rule(filter, symbolizer))
         
@@ -1019,7 +1046,7 @@ def postprocess_symbolizer_image_file(file_href, dirs):
     # of image sizes and jpeg reading support...
     # http://trac.mapnik.org/ticket/508
 
-    mapnik_auto_image_support = (MAPNIK_VERSION >= 700)
+    mapnik_auto_image_support = (MAPNIK_VERSION >= 701)
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
     
     file_href = urljoin(dirs.source.rstrip('/')+'/', file_href)
@@ -1046,13 +1073,16 @@ def postprocess_symbolizer_image_file(file_href, dirs):
 
     image_name, ext = splitext(path)
     
-    if ext in ('.png', 'tif', 'tiff'):
+    if ext in ('.png', '.tif', '.tiff'):
         output_ext = ext
     else:
         output_ext = '.png'
-
+    
     # new local file name
     dest_file = '%s%s' % (image_name, output_ext)
+    
+    if not os.path.exists(dest_file):
+        img.save(dest_file,'PNG')
 
     msg('Destination file: %s' % dest_file)
 
@@ -1068,7 +1098,7 @@ def get_shield_rule_groups(declarations, dirs):
                     'shield-size': 'size', 
                     'shield-fill': 'fill', 'shield-character-spacing': 'character_spacing',
                     'shield-line-spacing': 'line_spacing',
-                    'shield-spacing': 'spacing', 'shield-min-distance': 'min_distance',
+                    'shield-spacing': 'spacing', 'shield-min-distance': 'minimum_distance',
                     'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height',
                     'shield-meta-output': 'meta-output', 'shield-meta-writer': 'meta-writer'}
 
@@ -1112,7 +1142,7 @@ def get_shield_rule_groups(declarations, dirs):
             height = values.has_key('shield-height') and values['shield-height'].value or height
             
             color = values.has_key('shield-fill') and values['shield-fill'].value or None
-            min_distance = values.has_key('shield-min-distance') and values['shield-min-distance'].value or None
+            minimum_distance = values.has_key('shield-min-distance') and values['shield-min-distance'].value or None
             
             character_spacing = values.has_key('shield-character-spacing') and values['shield-character-spacing'].value or None
             line_spacing = values.has_key('shield-line-spacing') and values['shield-line-spacing'].value or None
@@ -1120,7 +1150,7 @@ def get_shield_rule_groups(declarations, dirs):
             
             if file and (face_name or fontset):
                 symbolizer = output.ShieldSymbolizer(text_name, face_name, size, file, filetype, 
-                                            width, height, color, min_distance,
+                                            width, height, color, minimum_distance,
                                             character_spacing, line_spacing, spacing,
                                             fontset=fontset)
             
