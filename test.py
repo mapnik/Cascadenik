@@ -569,7 +569,7 @@ class SelectorParseTests(unittest.TestCase):
         
         self.assertEqual(str, type(text_rule_groups.keys()[0]))
         self.assertEqual(str, type(text_rule_groups['CODE'][0].symbolizers[0].face_name))
-        self.assertEqual(str, type(text_rule_groups['CODE'][0].symbolizers[0].placement))
+        self.assertEqual(mapnik.label_placement.line, text_rule_groups['CODE'][0].symbolizers[0].placement)
 
 class FilterCombinationTests(unittest.TestCase):
 
@@ -1382,7 +1382,7 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(boolean(1), text_rule_groups['label'][0].symbolizers[0].avoid_edges)
         self.assertEqual(5, text_rule_groups['label'][0].symbolizers[0].min_distance)
         self.assertEqual(boolean(0), text_rule_groups['label'][0].symbolizers[0].allow_overlap)
-        self.assertEqual('point', text_rule_groups['label'][0].symbolizers[0].placement)
+        self.assertEqual(mapnik.label_placement.point, text_rule_groups['label'][0].symbolizers[0].placement)
 
     def testStyleRules12a(self):
         s = """
