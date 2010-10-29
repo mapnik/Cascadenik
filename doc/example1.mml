@@ -3,7 +3,7 @@
     <Stylesheet><![CDATA[
         Map
         {
-            map-bgcolor: "steelblue";
+            map-bgcolor: #69f;
         }
 
         Layer
