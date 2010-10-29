@@ -1013,7 +1013,12 @@ def locally_cache_remote_file(href, dir):
         t = localtime(os.stat(local_path).st_mtime)
         headers['If-Modified-Since'] = strftime('%a, %d %b %Y %H:%M:%S %Z', t)
     
-    conn = HTTPConnection(host, timeout=5)
+    if sys.hexversion >= 0x020600F0:
+        conn = HTTPConnection(host, timeout=5)
+    else:
+        import socket
+        socket.setdefaulttimeout(5)
+        conn = HTTPConnection(host)    
     conn.request('GET', remote_path, headers=headers)
     resp = conn.getresponse()
     
