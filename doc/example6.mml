@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Map srs="+init=epsg:900913">
+<Map srs="+init=epsg:3857">
     <Stylesheet><![CDATA[
         *
         {
@@ -15,10 +15,10 @@
 
     ]]></Stylesheet>
 
-    <Layer class="imagery" srs="+init=epsg:900913">
+    <Layer class="imagery" srs="+init=epsg:3857">
         <Datasource>
             <Parameter name="type">gdal</Parameter>
-            <Parameter name="file">test.tif</Parameter>
+            <Parameter name="file">../data/test.tif</Parameter>
         </Datasource>
     </Layer>
 </Map>
