@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+    <Stylesheet>
+        Map { map-bgcolor: #ccc; }
+    </Stylesheet>
+    <Stylesheet src="example.mss"/>
+
+    <DataSourcesConfig src="example.cfg" />
+    <DataSourcesConfig><![CDATA[
+[DEFAULT]
+my_srs = epsg:4326
+
+[world_admin0]
+type=shape
+file=http://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/110m-admin-0-countries.zip
+layer_srs=%(my_srs)s
+
+]]> </DataSourcesConfig>
+    <!-- Layers -->
+    <Layer id="world-borders" source_name="world_land" />
+    <!-- Supposed we want the same treatment for this other file -->
+    <Layer id="world-borders" source_name="world_admin0" />
+</Map>
