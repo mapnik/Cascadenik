@@ -1599,20 +1599,18 @@ garbage=junk
         self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
 
     def testLocalDefaultsFromFile(self):
-        cfg = tempfile.NamedTemporaryFile('w', delete=False)
+        handle, cfgpath = tempfile.mkstemp()
+        os.close(handle)
+
         try:
-            cfg.write(self.gen_section("DEFAULT", var="cows2"))
-            cfg.close()
-            self.assertTrue(os.path.exists(cfg.name))
-            dss = DataSources(__file__, cfg.name)
+            open(cfgpath, 'w').write(self.gen_section("DEFAULT", var="cows2"))
+            self.assertTrue(os.path.exists(cfgpath))
+            dss = DataSources(__file__, cfgpath)
             sect = self.gen_section("DEFAULT", var="cows") + "\n" + self.gen_section("t1", type="shape", file="%(var)s") 
             dss.add_config(sect, __file__)
             self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
         finally:
-            try:
-                os.unlink(cfg.name)
-            except: pass
-
+            os.unlink(cfgpath)
 
     def testBase1(self):
         dss = DataSources(None, None)
@@ -1751,18 +1749,15 @@ layer_srs=%(other_srs)s
         map = self.doCompile1(dscfg)        
         self.assertEqual(map.layers[1].srs, '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
         
-        cfg = tempfile.NamedTemporaryFile('w', delete=False)
+        handle, cfgpath = tempfile.mkstemp()
+        os.close(handle)
+
         try:
-            cfg.write("[DEFAULT]\nother_srs=epsg:900913")
-            cfg.close()
-            map = self.doCompile1(dscfg, datasources_cfg=cfg.name)
+            open(cfgpath, 'w').write("[DEFAULT]\nother_srs=epsg:900913")
+            map = self.doCompile1(dscfg, datasources_cfg=cfgpath)
             self.assertEqual(map.layers[1].srs, '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs')
         finally:
-            try:
-                os.unlink(cfg.name)
-            except: pass
-
-        
+            os.unlink(cfgpath)
         
     def doCompile1(self, s, **kwargs):
         map = compile(s, self.dirs, **kwargs)
