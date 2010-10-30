@@ -125,9 +125,11 @@ class Directories:
         
         if scheme == 'http':
             self.source = source
-
+        elif os.name == 'nt':
+            self.source = os.path.realpath(path)
         elif scheme in ('file', ''):
             self.source = 'file://' + os.path.realpath(path)
+                
 
     def output_path(self, path):
         """ Modify a path so it fits expectations.
@@ -138,8 +140,10 @@ class Directories:
         if os.path.isabs(path):
             if self.output == self.cache:
                 # worth seeing if an absolute path can be avoided
-                path = os.path.relpath(path, self.output)
-
+                if sys.hexversion >= 0x020600F0:
+                    path = os.path.relpath(path, self.output)
+                else: # only python 2.6 has relpath function
+                    return os.path.realpath(path)
             else:
                 return os.path.realpath(path)
     
@@ -612,8 +616,13 @@ def fetch_embedded_or_remote_src(elem, dirs):
     """
     """
     if 'src' in elem.attrib:
-        src_href = urljoin(dirs.source.rstrip('/')+'/', elem.attrib['src'])
-        return urllib.urlopen(src_href).read().decode(DEFAULT_ENCODING), src_href
+        scheme, host, remote_path, p, q, f = urlparse(dirs.source)
+        if not scheme == 'http' and os.name == 'nt':
+            src_href = os.path.realpath(os.path.join(dirs.source, elem.attrib['src']))
+            return open(src_href,'rb').read().decode(DEFAULT_ENCODING), src_href
+        else:
+            src_href = urljoin(dirs.source.rstrip('/')+'/', elem.attrib['src'])
+            return urllib.urlopen(src_href).read().decode(DEFAULT_ENCODING), src_href
 
     elif elem.text:
         return elem.text, dirs.source.rstrip('/')+'/'
@@ -1059,6 +1068,15 @@ def postprocess_symbolizer_image_file(file_href, dirs):
     
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
+    elif os.name == 'nt':
+        # if we are not fetching from remote we know that
+        # on windows urljoin will have completely failed
+        # so fall back to os.path.join
+        file_href = os.path.join(dirs.source.rstrip('\\')+'\\', file_href)
+        #scheme, n, path, p, q, f = urlparse(file_href)
+        # scheme here will evaluate to 'c' for 'c:\\' making os.path.exists(path) fail
+        # so, lets just use the actual path. 
+        path = file_href
         
     if scheme not in ('file', '') or not os.path.exists(path):
         raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
@@ -1402,20 +1420,27 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
     msg('Targeting mapnik version: %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
         
     if os.path.exists(src):
-        # It's a local file, give it the appropriate file:// scheme.
-        src = 'file://' + os.path.realpath(src)
+        # It's a relative path to a local file, give it the appropriate file:// scheme.
+        if os.name == "nt":
+            src = os.path.realpath(src)
+        else:
+            src = 'file://' + os.path.realpath(src)
     
     try:
         # guessing src is a literal XML string?
         map_el = ElementTree.fromstring(src)
 
     except:
-        assert src[:7] in ('http://', 'file://'), 'urlopen() wants a scheme'
+        assert (os.name == 'nt' or src[:7] in ('http://', 'file://')), 'urlopen() wants a scheme better than %s' % src[:7]
     
         # or a URL or file location?
-        doc = ElementTree.parse(urllib.urlopen(src))
+        if os.path.exists(src):
+            doc = ElementTree.parse(src)
+        else:
+            doc = ElementTree.parse(urllib.urlopen(src))
         map_el = doc.getroot()
 
+    expand_source_declarations(map_el, dirs, datasources_cfg)
     expand_source_declarations(map_el, dirs, datasources_cfg)
     declarations = extract_declarations(map_el, dirs)
     
