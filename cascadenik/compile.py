@@ -1298,12 +1298,7 @@ def unzip_shapefile_into(zip_path, dir):
     """
     """
     hash = md5(zip_path).hexdigest()[:8]
-    if os.name == 'nt':
-      zip_file = zipfile.ZipFile(zip_path)
-    else:
-      zip_data = open(zip_path).read()
-      zip_file = zipfile.ZipFile(StringIO.StringIO(zip_data))
-    
+    zip_file = zipfile.ZipFile(zip_path)
     
     infos = zip_file.infolist()
     extensions = [splitext(info.filename)[1] for info in infos]
