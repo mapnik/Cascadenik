@@ -17,7 +17,18 @@ from re import sub, compile, MULTILINE
 from urlparse import urlparse, urljoin
 from operator import lt, le, eq, ge, gt
 from os.path import basename, splitext
-from httplib import HTTPConnection
+
+# timeout parameter to HTTPConnection was added in Python 2.6
+if sys.hexversion >= 0x020600F0:
+    from httplib import HTTPConnection
+
+else:
+    from httplib import HTTPConnection as _HTTPConnection
+    import socket
+    
+    def HTTPConnection(host, port=port, strict=strict, timeout=timeout):
+        socket.setdefaulttimeout(timeout)
+        return _HTTPConnection(host, port=port, strict=strict)
 
 # cascadenik
 import safe64
@@ -1022,12 +1033,7 @@ def locally_cache_remote_file(href, dir):
         t = localtime(os.stat(local_path).st_mtime)
         headers['If-Modified-Since'] = strftime('%a, %d %b %Y %H:%M:%S %Z', t)
     
-    if sys.hexversion >= 0x020600F0:
-        conn = HTTPConnection(host, timeout=5)
-    else:
-        import socket
-        socket.setdefaulttimeout(5)
-        conn = HTTPConnection(host)    
+    conn = HTTPConnection(host, timeout=5)
     conn.request('GET', remote_path, headers=headers)
     resp = conn.getresponse()
     
