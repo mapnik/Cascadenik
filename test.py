@@ -2093,8 +2093,8 @@ class RelativePathTests(unittest.TestCase):
 
     def setUp(self):
         # directories for all the temp files to be created below
-        self.tmpdir1 = tempfile.mkdtemp(prefix='cascadenik-tests1-')
-        self.tmpdir2 = tempfile.mkdtemp(prefix='cascadenik-tests2-')
+        self.tmpdir1 = os.path.realpath(tempfile.mkdtemp(prefix='cascadenik-tests1-'))
+        self.tmpdir2 = os.path.realpath(tempfile.mkdtemp(prefix='cascadenik-tests2-'))
 
         basepath = os.path.dirname(__file__)
         
@@ -2387,11 +2387,11 @@ class RelativePathTests(unittest.TestCase):
         map = compile(mml_data, dirs)
         
         img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
-        assert img_path.startswith(os.path.realpath(self.tmpdir1)), 'Assert that "%s" starts with "%s"' % (img_path, self.tmpdir1)
+        assert img_path.startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (img_path, self.tmpdir1)
         assert os.path.exists(img_path)
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        assert shp_path.startswith(os.path.realpath(self.tmpdir1)), 'Assert that "%s" starts with "%s"' % (shp_path, self.tmpdir1)
+        assert shp_path.startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (shp_path, self.tmpdir1)
         assert os.path.exists(shp_path)
         
 if __name__ == '__main__':
