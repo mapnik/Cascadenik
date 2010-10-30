@@ -7,6 +7,7 @@ import StringIO
 import operator
 import base64
 import os.path
+import posixpath
 import zipfile
 import shutil
 
@@ -1420,10 +1421,7 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         
     if os.path.exists(src):
         # It's a relative path to a local file, give it the appropriate file:// scheme.
-        if os.name == "nt":
-            src = os.path.realpath(src)
-        else:
-            src = 'file://' + os.path.realpath(src)
+        src = 'file://' + posixpath.realpath(src)
     
     try:
         # guessing src is a literal XML string?
