@@ -6,10 +6,7 @@ import optparse
 import cascadenik
 import tempfile
 
-try:
-    import mapnik2 as mapnik
-except ImportError:
-    import mapnik
+import mapnik
 
 from os.path import realpath, dirname
 
