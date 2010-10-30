@@ -1441,7 +1441,6 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         map_el = doc.getroot()
 
     expand_source_declarations(map_el, dirs, datasources_cfg)
-    expand_source_declarations(map_el, dirs, datasources_cfg)
     declarations = extract_declarations(map_el, dirs)
     
     # a list of layers and a sequential ID generator
