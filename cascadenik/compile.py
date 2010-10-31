@@ -38,10 +38,7 @@ import sources
 import style
 import output
 
-try:
-    import mapnik2 as mapnik
-except ImportError:
-    import mapnik
+import mapnik
 
 try:
     from PIL import Image
