@@ -26,8 +26,9 @@ else:
     from httplib import HTTPConnection as _HTTPConnection
     import socket
     
-    def HTTPConnection(host, port=port, strict=strict, timeout=timeout):
-        socket.setdefaulttimeout(timeout)
+    def HTTPConnection(host, port=None, strict=None, timeout=None):
+        if timeout:
+            socket.setdefaulttimeout(timeout)
         return _HTTPConnection(host, port=port, strict=strict)
 
 # cascadenik
