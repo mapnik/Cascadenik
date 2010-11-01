@@ -128,18 +128,15 @@ class Directories:
     """ Holder for full paths to output and cache dirs.
     """
     def __init__(self, output, cache, source):
-        self.output = os.path.realpath(output)
-        self.cache = os.path.realpath(cache)
+        self.output = posixpath.realpath(output)
+        self.cache = posixpath.realpath(cache)
         
         scheme, n, path, p, q, f = urlparse(source)
         
         if scheme == 'http':
             self.source = source
-        elif os.name == 'nt':
-            self.source = os.path.realpath(path)
         elif scheme in ('file', ''):
-            self.source = 'file://' + os.path.realpath(path)
-                
+            self.source = 'file://' + posixpath.realpath(path)
 
     def output_path(self, path):
         """ Modify a path so it fits expectations.
@@ -148,12 +145,11 @@ class Directories:
             return relative paths when output and cache directories match.
         """
         if os.path.isabs(path):
-            if self.output == self.cache:
+            if self.output == self.cache and sys.hexversion >= 0x020600F0:
                 # worth seeing if an absolute path can be avoided
-                if sys.hexversion >= 0x020600F0:
-                    path = os.path.relpath(path, self.output)
-                else: # only python 2.6 has relpath function
-                    return os.path.realpath(path)
+                # only python 2.6 has relpath function
+                path = os.path.relpath(path, self.output)
+
             else:
                 return os.path.realpath(path)
     
