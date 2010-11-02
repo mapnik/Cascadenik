@@ -43,6 +43,8 @@ def main(src_file, dest_file, **kwargs):
         ElementTree.ElementTree(doc).write(f)
         f.close()
         
+    # manually unlinking seems to be required on windows
+    os.unlink(dest_file)
     os.rename(tmp_file, dest_file)
     return 0
 
