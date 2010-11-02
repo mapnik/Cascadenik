@@ -18,11 +18,26 @@ from re import sub, compile, MULTILINE
 from urlparse import urlparse, urljoin
 from operator import lt, le, eq, ge, gt
 
+# os.path.relpath was added in Python 2.6
+def _relpath(path, start=posixpath.curdir):
+    """Return a relative version of a path"""
+    if not path:
+        raise ValueError("no path specified")
+    start_list = posixpath.abspath(start).split(posixpath.sep)
+    path_list = posixpath.abspath(path).split(posixpath.sep)
+    i = len(posixpath.commonprefix([start_list, path_list]))
+    rel_list = [posixpath.pardir] * (len(start_list)-i) + path_list[i:]
+    if not rel_list:
+        return posixpath.curdir
+    return posixpath.join(*rel_list)
+
 # timeout parameter to HTTPConnection was added in Python 2.6
 if sys.hexversion >= 0x020600F0:
     from httplib import HTTPConnection
 
 else:
+    posixpath.relpath = _relpath
+    
     from httplib import HTTPConnection as _HTTPConnection
     import socket
     
@@ -30,6 +45,8 @@ else:
         if timeout:
             socket.setdefaulttimeout(timeout)
         return _HTTPConnection(host, port=port, strict=strict)
+
+
 
 # cascadenik
 import safe64
@@ -153,9 +170,8 @@ class Directories:
         assert (path == path_name), "path_name passed to output_path must be in posix format"
         
         if posixpath.isabs(path):
-            if self.output == self.cache and sys.hexversion >= 0x020600F0:
+            if self.output == self.cache:
                 # worth seeing if an absolute path can be avoided
-                # only python 2.6 has relpath function
                 path = posixpath.relpath(path, self.output)
 
             else:
