@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map srs="+init=epsg:4326">
+    <Stylesheet><![CDATA[
+
+        Layer {
+           point-file: url("purple-point.png");
+        }
+
+    ]]></Stylesheet>
+
+    <Layer class="imagery" srs="+init=epsg:4326">
+        <Datasource>
+            <Parameter name="type">ogr</Parameter>
+            <Parameter name="layer">OGRGeoJSON</Parameter>
+            <Parameter name="file">../data/points.json</Parameter>
+        </Datasource>
+    </Layer>
+</Map>
