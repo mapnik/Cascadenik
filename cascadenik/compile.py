@@ -6,8 +6,8 @@ import tempfile
 import StringIO
 import operator
 import base64
-import os.path
 import posixpath
+import os.path as systempath
 import zipfile
 import shutil
 
@@ -17,7 +17,6 @@ from time import strftime, localtime
 from re import sub, compile, MULTILINE
 from urlparse import urlparse, urljoin
 from operator import lt, le, eq, ge, gt
-from os.path import basename, splitext
 
 # timeout parameter to HTTPConnection was added in Python 2.6
 if sys.hexversion >= 0x020600F0:
@@ -38,7 +37,9 @@ import style
 import sources
 import style
 import output
+from cascadenik.nonposix import un_posix, to_posix
 
+# mapnik
 import mapnik
 
 try:
@@ -100,7 +101,7 @@ def next_counter():
 
 def url2fs(url):
     """ encode a URL to be safe as a filename """
-    uri, extension = splitext(url)
+    uri, extension = posixpath.splitext(url)
     return safe64.dir(uri) + extension
 
 def fs2url(url):
@@ -128,34 +129,41 @@ class Directories:
     """ Holder for full paths to output and cache dirs.
     """
     def __init__(self, output, cache, source):
-        self.output = posixpath.realpath(output)
-        self.cache = posixpath.realpath(cache)
-        
-        scheme, n, path, p, q, f = urlparse(source)
+        self.output = posixpath.realpath(to_posix(output))
+        self.cache = posixpath.realpath(to_posix(cache))
+
+        scheme, n, path, p, q, f = urlparse(to_posix(source))
         
         if scheme == 'http':
             self.source = source
         elif scheme in ('file', ''):
-            self.source = 'file://' + posixpath.realpath(path)
+            # os.path (systempath) usage here is intentional...
+            self.source = 'file://' + to_posix(systempath.realpath(path))
+        assert self.source, "self.source does not exist: source was: %s" % source
 
-    def output_path(self, path):
+    def output_path(self, path_name):
         """ Modify a path so it fits expectations.
         
             Avoid returning relative paths that start with '../' and possibly
             return relative paths when output and cache directories match.
-        """
-        if os.path.isabs(path):
+        """        
+        # make sure it is a valid posix format
+        path = to_posix(path_name)
+        
+        assert (path == path_name), "path_name passed to output_path must be in posix format"
+        
+        if posixpath.isabs(path):
             if self.output == self.cache and sys.hexversion >= 0x020600F0:
                 # worth seeing if an absolute path can be avoided
                 # only python 2.6 has relpath function
-                path = os.path.relpath(path, self.output)
+                path = posixpath.relpath(path, self.output)
 
             else:
-                return os.path.realpath(path)
+                return posixpath.realpath(path)
     
         if path.startswith('../'):
-            joined = os.path.join(self.output, path)
-            return os.path.realpath(joined)
+            joined = posixpath.join(self.output, path)
+            return posixpath.realpath(joined)
     
         return path
 
@@ -623,12 +631,8 @@ def fetch_embedded_or_remote_src(elem, dirs):
     """
     if 'src' in elem.attrib:
         scheme, host, remote_path, p, q, f = urlparse(dirs.source)
-        if not scheme == 'http' and os.name == 'nt':
-            src_href = os.path.realpath(os.path.join(dirs.source, elem.attrib['src']))
-            return open(src_href,'rb').read().decode(DEFAULT_ENCODING), src_href
-        else:
-            src_href = urljoin(dirs.source.rstrip('/')+'/', elem.attrib['src'])
-            return urllib.urlopen(src_href).read().decode(DEFAULT_ENCODING), src_href
+        src_href = urljoin(dirs.source.rstrip('/')+'/', elem.attrib['src'])
+        return urllib.urlopen(src_href).read().decode(DEFAULT_ENCODING), src_href
 
     elif elem.text:
         return elem.text, dirs.source.rstrip('/')+'/'
@@ -1017,14 +1021,13 @@ def locally_cache_remote_file(href, dir):
     
     assert scheme == 'http', 'No gophers.'
 
-    head, ext = splitext(basename(remote_path))
+    head, ext = posixpath.splitext(posixpath.basename(remote_path))
     head = sub(r'[^\w\-_]', '', head)
     hash = md5(href).hexdigest()[:8]
     
     local_path = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
     headers = {}
-    
-    if os.path.exists(local_path):
+    if posixpath.exists(local_path):
         t = localtime(os.stat(local_path).st_mtime)
         headers['If-Modified-Since'] = strftime('%a, %d %b %Y %H:%M:%S %Z', t)
     
@@ -1034,7 +1037,7 @@ def locally_cache_remote_file(href, dir):
     
     if resp.status in range(200, 210):
         # hurrah, it worked
-        f = open(local_path, 'wb')
+        f = open(un_posix(local_path), 'wb')
         f.write(resp.read())
         f.close()
 
@@ -1053,7 +1056,7 @@ def locally_cache_remote_file(href, dir):
     
     return local_path
 
-def postprocess_symbolizer_image_file(file_href, dirs):
+def post_process_symbolizer_image_file(file_href, dirs):
     """ Given an image file href and a set of directories, modify the image file
         name so it's correct with respect to the output and cache directories.
     """
@@ -1063,39 +1066,28 @@ def postprocess_symbolizer_image_file(file_href, dirs):
 
     mapnik_auto_image_support = (MAPNIK_VERSION >= 701)
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
-    
     file_href = urljoin(dirs.source.rstrip('/')+'/', file_href)
     scheme, n, path, p, q, f = urlparse(file_href)
-    
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
-    elif os.name == 'nt':
-        # if we are not fetching from remote we know that
-        # on windows urljoin will have completely failed
-        # so fall back to os.path.join
-        file_href = os.path.join(dirs.source.rstrip('\\')+'\\', file_href)
-        #scheme, n, path, p, q, f = urlparse(file_href)
-        # scheme here will evaluate to 'c' for 'c:\\' making os.path.exists(path) fail
-        # so, lets just use the actual path. 
-        path = file_href
-        
-    if scheme not in ('file', '') or not os.path.exists(path):
+    
+    if scheme not in ('file', '') or not systempath.exists(un_posix(path)):
         raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
         
     if not mapnik_auto_image_support and not Image:
         raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
 
-    img = Image.open(path)
+    img = Image.open(un_posix(path))
     
     if mapnik_requires_absolute_paths:
-        path = os.path.realpath(path)
+        path = posixpath.realpath(path)
     
     else:
         path = dirs.output_path(path)
 
     msg('reading symbol: %s' % path)
 
-    image_name, ext = splitext(path)
+    image_name, ext = posixpath.splitext(path)
     
     if ext in ('.png', '.tif', '.tiff'):
         output_ext = ext
@@ -1103,9 +1095,9 @@ def postprocess_symbolizer_image_file(file_href, dirs):
         output_ext = '.png'
     
     # new local file name
-    dest_file = '%s%s' % (image_name, output_ext)
+    dest_file = un_posix('%s%s' % (image_name, output_ext))
     
-    if not os.path.exists(dest_file):
+    if not posixpath.exists(dest_file):
         img.save(dest_file,'PNG')
 
     msg('Destination file: %s' % dest_file)
@@ -1159,7 +1151,7 @@ def get_shield_rule_groups(declarations, dirs):
             
             file, filetype, width, height \
                 = values.has_key('shield-file') \
-                and postprocess_symbolizer_image_file(str(values['shield-file'].value), dirs) \
+                and post_process_symbolizer_image_file(str(values['shield-file'].value), dirs) \
                 or (None, None, None, None)
             
             width = values.has_key('shield-width') and values['shield-width'].value or width
@@ -1202,7 +1194,7 @@ def get_point_rules(declarations, dirs):
     for (filter, values) in filtered_property_declarations(declarations, property_names):
         point_file, point_type, point_width, point_height \
             = values.has_key('point-file') \
-            and postprocess_symbolizer_image_file(str(values['point-file'].value), dirs) \
+            and post_process_symbolizer_image_file(str(values['point-file'].value), dirs) \
             or (None, None, None, None)
         
         point_width = values.has_key('point-width') and values['point-width'].value or point_width
@@ -1235,7 +1227,7 @@ def get_polygon_pattern_rules(declarations, dirs):
     
         poly_pattern_file, poly_pattern_type, poly_pattern_width, poly_pattern_height \
             = values.has_key('polygon-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), dirs) \
+            and post_process_symbolizer_image_file(str(values['polygon-pattern-file'].value), dirs) \
             or (None, None, None, None)
         
         poly_pattern_width = values.has_key('polygon-pattern-width') and values['polygon-pattern-width'].value or poly_pattern_width
@@ -1266,7 +1258,7 @@ def get_line_pattern_rules(declarations, dirs):
     
         line_pattern_file, line_pattern_type, line_pattern_width, line_pattern_height \
             = values.has_key('line-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), dirs) \
+            and post_process_symbolizer_image_file(str(values['line-pattern-file'].value), dirs) \
             or (None, None, None, None)
         
         line_pattern_width = values.has_key('line-pattern-width') and values['line-pattern-width'].value or line_pattern_width
@@ -1292,25 +1284,26 @@ def get_applicable_declarations(element, declarations):
 def unzip_shapefile_into(zip_path, dir):
     """
     """
+    
     hash = md5(zip_path).hexdigest()[:8]
-    zip_file = zipfile.ZipFile(zip_path)
+    zip_file = zipfile.ZipFile(un_posix(zip_path))
     
     infos = zip_file.infolist()
-    extensions = [splitext(info.filename)[1] for info in infos]
+    extensions = [posixpath.splitext(info.filename)[1] for info in infos]
     
     for (expected, required) in SHAPE_PARTS:
         if required and expected not in extensions:
             raise Exception('Zip file %(zip_path)s missing extension "%(expected)s"' % locals())
 
         for info in infos:
-            head, ext = splitext(basename(info.filename))
+            head, ext = posixpath.splitext(posixpath.basename(info.filename))
             head = sub(r'[^\w\-_]', '', head)
 
             if ext == expected:
                 file_data = zip_file.read(info.filename)
-                file_name = os.path.normpath('%(dir)s/%(head)s-%(hash)s%(ext)s' % locals())
+                file_name = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
                 
-                file_ = open(file_name, 'wb')
+                file_ = open(un_posix(file_name), 'wb')
                 file_.write(file_data)
                 file_.close()
                 
@@ -1336,19 +1329,22 @@ def localize_shapefile(shp_href, dirs):
     
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(shp_href, dirs.cache)
+    
+    # collect drive for windows
+    to_posix(systempath.realpath(path))
 
     if scheme not in ('file', ''):
         raise Exception("Shapefile needs to be a working, fetchable resource, not %s" % shp_href)
-    
+        
     if mapnik_requires_absolute_paths:
-        path = os.path.realpath(path)
+        path = posixpath.realpath(path)
         original = path
-    
+
     path = dirs.output_path(path)
     
     if path.endswith('.zip'):
         # unzip_shapefile_into needs a path it can find
-        path = os.path.join(dirs.output, path)
+        path = posixpath.join(dirs.output, path)
         path = unzip_shapefile_into(path, dirs.cache)
 
     return dirs.output_path(path)
@@ -1374,11 +1370,11 @@ def localize_file_datasource(file_href, dirs):
         raise Exception("Datasource file needs to be a working, fetchable resource, not %s" % file_href)
 
     if mapnik_requires_absolute_paths:
-        return os.path.realpath(path)
+        return posixpath.realpath(path)
     
     else:
         return dirs.output_path(path)
-
+    
 def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
     """ Compile a Cascadenik MML file, returning a cascadenik.output.Map object.
     
@@ -1415,23 +1411,19 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
     
     msg('Targeting mapnik version: %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
         
-    if os.path.exists(src):
-        # It's a relative path to a local file, give it the appropriate file:// scheme.
-        src = 'file://' + posixpath.realpath(src)
-    
-    try:
-        # guessing src is a literal XML string?
-        map_el = ElementTree.fromstring(src)
-
-    except:
-        assert (os.name == 'nt' or src[:7] in ('http://', 'file://')), 'urlopen() wants a scheme better than %s' % src[:7]
-    
-        # or a URL or file location?
-        if os.path.exists(src):
-            doc = ElementTree.parse(src)
-        else:
-            doc = ElementTree.parse(urllib.urlopen(src))
+    if posixpath.exists(src):
+        doc = ElementTree.parse(src)
         map_el = doc.getroot()
+    else:
+        try:
+            # guessing src is a literal XML string?
+            map_el = ElementTree.fromstring(src)
+    
+        except:
+            if not (src[:7] in ('http://', 'file://')):
+                src = "file://" + src;
+            doc = ElementTree.parse(urllib.urlopen(src))
+            map_el = doc.getroot()
 
     expand_source_declarations(map_el, dirs, datasources_cfg)
     declarations = extract_declarations(map_el, dirs)
@@ -1488,8 +1480,8 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
                 msg('Handling generic datasource...')
                 file_param = localize_file_datasource(file_param, dirs)
 
-            msg("Localized path = %s" % file_param)
-            datasource_params['file'] = file_param
+            msg("Localized path = %s" % un_posix(file_param))
+            datasource_params['file'] = un_posix(file_param)
 
             # TODO - consider custom support for other mapnik datasources:
             # sqlite, oracle, osm, kismet, gdal, raster, rasterlite
