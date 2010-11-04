@@ -6,7 +6,8 @@ import tempfile
 import StringIO
 import operator
 import base64
-import os.path
+import posixpath
+import os.path as systempath
 import zipfile
 import shutil
 
@@ -16,8 +17,36 @@ from time import strftime, localtime
 from re import sub, compile, MULTILINE
 from urlparse import urlparse, urljoin
 from operator import lt, le, eq, ge, gt
-from os.path import basename, splitext
-from httplib import HTTPConnection
+
+# os.path.relpath was added in Python 2.6
+def _relpath(path, start=posixpath.curdir):
+    """Return a relative version of a path"""
+    if not path:
+        raise ValueError("no path specified")
+    start_list = posixpath.abspath(start).split(posixpath.sep)
+    path_list = posixpath.abspath(path).split(posixpath.sep)
+    i = len(posixpath.commonprefix([start_list, path_list]))
+    rel_list = [posixpath.pardir] * (len(start_list)-i) + path_list[i:]
+    if not rel_list:
+        return posixpath.curdir
+    return posixpath.join(*rel_list)
+
+# timeout parameter to HTTPConnection was added in Python 2.6
+if sys.hexversion >= 0x020600F0:
+    from httplib import HTTPConnection
+
+else:
+    posixpath.relpath = _relpath
+    
+    from httplib import HTTPConnection as _HTTPConnection
+    import socket
+    
+    def HTTPConnection(host, port=None, strict=None, timeout=None):
+        if timeout:
+            socket.setdefaulttimeout(timeout)
+        return _HTTPConnection(host, port=port, strict=strict)
+
+
 
 # cascadenik
 import safe64
@@ -25,11 +54,10 @@ import style
 import sources
 import style
 import output
+from cascadenik.nonposix import un_posix, to_posix
 
-try:
-    import mapnik2 as mapnik
-except ImportError:
-    import mapnik
+# mapnik
+import mapnik
 
 try:
     from PIL import Image
@@ -90,7 +118,7 @@ def next_counter():
 
 def url2fs(url):
     """ encode a URL to be safe as a filename """
-    uri, extension = splitext(url)
+    uri, extension = posixpath.splitext(url)
     return safe64.dir(uri) + extension
 
 def fs2url(url):
@@ -118,34 +146,40 @@ class Directories:
     """ Holder for full paths to output and cache dirs.
     """
     def __init__(self, output, cache, source):
-        self.output = os.path.realpath(output)
-        self.cache = os.path.realpath(cache)
-        
-        scheme, n, path, p, q, f = urlparse(source)
+        self.output = posixpath.realpath(to_posix(output))
+        self.cache = posixpath.realpath(to_posix(cache))
+
+        scheme, n, path, p, q, f = urlparse(to_posix(source))
         
         if scheme == 'http':
             self.source = source
-
         elif scheme in ('file', ''):
-            self.source = 'file://' + os.path.realpath(path)
+            # os.path (systempath) usage here is intentional...
+            self.source = 'file://' + to_posix(systempath.realpath(path))
+        assert self.source, "self.source does not exist: source was: %s" % source
 
-    def output_path(self, path):
+    def output_path(self, path_name):
         """ Modify a path so it fits expectations.
         
             Avoid returning relative paths that start with '../' and possibly
             return relative paths when output and cache directories match.
-        """
-        if os.path.isabs(path):
+        """        
+        # make sure it is a valid posix format
+        path = to_posix(path_name)
+        
+        assert (path == path_name), "path_name passed to output_path must be in posix format"
+        
+        if posixpath.isabs(path):
             if self.output == self.cache:
                 # worth seeing if an absolute path can be avoided
-                path = os.path.relpath(path, self.output)
+                path = posixpath.relpath(path, self.output)
 
             else:
-                return os.path.realpath(path)
+                return posixpath.realpath(path)
     
         if path.startswith('../'):
-            joined = os.path.join(self.output, path)
-            return os.path.realpath(joined)
+            joined = posixpath.join(self.output, path)
+            return posixpath.realpath(joined)
     
         return path
 
@@ -566,7 +600,7 @@ def tests_filter_combinations(tests):
     # if no filters have been defined, return a blank one that matches anything
     return [Filter()]
 
-def is_gym_projection(srs):
+def is_merc_projection(srs):
     """ Return true if the map projection matches that used by VEarth, Google, OSM, etc.
     
         Is currently necessary for zoom-level shorthand for scale-denominator.
@@ -589,8 +623,8 @@ def is_gym_projection(srs):
 
     return True
 
-def extract_declarations(map_el, base):
-    """ Given a Map element and a URL base string, remove and return a complete
+def extract_declarations(map_el, dirs):
+    """ Given a Map element and directories object, remove and return a complete
         list of style declarations from any Stylesheet elements found within.
     """
     declarations = []
@@ -598,26 +632,30 @@ def extract_declarations(map_el, base):
     for stylesheet in map_el.findall('Stylesheet'):
         map_el.remove(stylesheet)
 
-        styles, local_base = fetch_embedded_or_remote_src(stylesheet, base)
+        styles, base = fetch_embedded_or_remote_src(stylesheet, dirs)
+
         if not styles:
             continue
             
-        rulesets = style.stylesheet_rulesets(styles, is_gym_projection(map_el.get('srs','')))
+        rulesets = style.stylesheet_rulesets(styles, is_merc_projection(map_el.get('srs','')))
         declarations += style.rulesets_declarations(rulesets)
 
     return declarations
 
-def fetch_embedded_or_remote_src(elem, base):
+def fetch_embedded_or_remote_src(elem, dirs):
+    """
+    """
     if 'src' in elem.attrib:
-        url = urljoin(base, elem.attrib['src'])
-        return urllib.urlopen(url).read().decode(DEFAULT_ENCODING), url
+        scheme, host, remote_path, p, q, f = urlparse(dirs.source)
+        src_href = urljoin(dirs.source.rstrip('/')+'/', elem.attrib['src'])
+        return urllib.urlopen(src_href).read().decode(DEFAULT_ENCODING), src_href
 
     elif elem.text:
-        return elem.text, base
+        return elem.text, dirs.source.rstrip('/')+'/'
     
     return None, None
 
-def expand_source_declarations(map_el, base, local_conf):
+def expand_source_declarations(map_el, dirs, local_conf):
     """ This provides mechanism for externalizing and sharing data sources.  The datasource configs are
     python files, and layers reference sections within that config:
     
@@ -630,12 +668,12 @@ def expand_source_declarations(map_el, base, local_conf):
 
     
     
-    ds = sources.DataSources(base, local_conf)
+    ds = sources.DataSources(dirs.source, local_conf)
 
     # build up the configuration
     for spec in map_el.findall('DataSourcesConfig'):
         map_el.remove(spec)
-        src_text, local_base = fetch_embedded_or_remote_src(spec, base)
+        src_text, local_base = fetch_embedded_or_remote_src(spec, dirs)
         if not src_text:
             continue
 
@@ -746,7 +784,7 @@ def is_applicable_selector(selector, filter):
 def get_map_attributes(declarations):
     """
     """
-    property_map = {'map-bgcolor': 'bgcolor'}    
+    property_map = {'map-bgcolor': 'background'}    
     
     return dict([(property_map[dec.property.name], dec.value.value)
                  for dec in declarations
@@ -890,18 +928,35 @@ def get_line_rules(declarations):
 def get_text_rule_groups(declarations):
     """ Given a list of declarations, return a list of output.Rule objects.
     """
-    property_map = {'text-face-name': 'face_name',
+    property_map = {'text-anchor-dx': 'anchor_dx', # does nothing
+                    'text-anchor-dy': 'anchor_dy', # does nothing
+                    'text-align': 'horizontal_alignment',
+                    'text-allow-overlap': 'allow_overlap',
+                    'text-avoid-edges': 'avoid_edges',
+                    'text-character-spacing': 'character_spacing',
+                    'text-dx': 'dx',
+                    'text-dy': 'dy',
+                    'text-face-name': 'face_name',
+                    'text-fill': 'fill',
                     'text-fontset': 'fontset',
-                    'text-size': 'size', 
-                    'text-ratio': 'text_ratio', 'text-wrap-width': 'wrap_width', 'text-spacing': 'spacing',
-                    'text-label-position-tolerance': 'label_position_tolerance','text-transform':'text_transform',
-                    'text-max-char-angle-delta': 'max_char_angle_delta', 'text-fill': 'fill',
-                    'text-halo-fill': 'halo_fill', 'text-halo-radius': 'halo_radius',
-                    'text-dx': 'dx', 'text-dy': 'dy', 'text-character-spacing': 'character_spacing',
+                    'text-force-odd-labels': 'force_odd_labels',
+                    'text-halo-fill': 'halo_fill',
+                    'text-halo-radius': 'halo_radius',
+                    'text-justify-align': 'justify_alignment',
+                    'text-label-position-tolerance': 'label_position_tolerance',
                     'text-line-spacing': 'line_spacing',
-                    'text-avoid-edges': 'avoid_edges', 'text-min-distance': 'min_distance',
-                    'text-allow-overlap': 'allow_overlap', 'text-placement': 'placement',
-                    'text-meta-output': 'meta-output', 'text-meta-writer': 'meta-writer'}
+                    'text-max-char-angle-delta': 'max_char_angle_delta',
+                    'text-min-distance': 'minimum_distance',
+                    'text-placement': 'label_placement',
+                    'text-ratio': 'text_ratio',
+                    'text-size': 'size', 
+                    'text-spacing': 'spacing',
+                    'text-transform': 'text_convert',
+                    'text-vertical-align': 'vertical_alignment',
+                    'text-wrap-width': 'wrap_width',
+                    'text-meta-output': 'meta-output',
+                    'text-meta-writer': 'meta-writer'
+                    }
 
     property_names = property_map.keys()
     
@@ -937,7 +992,7 @@ def get_text_rule_groups(declarations):
             
             ratio = values.has_key('text-ratio') and values['text-ratio'].value or None
             wrap_width = values.has_key('text-wrap-width') and values['text-wrap-width'].value or None
-            spacing = values.has_key('text-spacing') and values['text-spacing'].value or None
+            label_spacing = values.has_key('text-spacing') and values['text-spacing'].value or None
             label_position_tolerance = values.has_key('text-label-position-tolerance') and values['text-label-position-tolerance'].value or None
             max_char_angle_delta = values.has_key('text-max-char-angle-delta') and values['text-max-char-angle-delta'].value or None
             halo_color = values.has_key('text-halo-fill') and values['text-halo-fill'].value or None
@@ -945,17 +1000,27 @@ def get_text_rule_groups(declarations):
             dx = values.has_key('text-dx') and values['text-dx'].value or None
             dy = values.has_key('text-dy') and values['text-dy'].value or None
             avoid_edges = values.has_key('text-avoid-edges') and values['text-avoid-edges'].value or None
-            min_distance = values.has_key('text-min-distance') and values['text-min-distance'].value or None
+            minimum_distance = values.has_key('text-min-distance') and values['text-min-distance'].value or None
             allow_overlap = values.has_key('text-allow-overlap') and values['text-allow-overlap'].value or None
-            placement = values.has_key('text-placement') and values['text-placement'].value or None
+            label_placement = values.has_key('text-placement') and values['text-placement'].value or None
             text_transform = values.has_key('text-transform') and values['text-transform'].value or None
+            anchor_dx = values.has_key('text-anchor-dx') and values['text-anchor-dx'].value or None
+            anchor_dy = values.has_key('text-anchor-dy') and values['text-anchor-dy'].value or None
+            horizontal_alignment = values.has_key('text-horizontal-align') and values['text-horizontal-align'].value or None
+            vertical_alignment = values.has_key('text-vertical-align') and values['text-vertical-align'].value or None
+            justify_alignment = values.has_key('text-justify-align') and values['text-justify-align'].value or None
+            force_odd_labels = values.has_key('text-force-odd-labels') and values['text-force-odd-labels'].value or None
+            line_spacing = values.has_key('text-line-spacing') and values['text-line-spacing'].value or None
+            character_spacing = values.has_key('text-character-spacing') and values['text-character-spacing'].value or None
             
             if (face_name or fontset) and size and color:
                 symbolizer = output.TextSymbolizer(text_name, face_name, size, color, \
-                                              wrap_width, spacing, label_position_tolerance, \
+                                              wrap_width, label_spacing, label_position_tolerance, \
                                               max_char_angle_delta, halo_color, halo_radius, dx, dy, \
-                                              avoid_edges, min_distance, allow_overlap, placement, \
-                                              text_transform, fontset=fontset)
+                                              avoid_edges, minimum_distance, allow_overlap, label_placement, \
+                                              line_spacing, character_spacing, text_transform, fontset,
+                                              anchor_dx, anchor_dy,horizontal_alignment, \
+                                              vertical_alignment, justify_alignment, force_odd_labels)
             
                 rules.append(make_rule(filter, symbolizer))
         
@@ -972,14 +1037,13 @@ def locally_cache_remote_file(href, dir):
     
     assert scheme == 'http', 'No gophers.'
 
-    head, ext = splitext(basename(remote_path))
+    head, ext = posixpath.splitext(posixpath.basename(remote_path))
     head = sub(r'[^\w\-_]', '', head)
     hash = md5(href).hexdigest()[:8]
     
     local_path = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
     headers = {}
-    
-    if os.path.exists(local_path):
+    if posixpath.exists(local_path):
         t = localtime(os.stat(local_path).st_mtime)
         headers['If-Modified-Since'] = strftime('%a, %d %b %Y %H:%M:%S %Z', t)
     
@@ -989,7 +1053,7 @@ def locally_cache_remote_file(href, dir):
     
     if resp.status in range(200, 210):
         # hurrah, it worked
-        f = open(local_path, 'wb')
+        f = open(un_posix(local_path), 'wb')
         f.write(resp.read())
         f.close()
 
@@ -1008,7 +1072,7 @@ def locally_cache_remote_file(href, dir):
     
     return local_path
 
-def postprocess_symbolizer_image_file(file_href, dirs):
+def post_process_symbolizer_image_file(file_href, dirs):
     """ Given an image file href and a set of directories, modify the image file
         name so it's correct with respect to the output and cache directories.
     """
@@ -1016,40 +1080,41 @@ def postprocess_symbolizer_image_file(file_href, dirs):
     # of image sizes and jpeg reading support...
     # http://trac.mapnik.org/ticket/508
 
-    mapnik_auto_image_support = (MAPNIK_VERSION >= 700)
+    mapnik_auto_image_support = (MAPNIK_VERSION >= 701)
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
-    
     file_href = urljoin(dirs.source.rstrip('/')+'/', file_href)
     scheme, n, path, p, q, f = urlparse(file_href)
-    
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
-        
-    if scheme not in ('file', '') or not os.path.exists(path):
+    
+    if scheme not in ('file', '') or not systempath.exists(un_posix(path)):
         raise Exception("Image file needs to be a working, fetchable resource, not %s" % file_href)
         
     if not mapnik_auto_image_support and not Image:
         raise SystemExit('PIL (Python Imaging Library) is required for handling image data unless you are using PNG inputs and running Mapnik >=0.7.0')
 
-    img = Image.open(path)
+    img = Image.open(un_posix(path))
     
     if mapnik_requires_absolute_paths:
-        path = os.path.realpath(path)
+        path = posixpath.realpath(path)
     
     else:
         path = dirs.output_path(path)
 
     msg('reading symbol: %s' % path)
 
-    image_name, ext = splitext(path)
+    image_name, ext = posixpath.splitext(path)
     
-    if ext in ('.png', 'tif', 'tiff'):
+    if ext in ('.png', '.tif', '.tiff'):
         output_ext = ext
     else:
         output_ext = '.png'
-
+    
     # new local file name
-    dest_file = '%s%s' % (image_name, output_ext)
+    dest_file = un_posix('%s%s' % (image_name, output_ext))
+    
+    if not posixpath.exists(dest_file):
+        img.save(dest_file,'PNG')
 
     msg('Destination file: %s' % dest_file)
 
@@ -1065,7 +1130,7 @@ def get_shield_rule_groups(declarations, dirs):
                     'shield-size': 'size', 
                     'shield-fill': 'fill', 'shield-character-spacing': 'character_spacing',
                     'shield-line-spacing': 'line_spacing',
-                    'shield-spacing': 'spacing', 'shield-min-distance': 'min_distance',
+                    'shield-spacing': 'spacing', 'shield-min-distance': 'minimum_distance',
                     'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height',
                     'shield-meta-output': 'meta-output', 'shield-meta-writer': 'meta-writer'}
 
@@ -1102,22 +1167,22 @@ def get_shield_rule_groups(declarations, dirs):
             
             file, filetype, width, height \
                 = values.has_key('shield-file') \
-                and postprocess_symbolizer_image_file(str(values['shield-file'].value), dirs) \
+                and post_process_symbolizer_image_file(str(values['shield-file'].value), dirs) \
                 or (None, None, None, None)
             
             width = values.has_key('shield-width') and values['shield-width'].value or width
             height = values.has_key('shield-height') and values['shield-height'].value or height
             
             color = values.has_key('shield-fill') and values['shield-fill'].value or None
-            min_distance = values.has_key('shield-min-distance') and values['shield-min-distance'].value or None
+            minimum_distance = values.has_key('shield-min-distance') and values['shield-min-distance'].value or None
             
             character_spacing = values.has_key('shield-character-spacing') and values['shield-character-spacing'].value or None
             line_spacing = values.has_key('shield-line-spacing') and values['shield-line-spacing'].value or None
             spacing = values.has_key('shield-spacing') and values['shield-spacing'].value or None
             
-            if file or ((face_name or fontset) and size):
+            if file and (face_name or fontset):
                 symbolizer = output.ShieldSymbolizer(text_name, face_name, size, file, filetype, 
-                                            width, height, color, min_distance,
+                                            width, height, color, minimum_distance,
                                             character_spacing, line_spacing, spacing,
                                             fontset=fontset)
             
@@ -1145,7 +1210,7 @@ def get_point_rules(declarations, dirs):
     for (filter, values) in filtered_property_declarations(declarations, property_names):
         point_file, point_type, point_width, point_height \
             = values.has_key('point-file') \
-            and postprocess_symbolizer_image_file(str(values['point-file'].value), dirs) \
+            and post_process_symbolizer_image_file(str(values['point-file'].value), dirs) \
             or (None, None, None, None)
         
         point_width = values.has_key('point-width') and values['point-width'].value or point_width
@@ -1178,7 +1243,7 @@ def get_polygon_pattern_rules(declarations, dirs):
     
         poly_pattern_file, poly_pattern_type, poly_pattern_width, poly_pattern_height \
             = values.has_key('polygon-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), dirs) \
+            and post_process_symbolizer_image_file(str(values['polygon-pattern-file'].value), dirs) \
             or (None, None, None, None)
         
         poly_pattern_width = values.has_key('polygon-pattern-width') and values['polygon-pattern-width'].value or poly_pattern_width
@@ -1209,7 +1274,7 @@ def get_line_pattern_rules(declarations, dirs):
     
         line_pattern_file, line_pattern_type, line_pattern_width, line_pattern_height \
             = values.has_key('line-pattern-file') \
-            and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), dirs) \
+            and post_process_symbolizer_image_file(str(values['line-pattern-file'].value), dirs) \
             or (None, None, None, None)
         
         line_pattern_width = values.has_key('line-pattern-width') and values['line-pattern-width'].value or line_pattern_width
@@ -1235,26 +1300,26 @@ def get_applicable_declarations(element, declarations):
 def unzip_shapefile_into(zip_path, dir):
     """
     """
+    
     hash = md5(zip_path).hexdigest()[:8]
-    zip_data = open(zip_path).read()
-    zip_file = zipfile.ZipFile(StringIO.StringIO(zip_data))
+    zip_file = zipfile.ZipFile(un_posix(zip_path))
     
     infos = zip_file.infolist()
-    extensions = [splitext(info.filename)[1] for info in infos]
+    extensions = [posixpath.splitext(info.filename)[1] for info in infos]
     
     for (expected, required) in SHAPE_PARTS:
         if required and expected not in extensions:
             raise Exception('Zip file %(zip_path)s missing extension "%(expected)s"' % locals())
 
         for info in infos:
-            head, ext = splitext(basename(info.filename))
+            head, ext = posixpath.splitext(posixpath.basename(info.filename))
             head = sub(r'[^\w\-_]', '', head)
 
             if ext == expected:
                 file_data = zip_file.read(info.filename)
-                file_name = os.path.normpath('%(dir)s/%(head)s-%(hash)s%(ext)s' % locals())
+                file_name = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
                 
-                file_ = open(file_name, 'wb')
+                file_ = open(un_posix(file_name), 'wb')
                 file_.write(file_data)
                 file_.close()
                 
@@ -1280,19 +1345,22 @@ def localize_shapefile(shp_href, dirs):
     
     if scheme == 'http':
         scheme, path = '', locally_cache_remote_file(shp_href, dirs.cache)
+    
+    # collect drive for windows
+    to_posix(systempath.realpath(path))
 
     if scheme not in ('file', ''):
         raise Exception("Shapefile needs to be a working, fetchable resource, not %s" % shp_href)
-    
+        
     if mapnik_requires_absolute_paths:
-        path = os.path.realpath(path)
+        path = posixpath.realpath(path)
         original = path
-    
+
     path = dirs.output_path(path)
     
     if path.endswith('.zip'):
         # unzip_shapefile_into needs a path it can find
-        path = os.path.join(dirs.output, path)
+        path = posixpath.join(dirs.output, path)
         path = unzip_shapefile_into(path, dirs.cache)
 
     return dirs.output_path(path)
@@ -1318,21 +1386,23 @@ def localize_file_datasource(file_href, dirs):
         raise Exception("Datasource file needs to be a working, fetchable resource, not %s" % file_href)
 
     if mapnik_requires_absolute_paths:
-        return os.path.realpath(path)
+        return posixpath.realpath(path)
     
     else:
         return dirs.output_path(path)
-
+    
 def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
     """ Compile a Cascadenik MML file, returning a cascadenik.output.Map object.
     
         Parameters:
         
           src:
-            Path to .mml file.
+            Path to .mml file, or raw .mml file content.
           
           dirs:
             Object with directory names in 'cache', 'output', and 'source' attributes.
+            dirs.source is expected to be fully-qualified, e.g. "http://example.com"
+            or "file:///home/example".
         
         Keyword Parameters:
         
@@ -1357,23 +1427,22 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
     
     msg('Targeting mapnik version: %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
         
-    if os.path.exists(src):
-        # It's a local file, give it the appropriate file:// scheme.
-        src = 'file://' + os.path.realpath(src)
-    
-    try:
-        # guessing src is a literal XML string?
-        map_el = ElementTree.fromstring(src)
-
-    except:
-        assert src[:7] in ('http://', 'file://'), 'urlopen() wants a scheme'
-    
-        # or a URL or file location?
-        doc = ElementTree.parse(urllib.urlopen(src))
+    if posixpath.exists(src):
+        doc = ElementTree.parse(src)
         map_el = doc.getroot()
+    else:
+        try:
+            # guessing src is a literal XML string?
+            map_el = ElementTree.fromstring(src)
+    
+        except:
+            if not (src[:7] in ('http://', 'file://')):
+                src = "file://" + src;
+            doc = ElementTree.parse(urllib.urlopen(src))
+            map_el = doc.getroot()
 
-    expand_source_declarations(map_el, dirs.source, datasources_cfg)
-    declarations = extract_declarations(map_el, dirs.source)
+    expand_source_declarations(map_el, dirs, datasources_cfg)
+    declarations = extract_declarations(map_el, dirs)
     
     # a list of layers and a sequential ID generator
     layers, ids = [], (i for i in xrange(1, 999999))
@@ -1427,8 +1496,8 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
                 msg('Handling generic datasource...')
                 file_param = localize_file_datasource(file_param, dirs)
 
-            msg("Localized path = %s" % file_param)
-            datasource_params['file'] = file_param
+            msg("Localized path = %s" % un_posix(file_param))
+            datasource_params['file'] = un_posix(file_param)
 
             # TODO - consider custom support for other mapnik datasources:
             # sqlite, oracle, osm, kismet, gdal, raster, rasterlite

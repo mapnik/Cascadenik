@@ -566,12 +566,12 @@ class SelectorParseTests(unittest.TestCase):
             text-placement: line;
         }
         '''
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         text_rule_groups = get_text_rule_groups(declarations)
         
         self.assertEqual(str, type(text_rule_groups.keys()[0]))
         self.assertEqual(str, type(text_rule_groups['CODE'][0].symbolizers[0].face_name))
-        self.assertEqual(str, type(text_rule_groups['CODE'][0].symbolizers[0].placement))
+        self.assertEqual(str, type(text_rule_groups['CODE'][0].symbolizers[0].label_placement))
 
 class FilterCombinationTests(unittest.TestCase):
 
@@ -824,7 +824,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[zoom>10][use=cemetery] { polygon-fill: #ccc; }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         rules = get_polygon_rules(declarations)
         
         self.assertEqual(399999, rules[0].maxscale.value)
@@ -851,7 +851,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[zoom>10][foo>1] { polygon-fill: #f00; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         rules = get_polygon_rules(declarations)
         
         self.assertEqual(399999, rules[0].maxscale.value)
@@ -884,7 +884,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[foo>1] { line-color: #ff0; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         poly_rules = get_polygon_rules(declarations)
         
@@ -949,7 +949,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[zoom<=10] label { text-size: 10; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         line_rules = get_line_rules(declarations)
 
@@ -1017,7 +1017,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[bar=quux] label { shield-size: 16; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         text_rule_groups = get_text_rule_groups(declarations)
         
@@ -1107,7 +1107,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer { point-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
@@ -1182,7 +1182,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer { line-pattern-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png'); }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         point_rules = get_point_rules(declarations, self.dirs)
         
@@ -1221,7 +1221,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[bar=1] { inline-width: 1; inline-color: #999; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         line_rules = get_line_rules(declarations)
         
@@ -1292,7 +1292,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer[ELEVATION>900] { line-width: 3; line-color: #fff; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         line_rules = get_line_rules(declarations)
         
@@ -1318,7 +1318,7 @@ class StyleRuleTests(unittest.TestCase):
             Layer { polygon-fill: #000; }
         """
     
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
         
         polygon_rules = get_polygon_rules(declarations)
         
@@ -1377,7 +1377,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         polygon_rules = get_polygon_rules(declarations)
         
@@ -1416,7 +1416,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         text_rule_groups = get_text_rule_groups(declarations)
         
@@ -1426,7 +1426,7 @@ class StyleRuleTests(unittest.TestCase):
 
         self.assertEqual(color(0xFF, 0x00, 0x00), text_rule_groups['label'][0].symbolizers[0].color)
         self.assertEqual(100, text_rule_groups['label'][0].symbolizers[0].wrap_width)
-        self.assertEqual(50, text_rule_groups['label'][0].symbolizers[0].spacing)
+        self.assertEqual(50, text_rule_groups['label'][0].symbolizers[0].label_spacing)
         self.assertEqual(25, text_rule_groups['label'][0].symbolizers[0].label_position_tolerance)
         self.assertEqual(10, text_rule_groups['label'][0].symbolizers[0].max_char_angle_delta)
         self.assertEqual(color(0xFF, 0xFF, 0x00), text_rule_groups['label'][0].symbolizers[0].halo_color)
@@ -1434,9 +1434,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(10, text_rule_groups['label'][0].symbolizers[0].dx)
         self.assertEqual(15, text_rule_groups['label'][0].symbolizers[0].dy)
         self.assertEqual(boolean(1), text_rule_groups['label'][0].symbolizers[0].avoid_edges)
-        self.assertEqual(5, text_rule_groups['label'][0].symbolizers[0].min_distance)
+        self.assertEqual(5, text_rule_groups['label'][0].symbolizers[0].minimum_distance)
         self.assertEqual(boolean(0), text_rule_groups['label'][0].symbolizers[0].allow_overlap)
-        self.assertEqual('point', text_rule_groups['label'][0].symbolizers[0].placement)
+        self.assertEqual('point', text_rule_groups['label'][0].symbolizers[0].label_placement)
 
     def testStyleRules12a(self):
         s = """
@@ -1457,7 +1457,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         text_rule_groups = get_text_rule_groups(declarations)
         
@@ -1486,7 +1486,7 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         point_rules = get_point_rules(declarations, self.dirs)
         
@@ -1506,15 +1506,6 @@ class StyleRuleTests(unittest.TestCase):
 
     def testStyleRules14(self):
         s = """
-            Layer just_text
-            {
-                shield-face-name: 'Helvetica';
-                shield-size: 12;
-                
-                shield-fill: #f00;
-                shield-min-distance: 5;
-            }
-
             Layer just_image
             {
                 shield-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png');
@@ -1538,18 +1529,17 @@ class StyleRuleTests(unittest.TestCase):
             }
         """
 
-        declarations = stylesheet_declarations(s, is_gym=True)
+        declarations = stylesheet_declarations(s, is_merc=True)
 
         shield_rule_groups = get_shield_rule_groups(declarations, self.dirs)
         
-        self.assertEqual('Helvetica', shield_rule_groups['just_text'][0].symbolizers[0].face_name)
-        self.assertEqual(12, shield_rule_groups['just_text'][0].symbolizers[0].size)
-        self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['just_text'][0].symbolizers[0].color)
-        self.assertEqual(5, shield_rule_groups['just_text'][0].symbolizers[0].min_distance)
-
-        self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].width)
-        self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].height)
-        self.assertEqual(5, shield_rule_groups['just_image'][0].symbolizers[0].min_distance)
+        # Also Mapnik's python bindings should be able to allow a ShieldSymbolizer without text
+        # put this is not properly exposed in the latest release (0.7.1)
+        # So, disabling this test until we actually add support in Mapnik 0.7.x
+        # http://trac.mapnik.org/ticket/652
+        #self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].width)
+        #self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].height)
+        #self.assertEqual(5, shield_rule_groups['just_image'][0].symbolizers[0].minimum_distance)
         
         self.assertEqual('', shield_rule_groups['both'][0].symbolizers[0].face_name)
         self.assertEqual('SuperFonts', shield_rule_groups['both'][0].symbolizers[0].fontset)
@@ -1557,7 +1547,7 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['both'][0].symbolizers[0].color)
         self.assertEqual(16, shield_rule_groups['both'][0].symbolizers[0].width)
         self.assertEqual(16, shield_rule_groups['both'][0].symbolizers[0].height)
-        self.assertEqual(5, shield_rule_groups['both'][0].symbolizers[0].min_distance)
+        self.assertEqual(5, shield_rule_groups['both'][0].symbolizers[0].minimum_distance)
 
 class DataSourcesTests(unittest.TestCase):
 
@@ -1609,20 +1599,18 @@ garbage=junk
         self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
 
     def testLocalDefaultsFromFile(self):
-        cfg = tempfile.NamedTemporaryFile('w', delete=False)
+        handle, cfgpath = tempfile.mkstemp()
+        os.close(handle)
+
         try:
-            cfg.write(self.gen_section("DEFAULT", var="cows2"))
-            cfg.close()
-            self.assertTrue(os.path.exists(cfg.name))
-            dss = DataSources(__file__, cfg.name)
+            open(cfgpath, 'w').write(self.gen_section("DEFAULT", var="cows2"))
+            self.assertTrue(os.path.exists(cfgpath))
+            dss = DataSources(__file__, cfgpath)
             sect = self.gen_section("DEFAULT", var="cows") + "\n" + self.gen_section("t1", type="shape", file="%(var)s") 
             dss.add_config(sect, __file__)
             self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
         finally:
-            try:
-                os.unlink(cfg.name)
-            except: pass
-
+            os.unlink(cfgpath)
 
     def testBase1(self):
         dss = DataSources(None, None)
@@ -1761,18 +1749,15 @@ layer_srs=%(other_srs)s
         map = self.doCompile1(dscfg)        
         self.assertEqual(map.layers[1].srs, '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
         
-        cfg = tempfile.NamedTemporaryFile('w', delete=False)
+        handle, cfgpath = tempfile.mkstemp()
+        os.close(handle)
+
         try:
-            cfg.write("[DEFAULT]\nother_srs=epsg:900913")
-            cfg.close()
-            map = self.doCompile1(dscfg, datasources_cfg=cfg.name)
+            open(cfgpath, 'w').write("[DEFAULT]\nother_srs=epsg:900913")
+            map = self.doCompile1(dscfg, datasources_cfg=cfgpath)
             self.assertEqual(map.layers[1].srs, '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs')
         finally:
-            try:
-                os.unlink(cfg.name)
-            except: pass
-
-        
+            os.unlink(cfgpath)
         
     def doCompile1(self, s, **kwargs):
         map = compile(s, self.dirs, **kwargs)
@@ -2036,19 +2021,90 @@ layer_srs=%(other_srs)s
         ms.to_mapnik(mmap, self.dirs)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
 
+
+    def testCompile6(self):
+        s = u"""
+            Layer NAME
+            {
+                text-anchor-dx: 10;
+                text-anchor-dy: 10;
+                text-allow-overlap: true;
+                text-avoid-edges: true;
+                text-align: middle;
+                text-character-spacing: 10;
+                text-dx: 10;
+                text-dy: 15;
+                text-face-name: 'Helvetica';
+                text-fill: #f00;
+                text-fontset: 'nanas';
+                text-force-odd-labels: true;
+                text-halo-fill: #ff0;
+                text-halo-radius: 2;
+                text-label-position-tolerance: 25;
+                text-line-spacing:10;
+                
+                text-anchor-dx: 10;
+                text-anchor-dy: 10;
+                text-align: left;
+                text-vertical-align: bottom;
+                text-justify-align: left;
+                text-transform: uppercase;
+                text-size: 12;
+                text-spacing: 50;
+                text-wrap-width: 100;
+                text-transform: uppercase;
+                text-max-char-angle-delta: 10;
+                text-min-distance: 5;
+                text-placement: line;
+                text-vertical-align: top;
+            }
+        """
+        declarations = stylesheet_declarations(s, is_merc=True)
+        text_rule_groups = get_text_rule_groups(declarations)
+        sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik()
+        self.assertEqual([10,15], sym.get_displacement())
+        # todo - anchor (does not do anything yet in mapnik, but likely will)
+        # and is not set in xml, but accepted in python
+        #self.assertEqual([0,5], sym.get_anchor())
+        self.assertEqual(True, sym.allow_overlap)
+        self.assertEqual(True, sym.avoid_edges)
+        self.assertEqual(10, sym.character_spacing)
+        self.assertEqual('Helvetica', sym.face_name)
+        self.assertEqual(mapnik.Color("#f00"), sym.fill)
+        # todo - not exposed in python
+        #self.assertEqual('nanas', sym.fontset)
+        
+        self.assertEqual(True, sym.force_odd_labels)
+        self.assertEqual(mapnik.justify_alignment.LEFT, sym.justify_alignment)
+        self.assertEqual(mapnik.Color("#ff0"), sym.halo_fill)
+        self.assertEqual(2, sym.halo_radius)
+        
+        self.assertEqual('NAME', sym.name)
+        self.assertEqual(12, sym.text_size)
+        self.assertEqual(100, sym.wrap_width)
+        self.assertEqual(50, sym.label_spacing)
+        self.assertEqual(25, sym.label_position_tolerance)
+        self.assertEqual(10, sym.max_char_angle_delta)
+        self.assertEqual(10, sym.line_spacing)
+        self.assertEqual(5, sym.minimum_distance)
+        self.assertEqual(mapnik.label_placement.LINE_PLACEMENT, sym.label_placement)
+
 class RelativePathTests(unittest.TestCase):
 
     def setUp(self):
         # directories for all the temp files to be created below
-        self.tmpdir1 = tempfile.mkdtemp(prefix='cascadenik-tests-')
-        self.tmpdir2 = tempfile.mkdtemp(prefix='cascadenik-tests-')
+        self.tmpdir1 = os.path.realpath(tempfile.mkdtemp(prefix='cascadenik-tests1-'))
+        self.tmpdir2 = os.path.realpath(tempfile.mkdtemp(prefix='cascadenik-tests2-'))
 
         basepath = os.path.dirname(__file__)
         
-        paths = ('mission-points/mission-points.dbf',
+        paths = ('paths-test2.mml',
+                 'paths-test2.mss',
+                 'mission-points/mission-points.dbf',
                  'mission-points/mission-points.prj',
                  'mission-points/mission-points.shp',
                  'mission-points/mission-points.shx',
+                 'mission-points.zip',
                  'purple-point.png')
 
         for path in paths:
@@ -2258,6 +2314,85 @@ class RelativePathTests(unittest.TestCase):
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
         assert not os.path.isabs(shp_path)
         assert os.path.exists(os.path.join(dirs.output, shp_path))
+
+    def testRemoteLinkedSheetPaths(self):
+    
+        dirs = Directories(self.tmpdir1, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
+        
+        mml_href = 'http://cascadenik-sampledata.s3.amazonaws.com/paths-test2.mml'
+        
+        map = compile(mml_href, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(dirs.cache), str((img_path, dirs.cache))
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert shp_path.startswith(dirs.cache), str((shp_path, dirs.cache))
+        assert os.path.exists(shp_path)
+
+    def testLocalLinkedSheetPaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, self.tmpdir1)
+        
+        mml_path = os.path.join(self.tmpdir1, 'paths-test2.mml')
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(dirs.source[7:]), str((img_path, dirs.source[7:]))
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert not os.path.isabs(shp_path)
+        assert os.path.exists(os.path.join(dirs.output, shp_path))
+
+    def testSplitLinkedSheetPaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir1, self.tmpdir1)
+        
+        mml_path = os.path.join(self.tmpdir1, 'paths-test2.mml')
+        
+        map = compile(mml_path, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(dirs.source[7:]), str((img_path, dirs.source[7:]))
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert shp_path.startswith(dirs.cache), str((shp_path, dirs.cache))
+        assert os.path.exists(shp_path)
+
+    def testReflexivePaths(self):
+    
+        dirs = Directories(self.tmpdir2, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
+        
+        mml_data = """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet>
+                    Layer
+                    {
+                        point-file: url("file://%s/purple-point.png");
+                    }
+                </Stylesheet>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">file://%s/mission-points</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """ % (self.tmpdir1, self.tmpdir1)
+        
+        map = compile(mml_data, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (img_path, self.tmpdir1)
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert shp_path.startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (shp_path, self.tmpdir1)
+        assert os.path.exists(shp_path)
         
 if __name__ == '__main__':
     unittest.main()

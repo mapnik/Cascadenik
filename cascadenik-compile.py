@@ -5,6 +5,7 @@ import sys
 import optparse
 import cascadenik
 import tempfile
+
 import mapnik
 
 from os.path import realpath, dirname
@@ -42,6 +43,8 @@ def main(src_file, dest_file, **kwargs):
         ElementTree.ElementTree(doc).write(f)
         f.close()
         
+    # manually unlinking seems to be required on windows
+    os.unlink(dest_file)
     os.rename(tmp_file, dest_file)
     return 0
 
@@ -72,7 +75,7 @@ parser.add_option('-v' , '--verbose', dest='verbose',
 if __name__ == '__main__':
     (options, args) = parser.parse_args()
     
-    if not args:
+    if not len(args) == 2:
         parser.error('Please specify .mml and .xml files')
 
     layersfile, outputfile = args[0:2]

@@ -163,6 +163,13 @@ properties = {
 
     #--------------- text symbolizer
 
+    'text-anchor-dx':int,
+    'text-anchor-dy':int,
+    'text-align': ('left','middle','right',),
+    'text-vertical-align': ('top','middle','bottom',),
+    'text-justify-align': ('left','middle','right',),
+    'text-transform': ('uppercase','lowercase',),
+    'text-force-odd-labels':boolean,
     # Font name
     'text-face-name': str,
 
@@ -366,7 +373,7 @@ class Selector:
     
         self.elements = elements[:]
 
-    def convertZoomTests(self,is_gym=True):
+    def convertZoomTests(self, is_merc=True):
         """ Modify the tests on this selector to use mapnik-friendly
             scale-denominator instead of shorthand zoom.
         """
@@ -395,7 +402,7 @@ class Selector:
         
         for test in self.elements[0].tests:
             if test.property == 'zoom':
-                if not is_gym:
+                if not is_merc:
                     # TODO - should we warn instead that values may not be appropriate?
                     raise NotImplementedError('Map srs is not web mercator, so zoom level shorthand cannot be propertly converted to Min/Max scaledenominators')
 
@@ -762,17 +769,21 @@ class Value:
     def __str__(self):
         return str(self.value)
 
-def stylesheet_declarations(string, is_gym):
+def stylesheet_declarations(string, is_merc):
+    """ Parse a string representing a stylesheet into a list of declarations.
+    
+        Required boolean is_merc indicates whether the projection should
+        be interpreted as spherical mercator, so we know what to do with
+        zoom/scale-denominator in postprocess_selector().
     """
-    """
-    return rulesets_declarations(stylesheet_rulesets(string, is_gym))
+    return rulesets_declarations(stylesheet_rulesets(string, is_merc))
 
-def stylesheet_rulesets(string, is_gym=False):
+def stylesheet_rulesets(string, is_merc=False):
     """ Parse a string representing a stylesheet into a list of rulesets.
     
-        Optionally, accept a base string so we know where linked files come from,
-        and a flag letting us know whether this is a Google/VEarth mercator projection
-        so we know what to do with zoom/scale-denominator in postprocess_selector().
+        Required boolean is_merc indicates whether the projection should
+        be interpreted as spherical mercator, so we know what to do with
+        zoom/scale-denominator in postprocess_selector().
     """
     in_selectors = False
     in_block = False
@@ -801,13 +812,13 @@ def stylesheet_rulesets(string, is_gym=False):
             
                 if (nname == 'CHAR' and value == '{'):
                     # open curly-brace means we're on to the actual rule sets
-                    ruleset['selectors'][-1] = postprocess_selector(ruleset['selectors'][-1], is_gym, line, col)
+                    ruleset['selectors'][-1] = postprocess_selector(ruleset['selectors'][-1], is_merc, line, col)
                     in_selectors = False
                     in_block = True
     
                 elif (nname == 'CHAR' and value == ','):
                     # comma means there's a break between selectors
-                    ruleset['selectors'][-1] = postprocess_selector(ruleset['selectors'][-1], is_gym, line, col)
+                    ruleset['selectors'][-1] = postprocess_selector(ruleset['selectors'][-1], is_merc, line, col)
                     ruleset['selectors'].append([])
     
                 elif nname not in ('COMMENT'):
@@ -890,7 +901,7 @@ def trim_extra(tokens):
         
     return tokens
 
-def postprocess_selector(tokens, is_gym, line=0, col=0):
+def postprocess_selector(tokens, is_merc, line=0, col=0):
     """ Convert a list of tokens into a Selector.
     """
     tokens = (token for token in trim_extra(tokens))
@@ -987,7 +998,7 @@ def postprocess_selector(tokens, is_gym, line=0, col=0):
 
     selector = Selector(*elements)
     
-    selector.convertZoomTests(is_gym=is_gym)
+    selector.convertZoomTests(is_merc=is_merc)
     
     return selector
 
