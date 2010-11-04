@@ -250,7 +250,63 @@ properties = {
     
     # resampling method
     'raster-scaling': ('fast', 'bilinear', 'bilinear8',),
-        
+
+    #--------------- markers symbolizer
+
+    # CSS colour (default "black")
+    'marker-line-color': color,
+
+    # 0.0 - n (default 1.0)
+    'marker-line-width': float,
+
+    # 0.0 - 1.0 (default 1.0)
+    'marker-line-opacity': float,
+
+    # d0,d1, ... (default none)
+    #'line-dasharray': numbers, # Number(s)
+
+    # "line" to label along lines instead of by point
+    # default is line
+    'marker-placement': ('point', 'line'),
+
+    # marker shape type
+    # arrow default if line placement
+    # ellipse default if point placement
+    'marker-type': ('arrow', 'ellipse'),
+    
+    # marker width
+    # default 5
+    'marker-width': int,
+
+    # marker height
+    # default 5
+    'marker-height': int,
+
+    # marker fill color
+    'marker-fill': color,
+
+    # 0.0 - 1.0 (default 1.0)
+    # should we name marker-opacity ?
+    'marker-fill-opacity': float,
+
+    # TODO - expose these next
+    # path to svg file (optional)
+    'marker-file': uri, # none
+
+    # Allow markers to overlap other markers
+    'marker-allow-overlap': boolean,
+    
+    'marker-spacing':float,
+    
+    'marker-max-error':float,
+
+    'marker-transform': str,
+
+    # metawriter support
+    'marker-meta-output': str,
+
+    'marker-meta-writer': str,
+            
     #--------------- polygon pattern symbolizer
 
     # path to image file (default none)
