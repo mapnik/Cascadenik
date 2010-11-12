@@ -33,12 +33,13 @@ def _relpath(path, start=posixpath.curdir):
 
 # timeout parameter to HTTPConnection was added in Python 2.6
 if sys.hexversion >= 0x020600F0:
-    from httplib import HTTPConnection
+    from httplib import HTTPConnection, HTTPSConnection
 
 else:
     posixpath.relpath = _relpath
     
     from httplib import HTTPConnection as _HTTPConnection
+    from httplib import HTTPSConnection as _HTTPSConnection
     import socket
     
     def HTTPConnection(host, port=None, strict=None, timeout=None):
@@ -46,6 +47,10 @@ else:
             socket.setdefaulttimeout(timeout)
         return _HTTPConnection(host, port=port, strict=strict)
 
+    def HTTPSConnection(host, port=None, strict=None, timeout=None):
+        if timeout:
+            socket.setdefaulttimeout(timeout)
+        return _HTTPSConnection(host, port=port, strict=strict)
 
 
 # cascadenik
@@ -151,7 +156,7 @@ class Directories:
 
         scheme, n, path, p, q, f = urlparse(to_posix(source))
         
-        if scheme == 'http':
+        if scheme in ('http','https'):
             self.source = source
         elif scheme in ('file', ''):
             # os.path (systempath) usage here is intentional...
@@ -478,7 +483,6 @@ def test_combinations(tests, filter=None):
 
     # knock one off the front
     first_test, remaining_tests = tests[0], tests[1:]
-    
     # one filter with the front test on it
     this_filter = filter.clone()
     this_filter.tests.append(first_test)
@@ -1035,22 +1039,26 @@ def locally_cache_remote_file(href, dir):
     """
     scheme, host, remote_path, p, q, f = urlparse(href)
     
-    assert scheme == 'http', 'No gophers.'
+    assert scheme in ('http','https'), 'Scheme must be either http or https, not "%s" (for %s)' % (scheme,href)
 
     head, ext = posixpath.splitext(posixpath.basename(remote_path))
     head = sub(r'[^\w\-_]', '', head)
     hash = md5(href).hexdigest()[:8]
     
     local_path = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
+
     headers = {}
     if posixpath.exists(local_path):
         t = localtime(os.stat(local_path).st_mtime)
         headers['If-Modified-Since'] = strftime('%a, %d %b %Y %H:%M:%S %Z', t)
     
-    conn = HTTPConnection(host, timeout=5)
+    if scheme == 'https':
+        conn = HTTPSConnection(host, timeout=5)
+    else:
+        conn = HTTPConnection(host, timeout=5)
     conn.request('GET', remote_path, headers=headers)
     resp = conn.getresponse()
-    
+        
     if resp.status in range(200, 210):
         # hurrah, it worked
         f = open(un_posix(local_path), 'wb')
@@ -1084,7 +1092,7 @@ def post_process_symbolizer_image_file(file_href, dirs):
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
     file_href = urljoin(dirs.source.rstrip('/')+'/', file_href)
     scheme, n, path, p, q, f = urlparse(file_href)
-    if scheme == 'http':
+    if scheme in ('http','https'):
         scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
     
     if scheme not in ('file', '') or not systempath.exists(un_posix(path)):
@@ -1343,7 +1351,8 @@ def localize_shapefile(shp_href, dirs):
     shp_href = urljoin(dirs.source.rstrip('/')+'/', shp_href)
     scheme, n, path, p, q, f = urlparse(shp_href)
     
-    if scheme == 'http':
+    if scheme in ('http','https'):
+        msg('%s | %s' % (shp_href, dirs.cache))
         scheme, path = '', locally_cache_remote_file(shp_href, dirs.cache)
     
     # collect drive for windows
@@ -1379,7 +1388,7 @@ def localize_file_datasource(file_href, dirs):
     file_href = urljoin(dirs.source.rstrip('/')+'/', file_href)
     scheme, n, path, p, q, f = urlparse(file_href)
     
-    if scheme == 'http':
+    if scheme in ('http','https'):
         scheme, path = '', locally_cache_remote_file(file_href, dirs.cache)
 
     if scheme not in ('file', ''):
@@ -1436,9 +1445,12 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
             map_el = ElementTree.fromstring(src)
     
         except:
-            if not (src[:7] in ('http://', 'file://')):
-                src = "file://" + src;
-            doc = ElementTree.parse(urllib.urlopen(src))
+            if not (src[:7] in ('http://', 'https:/', 'file://')):
+                src = "file://" + src
+            try:
+                doc = ElementTree.parse(urllib.urlopen(src))
+            except IOError, e:
+                raise IOError('%s: %s' % (e,src))
             map_el = doc.getroot()
 
     expand_source_declarations(map_el, dirs, datasources_cfg)
