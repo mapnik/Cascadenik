@@ -59,7 +59,7 @@ import style
 import sources
 import style
 import output
-from cascadenik.nonposix import un_posix, to_posix
+from nonposix import un_posix, to_posix
 
 # mapnik
 import mapnik2 as mapnik
