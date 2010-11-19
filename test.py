@@ -569,7 +569,7 @@ class SelectorParseTests(unittest.TestCase):
         
         self.assertEqual(str, type(text_rule_groups.keys()[0]))
         self.assertEqual(str, type(text_rule_groups['CODE'][0].symbolizers[0].face_name))
-        self.assertEqual(mapnik.label_placement.line, text_rule_groups['CODE'][0].symbolizers[0].placement)
+        self.assertEqual(str, type(text_rule_groups['CODE'][0].symbolizers[0].label_placement))
 
 class FilterCombinationTests(unittest.TestCase):
 
@@ -1372,7 +1372,7 @@ class StyleRuleTests(unittest.TestCase):
 
         self.assertEqual(color(0xFF, 0x00, 0x00), text_rule_groups['label'][0].symbolizers[0].color)
         self.assertEqual(100, text_rule_groups['label'][0].symbolizers[0].wrap_width)
-        self.assertEqual(50, text_rule_groups['label'][0].symbolizers[0].spacing)
+        self.assertEqual(50, text_rule_groups['label'][0].symbolizers[0].label_spacing)
         self.assertEqual(25, text_rule_groups['label'][0].symbolizers[0].label_position_tolerance)
         self.assertEqual(10, text_rule_groups['label'][0].symbolizers[0].max_char_angle_delta)
         self.assertEqual(color(0xFF, 0xFF, 0x00), text_rule_groups['label'][0].symbolizers[0].halo_color)
@@ -1380,9 +1380,9 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(10, text_rule_groups['label'][0].symbolizers[0].dx)
         self.assertEqual(15, text_rule_groups['label'][0].symbolizers[0].dy)
         self.assertEqual(boolean(1), text_rule_groups['label'][0].symbolizers[0].avoid_edges)
-        self.assertEqual(5, text_rule_groups['label'][0].symbolizers[0].min_distance)
+        self.assertEqual(5, text_rule_groups['label'][0].symbolizers[0].minimum_distance)
         self.assertEqual(boolean(0), text_rule_groups['label'][0].symbolizers[0].allow_overlap)
-        self.assertEqual(mapnik.label_placement.point, text_rule_groups['label'][0].symbolizers[0].placement)
+        self.assertEqual('point', text_rule_groups['label'][0].symbolizers[0].label_placement)
 
     def testStyleRules12a(self):
         s = """
@@ -1485,13 +1485,13 @@ class StyleRuleTests(unittest.TestCase):
         # http://trac.mapnik.org/ticket/652
         #self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].width)
         #self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].height)
-        #self.assertEqual(5, shield_rule_groups['just_image'][0].symbolizers[0].min_distance)
+        #self.assertEqual(5, shield_rule_groups['just_image'][0].symbolizers[0].minimum_distance)
         
         self.assertEqual('', shield_rule_groups['both'][0].symbolizers[0].face_name)
         self.assertEqual('SuperFonts', shield_rule_groups['both'][0].symbolizers[0].fontset)
         self.assertEqual(12, shield_rule_groups['both'][0].symbolizers[0].size)
         self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['both'][0].symbolizers[0].color)
-        self.assertEqual(5, shield_rule_groups['both'][0].symbolizers[0].min_distance)
+        self.assertEqual(5, shield_rule_groups['both'][0].symbolizers[0].minimum_distance)
 
 class DataSourcesTests(unittest.TestCase):
 
@@ -1543,15 +1543,18 @@ garbage=junk
         self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
 
     def testLocalDefaultsFromFile(self):
-        cfgn = tempfile.NamedTemporaryFile('w')
-        cfg = open(cfgn.name, 'w')
-        cfg.write(self.gen_section("DEFAULT", var="cows2"))
-        cfg.close()
-        self.assertTrue(os.path.exists(cfg.name))
-        dss = DataSources(__file__, cfg.name)
-        sect = self.gen_section("DEFAULT", var="cows") + "\n" + self.gen_section("t1", type="shape", file="%(var)s") 
-        dss.add_config(sect, __file__)
-        self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
+        handle, cfgpath = tempfile.mkstemp()
+        os.close(handle)
+
+        try:
+            open(cfgpath, 'w').write(self.gen_section("DEFAULT", var="cows2"))
+            self.assertTrue(os.path.exists(cfgpath))
+            dss = DataSources(__file__, cfgpath)
+            sect = self.gen_section("DEFAULT", var="cows") + "\n" + self.gen_section("t1", type="shape", file="%(var)s") 
+            dss.add_config(sect, __file__)
+            self.assertEqual(dss.get('t1')['parameters']['file'], "cows2")
+        finally:
+            os.unlink(cfgpath)
 
     def testBase1(self):
         dss = DataSources(None, None)
@@ -1690,12 +1693,15 @@ layer_srs=%(other_srs)s
         map = self.doCompile1(dscfg)        
         self.assertEqual(map.layers[1].srs, '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
         
-        cfgn = tempfile.NamedTemporaryFile('w')
-        cfg = open(cfgn.name, 'w')
-        cfg.write("[DEFAULT]\nother_srs=epsg:900913")
-        cfg.close()
-        map = self.doCompile1(dscfg, datasources_cfg=cfg.name)
-        self.assertEqual(map.layers[1].srs, '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs')
+        handle, cfgpath = tempfile.mkstemp()
+        os.close(handle)
+
+        try:
+            open(cfgpath, 'w').write("[DEFAULT]\nother_srs=epsg:900913")
+            map = self.doCompile1(dscfg, datasources_cfg=cfgpath)
+            self.assertEqual(map.layers[1].srs, '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs')
+        finally:
+            os.unlink(cfgpath)
         
     def doCompile1(self, s, **kwargs):
         map = compile(s, self.dirs, **kwargs)
@@ -1956,6 +1962,74 @@ layer_srs=%(other_srs)s
         ms = compile(s, self.dirs)
         ms.to_mapnik(mmap, self.dirs)
         mapnik.save_map(mmap, os.path.join(self.tmpdir, 'out.mml'))
+
+
+    def testCompile6(self):
+        s = u"""
+            Layer NAME
+            {
+                text-anchor-dx: 10;
+                text-anchor-dy: 10;
+                text-allow-overlap: true;
+                text-avoid-edges: true;
+                text-align: middle;
+                text-character-spacing: 10;
+                text-dx: 10;
+                text-dy: 15;
+                text-face-name: 'Helvetica';
+                text-fill: #f00;
+                text-fontset: 'nanas';
+                text-force-odd-labels: true;
+                text-halo-fill: #ff0;
+                text-halo-radius: 2;
+                text-label-position-tolerance: 25;
+                text-line-spacing:10;
+                
+                text-anchor-dx: 10;
+                text-anchor-dy: 10;
+                text-align: left;
+                text-vertical-align: bottom;
+                text-justify-align: left;
+                text-transform: uppercase;
+                text-size: 12;
+                text-spacing: 50;
+                text-wrap-width: 100;
+                text-transform: uppercase;
+                text-max-char-angle-delta: 10;
+                text-min-distance: 5;
+                text-placement: line;
+                text-vertical-align: top;
+            }
+        """
+        declarations = stylesheet_declarations(s, is_merc=True)
+        text_rule_groups = get_text_rule_groups(declarations)
+        sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik()
+        self.assertEqual([10,15], sym.get_displacement())
+        # todo - anchor (does not do anything yet in mapnik, but likely will)
+        # and is not set in xml, but accepted in python
+        #self.assertEqual([0,5], sym.get_anchor())
+        self.assertEqual(True, sym.allow_overlap)
+        self.assertEqual(True, sym.avoid_edges)
+        self.assertEqual(10, sym.character_spacing)
+        self.assertEqual('Helvetica', sym.face_name)
+        self.assertEqual(mapnik.Color("#f00"), sym.fill)
+        # todo - not exposed in python
+        #self.assertEqual('nanas', sym.fontset)
+        
+        self.assertEqual(True, sym.force_odd_labels)
+        self.assertEqual(mapnik.justify_alignment.LEFT, sym.justify_alignment)
+        self.assertEqual(mapnik.Color("#ff0"), sym.halo_fill)
+        self.assertEqual(2, sym.halo_radius)
+        
+        self.assertEqual('[NAME]', str(sym.name))
+        self.assertEqual(12, sym.text_size)
+        self.assertEqual(100, sym.wrap_width)
+        self.assertEqual(50, sym.label_spacing)
+        self.assertEqual(25, sym.label_position_tolerance)
+        self.assertEqual(10, sym.max_char_angle_delta)
+        self.assertEqual(10, sym.line_spacing)
+        self.assertEqual(5, sym.minimum_distance)
+        self.assertEqual(mapnik.label_placement.LINE_PLACEMENT, sym.label_placement)
 
 class RelativePathTests(unittest.TestCase):
 
@@ -2255,11 +2329,11 @@ class RelativePathTests(unittest.TestCase):
         map = compile(mml_data, dirs)
         
         img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
-        assert os.path.realpath(img_path).startswith(self.tmpdir1), "%s %s" % (img_path, self.tmpdir1)
+        assert os.path.realpath(img_path).startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (img_path, self.tmpdir1)
         assert os.path.exists(img_path)
         
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
-        assert os.path.realpath(shp_path).startswith(self.tmpdir1), "%s %s" % (shp_path, self.tmpdir1)
+        assert os.path.realpath(shp_path).startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (shp_path, self.tmpdir1)
         assert os.path.exists(shp_path)
         
 if __name__ == '__main__':

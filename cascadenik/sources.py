@@ -3,10 +3,7 @@ import StringIO
 import urlparse
 import urllib
 
-try:
-    import mapnik2 as mapnik
-except ImportError:
-    import mapnik
+import mapnik2 as mapnik
 
 class DataSources(object):
     def __init__(self, base, local_cfg):

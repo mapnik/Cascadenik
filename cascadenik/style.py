@@ -163,6 +163,13 @@ properties = {
 
     #--------------- text symbolizer
 
+    'text-anchor-dx':int,
+    'text-anchor-dy':int,
+    'text-align': ('left','middle','right',),
+    'text-vertical-align': ('top','middle','bottom',),
+    'text-justify-align': ('left','middle','right',),
+    'text-transform': ('uppercase','lowercase',),
+    'text-force-odd-labels':boolean,
     # Font name
     'text-face-name': str,
 
@@ -418,8 +425,12 @@ class Selector:
             15: (12500, 25000),
             16: (5000, 12500),
             17: (2500, 5000),
-            18: (1000, 2500)
-            }
+            18: (1000, 2500),
+            19: (500, 1000),
+            20: (250, 500),
+            21: (100, 250),
+            22: (50, 100),
+           }
         
         for test in self.elements[0].tests:
             if test.property == 'zoom':
