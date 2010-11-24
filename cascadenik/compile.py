@@ -1045,7 +1045,7 @@ def locally_cache_remote_file(href, dir):
     head = sub(r'[^\w\-_]', '', head)
     hash = md5(href).hexdigest()[:8]
     
-    local_path = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
+    local_path = '%(dir)s/%(host)s-%(hash)s-%(head)s%(ext)s' % locals()
 
     headers = {}
     if posixpath.exists(local_path):
@@ -1305,15 +1305,16 @@ def get_applicable_declarations(element, declarations):
     return [dec for dec in declarations
             if dec.selector.matches(element_tag, element_id, element_classes)]
 
-def unzip_shapefile_into(zip_path, dir):
+def unzip_shapefile_into(zip_path, dir, host=None):
     """
     """
-    
     hash = md5(zip_path).hexdigest()[:8]
     zip_file = zipfile.ZipFile(un_posix(zip_path))
     
     infos = zip_file.infolist()
     extensions = [posixpath.splitext(info.filename)[1] for info in infos]
+    
+    host_prefix = host and ('%(host)s-' % locals()) or ''
     
     for (expected, required) in SHAPE_PARTS:
         if required and expected not in extensions:
@@ -1325,7 +1326,7 @@ def unzip_shapefile_into(zip_path, dir):
 
             if ext == expected:
                 file_data = zip_file.read(info.filename)
-                file_name = '%(dir)s/%(head)s-%(hash)s%(ext)s' % locals()
+                file_name = '%(dir)s/%(host_prefix)s%(hash)s-%(head)s%(ext)s' % locals()
                 
                 file_ = open(un_posix(file_name), 'wb')
                 file_.write(file_data)
@@ -1349,17 +1350,19 @@ def localize_shapefile(shp_href, dirs):
     mapnik_requires_absolute_paths = (MAPNIK_VERSION < 601)
 
     shp_href = urljoin(dirs.source.rstrip('/')+'/', shp_href)
-    scheme, n, path, p, q, f = urlparse(shp_href)
+    scheme, host, path, p, q, f = urlparse(shp_href)
     
     if scheme in ('http','https'):
         msg('%s | %s' % (shp_href, dirs.cache))
         scheme, path = '', locally_cache_remote_file(shp_href, dirs.cache)
+    else:
+        host = None
     
     # collect drive for windows
     to_posix(systempath.realpath(path))
 
     if scheme not in ('file', ''):
-        raise Exception("Shapefile needs to be a working, fetchable resource, not %s" % shp_href)
+        raise Exception("Shapefile needs to be local, not %s" % shp_href)
         
     if mapnik_requires_absolute_paths:
         path = posixpath.realpath(path)
@@ -1370,7 +1373,7 @@ def localize_shapefile(shp_href, dirs):
     if path.endswith('.zip'):
         # unzip_shapefile_into needs a path it can find
         path = posixpath.join(dirs.output, path)
-        path = unzip_shapefile_into(path, dirs.cache)
+        path = unzip_shapefile_into(path, dirs.cache, host)
 
     return dirs.output_path(path)
 
