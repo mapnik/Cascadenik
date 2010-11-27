@@ -2,9 +2,22 @@ Cascadenik Changelog
 --------------------
 
 
+Version 1.0.1, November 27, 2010:
+----------------------------
+ 
+ * Updated the CHANGELOG.
+ * Modified packaging script from deploy.py to Makefile.
+
+
 Version 1.0.0, October 4, 2010:
 ----------------------------
  
+ * Removed numerous command-line flags from cascadenik-compile.py; see --help for info.
+ * Substantially modified path usage to be internally consistent for local and remote paths.
+ * Added new .ini-based datasource configuration (Nino Walker).
+ * Switched from python-based XML output to Mapnik-based XML output (Robert Coup).
+ * Added new use of ~/.cascadenik directory for locally-cached files.
+ * Made local cache aware of HTTP 304 to minimize network traffic.
  * Started to write CHANGELOG for 1.0.0 but it's late.
 
 

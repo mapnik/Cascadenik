@@ -3,8 +3,10 @@ Written by Michal Migurski.
 
 With contributions from:
 
+Nino Walker
 Aubrey Holland
 Matt Kenny
 Tom MacWright
 Dane Springmeyer
 Oliver Tonnhofer
+Robert Coup
