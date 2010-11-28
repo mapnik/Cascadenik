@@ -2,6 +2,12 @@ Cascadenik Changelog
 --------------------
 
 
+Version 1.0.2, November 27, 2010:
+----------------------------
+ 
+ * Fixed is_gym/is_merc bug from https://github.com/mapnik/Cascadenik/issues/closed#issue/10.
+
+
 Version 1.0.1, November 27, 2010:
 ----------------------------
  
