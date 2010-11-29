@@ -1441,13 +1441,13 @@ class StyleRuleTests(unittest.TestCase):
         s = """
             Layer
             {
-                point-file: url('file:///Users/rcoup/Downloads/cowbell.svg');
+                point-file: url('http://cascadenik-sampledata.s3.amazonaws.com/cowbell.svg');
                 point-transform: scale(0.1);
 
-                polygon-pattern-file: url('file:///Users/rcoup/Downloads/cowbell.svg');
+                polygon-pattern-file: url('http://cascadenik-sampledata.s3.amazonaws.com/cowbell.svg');
                 polygon-pattern-transform: scale(0.2,0.2);
 
-                line-pattern-file: url('file:///Users/rcoup/Downloads/cowbell.svg');
+                line-pattern-file: url('http://cascadenik-sampledata.s3.amazonaws.com/cowbell.svg');
                 line-pattern-transform: scale(0.3,0.3);
             }
         """
@@ -2042,14 +2042,14 @@ layer_srs=%(other_srs)s
         s = u"""
             Layer
             {
-                point-file: url('file:///Users/rcoup/Downloads/cowbell.svg');
+                point-file: url('http://cascadenik-sampledata.s3.amazonaws.com/cowbell.svg');
                 point-transform: scale(2,3) rotate(0.5);
             }
         """
         declarations = stylesheet_declarations(s, is_merc=True)
         point_rules = get_point_rules(declarations, self.dirs)
         sym = point_rules[0].symbolizers[0].to_mapnik()
-        self.assertEqual('/Users/rcoup/Downloads/cowbell.svg', sym.filename)
+        self.assert_(sym.filename.startswith('cowbell-') and sym.filename.endswith('.svg'), sym.filename)
         # retrieving the transform always returns the matrix form
         self.assertEqual('matrix(1.999924, 0.026180, -0.017453, 2.999886, 0.000000, 0.000000)', sym.transform)
         
