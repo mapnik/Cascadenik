@@ -1162,6 +1162,7 @@ def get_shield_rule_groups(declarations, dirs):
                     'shield-line-spacing': 'line_spacing',
                     'shield-spacing': 'spacing', 'shield-min-distance': 'minimum_distance',
                     'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height',
+                    'shield-transform': 'transform',
                     'shield-meta-output': 'meta-output', 'shield-meta-writer': 'meta-writer'}
 
     property_names = property_map.keys()
@@ -1201,6 +1202,7 @@ def get_shield_rule_groups(declarations, dirs):
             
             color = values.has_key('shield-fill') and values['shield-fill'].value or None
             minimum_distance = values.has_key('shield-min-distance') and values['shield-min-distance'].value or None
+            transform = values.has_key('shield-transform') and values['shield-transform'].value or None
             
             character_spacing = values.has_key('shield-character-spacing') and values['shield-character-spacing'].value or None
             line_spacing = values.has_key('shield-line-spacing') and values['shield-line-spacing'].value or None
@@ -1210,7 +1212,7 @@ def get_shield_rule_groups(declarations, dirs):
                 symbolizer = output.ShieldSymbolizer(text_name, face_name, size, 
                                             file, color, minimum_distance,
                                             character_spacing, line_spacing, spacing,
-                                            fontset=fontset)
+                                            fontset=fontset, transform=transform)
             
                 rules.append(make_rule(filter, symbolizer))
         
@@ -1225,6 +1227,7 @@ def get_point_rules(declarations, dirs):
     """
     property_map = {'point-file': 'file', 
                     'point-allow-overlap': 'allow_overlap',
+                    'point-transform': 'transform',
                     'point-meta-output': 'meta-output', 'point-meta-writer': 'meta-writer'}
     
     property_names = property_map.keys()
@@ -1238,8 +1241,9 @@ def get_point_rules(declarations, dirs):
             or None
         
         point_allow_overlap = values.has_key('point-allow-overlap') and values['point-allow-overlap'].value or None
+        transform = values.has_key('point-transform') and values['point-transform'].value or None
         
-        symbolizer = point_file and output.PointSymbolizer(point_file, point_allow_overlap)
+        symbolizer = point_file and output.PointSymbolizer(point_file, point_allow_overlap, transform=transform)
 
         if symbolizer:
             rules.append(make_rule(filter, symbolizer))
@@ -1252,6 +1256,7 @@ def get_polygon_pattern_rules(declarations, dirs):
         Optionally provide an output directory for local copies of image files.
     """
     property_map = {'polygon-pattern-file': 'file', 
+                    'polygon-pattern-transform': 'transform',
                     'polygon-meta-output': 'meta-output', 'polygon-meta-writer': 'meta-writer'}
 
     
@@ -1265,7 +1270,8 @@ def get_polygon_pattern_rules(declarations, dirs):
             and postprocess_symbolizer_image_file(str(values['polygon-pattern-file'].value), dirs) \
             or None
         
-        symbolizer = poly_pattern_file and output.PolygonPatternSymbolizer(poly_pattern_file)
+        transform = values.has_key('polygon-pattern-transform') and values['polygon-pattern-transform'].value or None
+        symbolizer = poly_pattern_file and output.PolygonPatternSymbolizer(poly_pattern_file, transform=transform)
         
         if symbolizer:
             rules.append(make_rule(filter, symbolizer))
@@ -1278,6 +1284,7 @@ def get_line_pattern_rules(declarations, dirs):
         Optionally provide an output directory for local copies of image files.
     """
     property_map = {'line-pattern-file': 'file', 
+                    'line-pattern-transform': 'transform',
                     'line-pattern-meta-output': 'meta-output', 'line-pattern-meta-writer': 'meta-writer'}
 
     
@@ -1291,7 +1298,8 @@ def get_line_pattern_rules(declarations, dirs):
             and postprocess_symbolizer_image_file(str(values['line-pattern-file'].value), dirs) \
             or None
         
-        symbolizer = line_pattern_file and output.LinePatternSymbolizer(line_pattern_file)
+        transform = values.has_key('line-pattern-transform') and values['line-pattern-transform'].value or None
+        symbolizer = line_pattern_file and output.LinePatternSymbolizer(line_pattern_file, transform=transform)
         
         if symbolizer:
             rules.append(make_rule(filter, symbolizer))

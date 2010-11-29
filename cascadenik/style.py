@@ -61,6 +61,9 @@ class numbers:
     def __eq__(self, other):
         return self.values == other.values
 
+class function_expression(str):
+    pass
+
 # recognized properties
 
 properties = {
@@ -234,6 +237,7 @@ properties = {
 
     # path to image file
     'point-file': uri, # none
+    'point-transform': function_expression,
 
     # true/false
     'point-allow-overlap': boolean,
@@ -307,7 +311,7 @@ properties = {
     
     'marker-max-error':float,
 
-    'marker-transform': str,
+    'marker-transform': function_expression,
 
     # metawriter support
     'marker-meta-output': str,
@@ -318,6 +322,7 @@ properties = {
 
     # path to image file (default none)
     'polygon-pattern-file': uri,
+    'polygon-pattern-transform': function_expression,
 
     # metawriter support
     'polygon-pattern-meta-output': str,
@@ -328,6 +333,7 @@ properties = {
 
     # path to image file (default none)
     'line-pattern-file': uri,
+    'line-pattern-transform': function_expression,
 
     # metawriter support
     'line-pattern-meta-output': str,
@@ -365,6 +371,7 @@ properties = {
 
     # path to image file (default none)
     'shield-file': uri,
+    'shield-transform': function_expression,
 
     # metawriter support
     'shield-meta-output': str,
@@ -1070,7 +1077,7 @@ def postprocess_value(tokens, property, line=0, col=0):
     
     if properties[property.name] in (int, float, str, color, uri, boolean) or type(properties[property.name]) is tuple:
         if len(tokens) != 1:
-            raise ParseException('Single value only for property "%(property)s"' % locals(), line, col)
+            raise ParseException('Single value only for property "%(property)s": %(tokens)s' % locals(), line, col)
 
     if properties[property.name] is int:
         if tokens[0][0] != 'NUMBER':
@@ -1182,5 +1189,11 @@ def postprocess_value(tokens, property, line=0, col=0):
                 raise ParseException('Value for property "%(property)s" should be a comma-delimited list of numbers' % locals(), line, col)
 
         value = numbers(*values)
+
+    elif properties[property.name] is function_expression:
+        if tokens[0][0] != 'FUNCTION':
+            raise ParseException('Function value only for property "%(property)s"' % locals(), line, col)
+
+        value = str(''.join([t[1] for t in tokens]))
 
     return Value(value, important)

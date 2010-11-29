@@ -346,7 +346,7 @@ class TextSymbolizer:
 class ShieldSymbolizer:
     def __init__(self, name, face_name=None, size=None, file=None, \
         color=None, minimum_distance=None, character_spacing=None, \
-        line_spacing=None, spacing=None, fontset=None):
+        line_spacing=None, spacing=None, fontset=None, transform=None):
         
         assert (face_name or fontset) and file
         
@@ -360,12 +360,14 @@ class ShieldSymbolizer:
         assert line_spacing is None or type(line_spacing) is int
         assert spacing is None or type(spacing) is int
         assert minimum_distance is None or type(minimum_distance) is int
+        assert transform is None or isinstance(transform, basestring)
 
         self.name = safe_str(name)
         self.face_name = safe_str(face_name) or ''
         self.fontset = safe_str(fontset)
         self.size = size or 10
         self.file = safe_str(file)
+        self.transform = transform
 
         self.color = color
         self.character_spacing = character_spacing
@@ -394,10 +396,12 @@ class ShieldSymbolizer:
         return sym
 
 class BasePointSymbolizer(object):
-    def __init__(self, file):
+    def __init__(self, file, transform=None):
         assert isinstance(file, basestring)
+        assert transform is None or isinstance(transform, basestring), transform
 
         self.file = safe_str(file)
+        self.transform = transform
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self.file)
@@ -405,11 +409,12 @@ class BasePointSymbolizer(object):
     def to_mapnik(self):
         sym_class = getattr(mapnik, self.__class__.__name__)
         sym = sym_class(mapnik.PathExpression(self.file))
+        sym.transform = self.transform if self.transform else sym.transform
         return sym
 
 class PointSymbolizer(BasePointSymbolizer):
-    def __init__(self, file, allow_overlap=None):
-        super(PointSymbolizer, self).__init__(file)
+    def __init__(self, file, allow_overlap=None, transform=None):
+        super(PointSymbolizer, self).__init__(file, transform=transform)
 
         assert allow_overlap is None or allow_overlap.__class__ is style.boolean
 
