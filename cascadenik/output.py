@@ -300,7 +300,16 @@ class TextSymbolizer:
                          'lowercase': mapnik.text_transform.LOWERCASE,
                         }
 
-        sym = mapnik.TextSymbolizer(mapnik.Expression(self.name), self.face_name, self.size,
+        # Wrap 'name' in brackets because now that Mapnik2 supports
+        # expressions more generically we use brackets to denote any
+        # field names being pulled from the featureset, which is what
+        # text_symbolizer's 'name' attribute does by default in previous
+        # mapnik versions, and this workaround avoids deprecation errors
+        # from mapnik2 - in the future we may expose expressions more properly
+        # in Cascadenik and this will need to be amended
+        expr = mapnik.Expression('[%s]' % self.name)
+        
+        sym = mapnik.TextSymbolizer(expr, self.face_name, self.size,
                                     mapnik.Color(str(self.color)))
 
         sym.wrap_width = self.wrap_width or sym.wrap_width
