@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map srs="+init=epsg:4326">
+    <Stylesheet><![CDATA[
+
+        .thematic[count_2>0][count_2<48] { polygon-fill: #00FF00; }
+
+        .thematic[count_2>=48][count_2<96] { polygon-fill: #00BF40; }
+
+        .thematic[count_2>=96][count_2<144] { polygon-fill: #00807F; }
+
+        .thematic[count_2>=144][count_2<192] { polygon-fill: #0041BE; }
+
+    ]]></Stylesheet>
+
+    <Layer class="thematic" srs="+init=epsg:4326">
+        <Datasource>
+            <Parameter name="type">ogr</Parameter>
+            <Parameter name="layer">OGRGeoJSON</Parameter>
+            <Parameter name="file">http://geocommons.com/overlays/78664/features.json?geojson=1</Parameter>
+        </Datasource>
+    </Layer>
+</Map>
