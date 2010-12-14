@@ -1037,7 +1037,7 @@ def locally_cache_remote_file(href, dir):
         and awareness of modification date. Assume that files are "normal"
         which is to say they have filenames with extensions.
     """
-    scheme, host, remote_path, p, q, f = urlparse(href)
+    scheme, host, remote_path, params, query, fragment = urlparse(href)
     
     assert scheme in ('http','https'), 'Scheme must be either http or https, not "%s" (for %s)' % (scheme,href)
 
@@ -1049,6 +1049,7 @@ def locally_cache_remote_file(href, dir):
 
     headers = {}
     if posixpath.exists(local_path):
+        msg('Found local file: %s' % local_path )
         t = localtime(os.stat(local_path).st_mtime)
         headers['If-Modified-Since'] = strftime('%a, %d %b %Y %H:%M:%S %Z', t)
     
@@ -1056,12 +1057,17 @@ def locally_cache_remote_file(href, dir):
         conn = HTTPSConnection(host, timeout=5)
     else:
         conn = HTTPConnection(host, timeout=5)
+
+    if query:
+        remote_path += '?%s' % query
+
     conn.request('GET', remote_path, headers=headers)
     resp = conn.getresponse()
         
     if resp.status in range(200, 210):
         # hurrah, it worked
         f = open(un_posix(local_path), 'wb')
+        msg('Reading from remote: %s' % remote_path)
         f.write(resp.read())
         f.close()
 
@@ -1073,6 +1079,7 @@ def locally_cache_remote_file(href, dir):
     
     elif resp.status == 304:
         # hurrah, it's cached
+        msg('Reading directly from local cache')
         pass
 
     else:
