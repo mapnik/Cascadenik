@@ -348,8 +348,11 @@ class TextSymbolizer:
              # not viable via python
             sys.stderr.write('\nCascadenik debug: Warning, FontSets will be ignored as they are not yet supported in Mapnik via Python...\n')
         
-        sym.displacement(self.dx or 0.0, self.dy or 0.0)
-        
+        try:
+            sym.displacement = (self.dx or 0.0, self.dy or 0.0)
+        except:
+            sym.displacement(self.dx or 0.0, self.dy or 0.0)
+            
         return sym
 
 class ShieldSymbolizer:

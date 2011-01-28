@@ -24,7 +24,8 @@
             text-wrap-width: 50;
             text-avoid-edges: true;
 
-            point-file: url("purple-point.png");
+            point-file: url("point.svg");
+            point-allow-overlap: true;
             text-dy: 10;
         }
     ]]></Stylesheet>
