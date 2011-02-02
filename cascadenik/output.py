@@ -410,7 +410,7 @@ class ShieldSymbolizer:
 class BasePointSymbolizer(object):
     def __init__(self, file, transform=None):
         assert isinstance(file, basestring)
-        assert transform is None or isinstance(transform, basestring), transform
+        assert transform is None or isinstance(transform, basestring)
 
         self.file = safe_str(file)
         self.transform = transform
@@ -425,10 +425,12 @@ class BasePointSymbolizer(object):
         return sym
 
 class PointSymbolizer(BasePointSymbolizer):
-    def __init__(self, file, allow_overlap=None, transform=None):
+    def __init__(self, file, allow_overlap=None, transform=None, placement=None):
         super(PointSymbolizer, self).__init__(file, transform=transform)
 
         assert allow_overlap is None or allow_overlap.__class__ is style.boolean
+        assert placement is None or isinstance(placement, basestring)
+        self.placement = placement
 
         self.allow_overlap = allow_overlap
 
@@ -436,6 +438,9 @@ class PointSymbolizer(BasePointSymbolizer):
         sym = super(PointSymbolizer, self).to_mapnik()
         
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
+        if self.placement:
+            sym.placement = mapnik.point_placement.names.get(self.placement,mapnik.point_placement.CENTROID)
+            print sym.placement
         
         return sym
 

@@ -1228,6 +1228,7 @@ def get_point_rules(declarations, dirs):
     property_map = {'point-file': 'file', 
                     'point-allow-overlap': 'allow_overlap',
                     'point-transform': 'transform',
+                    'point-placement': 'placement',
                     'point-meta-output': 'meta-output', 'point-meta-writer': 'meta-writer'}
     
     property_names = property_map.keys()
@@ -1242,11 +1243,16 @@ def get_point_rules(declarations, dirs):
         
         point_allow_overlap = values.has_key('point-allow-overlap') and values['point-allow-overlap'].value or None
         transform = values.has_key('point-transform') and values['point-transform'].value or None
-        
-        symbolizer = point_file and output.PointSymbolizer(point_file, point_allow_overlap, transform=transform)
+        placement = values.has_key('point-placement') and values['point-placement'].value or None
 
-        if symbolizer:
-            rules.append(make_rule(filter, symbolizer))
+        if point_file:
+            symbolizer = output.PointSymbolizer(point_file,
+                                                           point_allow_overlap,
+                                                           transform=transform,
+                                                           placement=placement)
+
+            if symbolizer:
+                rules.append(make_rule(filter, symbolizer))
     
     return rules
 

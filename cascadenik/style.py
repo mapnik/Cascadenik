@@ -226,7 +226,7 @@ properties = {
     'text-allow-overlap': boolean,
 
     # "line" to label along lines instead of by point
-    'text-placement': ('point', 'line'),
+    'text-placement': ('point', 'line','vertex','interior'),
 
     # metawriter support
     'text-meta-output': str,
@@ -238,6 +238,7 @@ properties = {
     # path to image file
     'point-file': uri, # none
     'point-transform': function_expression,
+    'point-placement': ('centroid', 'interior'),
 
     # true/false
     'point-allow-overlap': boolean,

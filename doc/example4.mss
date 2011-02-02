@@ -10,6 +10,7 @@
     polygon-fill: #6f9;
 
     point-file: url("purple-point.png");
+    point-placement: interior;
     polygon-pattern-file: url("http://www.inkycircus.com/jargon/images/grass_by_conformity.jpg");
 }
 
