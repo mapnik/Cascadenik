@@ -440,7 +440,6 @@ class PointSymbolizer(BasePointSymbolizer):
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
         if self.placement:
             sym.placement = mapnik.point_placement.names.get(self.placement,mapnik.point_placement.CENTROID)
-            print sym.placement
         
         return sym
 

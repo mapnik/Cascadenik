@@ -2011,7 +2011,7 @@ layer_srs=%(other_srs)s
         declarations = stylesheet_declarations(s, is_merc=True)
         text_rule_groups = get_text_rule_groups(declarations)
         sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik()
-        self.assertEqual([10,15], sym.get_displacement())
+        self.assertEqual((10,15), sym.displacement)
         # todo - anchor (does not do anything yet in mapnik, but likely will)
         # and is not set in xml, but accepted in python
         #self.assertEqual([0,5], sym.get_anchor())
@@ -2051,7 +2051,7 @@ layer_srs=%(other_srs)s
         sym = point_rules[0].symbolizers[0].to_mapnik()
         self.assert_(sym.filename.startswith('cowbell-') and sym.filename.endswith('.svg'), sym.filename)
         # retrieving the transform always returns the matrix form
-        self.assertEqual('matrix(1.999924, 0.026180, -0.017453, 2.999886, 0.000000, 0.000000)', sym.transform)
+        self.assertEqual('matrix(1.99992, 0.0261796, -0.0174531, 2.99989, 0, 0)', sym.transform)
         
 class RelativePathTests(unittest.TestCase):
 
