@@ -14,7 +14,7 @@ def main(filename):
         unrolled list of declarations in cascade order.
     """
     input = open(filename, 'r').read()
-    declarations = cascadenik.stylesheet_declarations(input,is_gym=True)
+    declarations = cascadenik.stylesheet_declarations(input,is_merc=True)
     
     for dec in declarations:
         print dec.selector,
