@@ -2292,7 +2292,8 @@ class RelativePathTests(unittest.TestCase):
         assert os.path.exists(shp_path)
 
     def testRemotePaths(self):
-    
+        """ MML and MSS files are remote, cache and output to a local directory.
+        """
         dirs = Directories(self.tmpdir2, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
         
         mml_href = 'http://cascadenik-sampledata.s3.amazonaws.com/paths-test.mml'
@@ -2308,7 +2309,8 @@ class RelativePathTests(unittest.TestCase):
         assert os.path.exists(os.path.join(dirs.output, shp_path))
 
     def testRemoteLinkedSheetPaths(self):
-    
+        """ MML and MSS files are remote, cache to one local directory and output to a second.
+        """
         dirs = Directories(self.tmpdir1, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
         
         mml_href = 'http://cascadenik-sampledata.s3.amazonaws.com/paths-test2.mml'
@@ -2324,7 +2326,8 @@ class RelativePathTests(unittest.TestCase):
         assert os.path.exists(shp_path)
 
     def testLocalLinkedSheetPaths(self):
-    
+        """ MML and MSS files are in one directory, cache and output to a second.
+        """
         dirs = Directories(self.tmpdir2, self.tmpdir2, self.tmpdir1)
         
         mml_path = os.path.join(self.tmpdir1, 'paths-test2.mml')
@@ -2340,7 +2343,8 @@ class RelativePathTests(unittest.TestCase):
         assert os.path.exists(os.path.join(dirs.output, shp_path))
 
     def testSplitLinkedSheetPaths(self):
-    
+        """ MML and MSS files are in one directory, cache in that same directory, and output to a second.
+        """
         dirs = Directories(self.tmpdir2, self.tmpdir1, self.tmpdir1)
         
         mml_path = os.path.join(self.tmpdir1, 'paths-test2.mml')
@@ -2356,7 +2360,8 @@ class RelativePathTests(unittest.TestCase):
         assert os.path.exists(shp_path)
 
     def testReflexivePaths(self):
-    
+        """ MML file is at a remote location, but it references a local resource by file://.
+        """
         dirs = Directories(self.tmpdir2, self.tmpdir2, 'http://cascadenik-sampledata.s3.amazonaws.com')
         
         mml_data = """<?xml version="1.0" encoding="utf-8"?>
