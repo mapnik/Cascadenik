@@ -2385,6 +2385,60 @@ class RelativePathTests(unittest.TestCase):
         shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
         assert shp_path.startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (shp_path, self.tmpdir1)
         assert os.path.exists(shp_path)
+    
+    def testDotDotStylePaths(self):
+        """ MML file is in a subdirectory, MSS is outside that subdirectory with relative resources.
+        """
+        dirs = Directories(self.tmpdir2, self.tmpdir2, self.tmpdir1 + '/sub')
+        
+        mml_data = """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet src="../paths-test2.mss"/>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">file://%s/mission-points</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """ % self.tmpdir1
+        
+        map = compile(mml_data, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (img_path, self.tmpdir1)
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert shp_path.startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (shp_path, self.tmpdir1)
+        assert os.path.exists(shp_path)
+    
+    def testSubdirStylePaths(self):
+        """ MML file is in a directory, MSS is in a subdirectory with relative resources.
+        """
+        dirs = Directories(self.tmpdir2, self.tmpdir2, self.tmpdir1 + '/..')
+        
+        mml_data = """<?xml version="1.0" encoding="utf-8"?>
+            <Map srs="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null">
+                <Stylesheet src="%s/paths-test2.mss"/>
+                <Layer srs="+proj=latlong +ellps=WGS84 +datum=WGS84 +no_defs">
+                    <Datasource>
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">file://%s/mission-points</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """ % (os.path.basename(self.tmpdir1), self.tmpdir1)
+        
+        map = compile(mml_data, dirs)
+        
+        img_path = map.layers[0].styles[0].rules[0].symbolizers[0].file
+        assert img_path.startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (img_path, self.tmpdir1)
+        assert os.path.exists(img_path)
+        
+        shp_path = map.layers[0].datasource.parameters['file'] + '.shp'
+        assert shp_path.startswith(self.tmpdir1), 'Assert that "%s" starts with "%s"' % (shp_path, self.tmpdir1)
+        assert os.path.exists(shp_path)
         
 if __name__ == '__main__':
     unittest.main()
