@@ -1193,12 +1193,12 @@ def get_shield_rule_groups(declarations, dirs):
             
             character_spacing = values.has_key('shield-character-spacing') and values['shield-character-spacing'].value or None
             line_spacing = values.has_key('shield-line-spacing') and values['shield-line-spacing'].value or None
-            spacing = values.has_key('shield-spacing') and values['shield-spacing'].value or None
+            label_spacing = values.has_key('shield-spacing') and values['shield-spacing'].value or None
             
             if file and (face_name or fontset):
                 symbolizer = output.ShieldSymbolizer(text_name, face_name, size, file, filetype, 
-                                            width, height, color, minimum_distance,
-                                            character_spacing, line_spacing, spacing,
+                                            width, height, color, minimum_distance, character_spacing,
+                                            line_spacing, label_spacing,
                                             fontset=fontset)
             
                 rules.append(make_rule(filter, symbolizer))

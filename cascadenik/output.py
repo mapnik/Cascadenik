@@ -347,7 +347,7 @@ class TextSymbolizer:
 class ShieldSymbolizer:
     def __init__(self, name, face_name=None, size=None, file=None, filetype=None, \
         width=None, height=None, color=None, minimum_distance=None, character_spacing=None, \
-        line_spacing=None, spacing=None, fontset=None):
+        line_spacing=None, label_spacing=None, fontset=None):
         
         assert (face_name or fontset) and file
         
@@ -361,7 +361,7 @@ class ShieldSymbolizer:
         assert color is None or color.__class__ is style.color
         assert character_spacing is None or type(character_spacing) is int
         assert line_spacing is None or type(line_spacing) is int
-        assert spacing is None or type(spacing) is int
+        assert label_spacing is None or type(label_spacing) is int
         assert minimum_distance is None or type(minimum_distance) is int
 
         self.name = safe_str(name)
@@ -376,7 +376,7 @@ class ShieldSymbolizer:
         self.color = color
         self.character_spacing = character_spacing
         self.line_spacing = line_spacing
-        self.spacing = spacing
+        self.label_spacing = label_spacing
         self.minimum_distance = minimum_distance
 
     def __repr__(self):
@@ -395,7 +395,8 @@ class ShieldSymbolizer:
 
         sym.character_spacing = self.character_spacing or sym.character_spacing
         sym.line_spacing = self.line_spacing or sym.line_spacing
-        sym.spacing = self.spacing or sym.line_spacing
+        sym.label_placement = self.label_spacing and mapnik.label_placement.LINE_PLACEMENT or sym.label_placement
+        sym.label_spacing = self.label_spacing or sym.label_spacing
         sym.minimum_distance = self.minimum_distance or sym.minimum_distance
         if self.fontset:
             sym.fontset = self.fontset.value
