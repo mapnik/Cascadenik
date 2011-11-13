@@ -382,7 +382,7 @@ class ShieldSymbolizer:
         self.label_spacing = label_spacing
         self.minimum_distance = minimum_distance
         self.text_dx = text_dx
-        self.text_dx = text_dx
+        self.text_dy = text_dy
 
     def __repr__(self):
         return 'Shield(%s, %s, %s, %s)' % (self.name, self.face_name, self.size, self.file)
