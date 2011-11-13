@@ -2,6 +2,12 @@ Cascadenik Changelog
 --------------------
 
 
+Version 1.1.0, November 13, 2011:
+----------------------------
+ 
+ * Added shield-text-dx and shield-text-dy properties.
+
+
 Version 1.0.2, November 27, 2010:
 ----------------------------
  
