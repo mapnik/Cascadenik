@@ -2,6 +2,12 @@ Cascadenik Changelog
 --------------------
 
 
+Version 1.1.1, November 13, 2011:
+----------------------------
+ 
+ * Fixed use of shield symbolizer displacement based on https://github.com/mapnik/mapnik/issues/947.
+
+
 Version 1.1.0, November 13, 2011:
 ----------------------------
  

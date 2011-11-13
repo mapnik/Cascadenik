@@ -407,7 +407,7 @@ class ShieldSymbolizer:
         if self.fontset:
             sym.fontset = self.fontset.value
         
-        sym.displacement = (self.text_dx, self.text_dy)
+        sym.displacement(self.text_dx or 0, self.text_dy or 0)
         
         return sym
 
