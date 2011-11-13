@@ -1147,7 +1147,8 @@ def get_shield_rule_groups(declarations, dirs):
                     'shield-line-spacing': 'line_spacing',
                     'shield-spacing': 'spacing', 'shield-min-distance': 'minimum_distance',
                     'shield-file': 'file', 'shield-width': 'width', 'shield-height': 'height',
-                    'shield-meta-output': 'meta-output', 'shield-meta-writer': 'meta-writer'}
+                    'shield-meta-output': 'meta-output', 'shield-meta-writer': 'meta-writer',
+                    'shield-text-dx': 'dx', 'shield-text-dy': 'dy'}
 
     property_names = property_map.keys()
     
@@ -1195,10 +1196,13 @@ def get_shield_rule_groups(declarations, dirs):
             line_spacing = values.has_key('shield-line-spacing') and values['shield-line-spacing'].value or None
             label_spacing = values.has_key('shield-spacing') and values['shield-spacing'].value or None
             
+            text_dx = values.has_key('shield-text-dx') and values['shield-text-dx'].value or 0
+            text_dy = values.has_key('shield-text-dy') and values['shield-text-dy'].value or 0
+            
             if file and (face_name or fontset):
                 symbolizer = output.ShieldSymbolizer(text_name, face_name, size, file, filetype, 
                                             width, height, color, minimum_distance, character_spacing,
-                                            line_spacing, label_spacing,
+                                            line_spacing, label_spacing, text_dx=text_dx, text_dy=text_dy,
                                             fontset=fontset)
             
                 rules.append(make_rule(filter, symbolizer))

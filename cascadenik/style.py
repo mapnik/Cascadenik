@@ -328,6 +328,10 @@ properties = {
     # Vertical spacing between lines of multiline shields (in pixels)
     'shield-line-spacing': int,
 
+    # Text offset in pixels from image center
+    'shield-text-dx': int,
+    'shield-text-dy': int,
+
     # path to image file (default none)
     'shield-file': uri,
 
