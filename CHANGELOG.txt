@@ -2,6 +2,12 @@ Cascadenik Changelog
 --------------------
 
 
+Version 1.1.2, December 3, 2011:
+----------------------------
+ 
+ * Switched from os.rename() to shutil.move() in cascadenik-compile.py so cross-device moves would work.
+
+
 Version 1.1.1, November 13, 2011:
 ----------------------------
  

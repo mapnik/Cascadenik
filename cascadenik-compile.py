@@ -2,6 +2,7 @@
 
 import os
 import sys
+import shutil
 import optparse
 import cascadenik
 import tempfile
@@ -46,7 +47,7 @@ def main(src_file, dest_file, **kwargs):
     # manually unlinking seems to be required on windows
     if os.path.exists(dest_file):
         os.unlink(dest_file)
-    os.rename(tmp_file, dest_file)
+    shutil.move(tmp_file, dest_file)
     return 0
 
 parser = optparse.OptionParser(usage="""%prog [options] <mml> <xml>""", version='%prog ' + cascadenik.VERSION)
