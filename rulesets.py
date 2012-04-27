@@ -1,4 +1,4 @@
-from itertools import chain
+from itertools import chain, product
 
 from cssutils.tokenize2 import Tokenizer as cssTokenizer
 
@@ -69,13 +69,13 @@ Layer
 
 Layer#id[zoom >2][ zoom<= 3]
 {
-    line-width: 2;
+    line-width: 2 !important;
     line-width: 3 3;
 }
 
 * Stuff
 {
-    line-width: "hello";
+    line-width: "hello" #foo ;
 }
 
 """
@@ -164,29 +164,61 @@ def post_attribute(tokens):
     
 def post_block(tokens):
 
+    def post_value(tokens):
+        value = []
+        while True:
+            tname, tvalue, line, col = tokens.next()
+            if (tname, tvalue) == ('CHAR', '!'):
+                while True:
+                    tname, tvalue, line, col = tokens.next()
+                    if (tname, tvalue) == ('IDENT', 'important'):
+                        while True:
+                            tname, tvalue, line, col = tokens.next()
+                            if (tname, tvalue) == ('CHAR', ';'):
+                                #
+                                # end of a high-importance value
+                                #
+                                return value, True
+                            elif tname != 'S':
+                                raise ParseException('', line, col)
+                        break
+                    else:
+                        raise ParseException('', line, col)
+                break
+            elif (tname, tvalue) == ('CHAR', ';'):
+                #
+                # end of a low-importance value
+                #
+                return value, False
+            elif tname != 'S':
+                value.append((tname, tvalue))
+        raise ParseException('', line, col)
+    
+    property_values = []
+    
     while True:
         tname, tvalue, line, col = tokens.next()
         
         if tname == 'IDENT':
-            _tname, _tvalue, line, col = tokens.next()
+            _tname, _tvalue, _line, _col = tokens.next()
             
             if (_tname, _tvalue) == ('CHAR', ':'):
-                print '    a.', tvalue
+
+                property = tvalue
+                value, importance = post_value(tokens)
                 
-                while True:
-                    tname, tvalue, line, col = tokens.next()
-                    
-                    if (tname, tvalue) == ('CHAR', ';'):
-                        break
-                    
-                    elif tname != 'S':
-                        print '    b.', tname, repr(tvalue)
+                property_values.append((property, value, (line, col), importance))
                 
             else:
                 raise ParseException('', line, col)
         
-        if (tname, tvalue) == ('CHAR', '}'):
-            break
+        elif (tname, tvalue) == ('CHAR', '}'):
+            return property_values
+        
+        elif tname != 'S':
+            raise ParseException('', line, col)
+
+    raise ParseException('', line, col)
 
 def post_rule(tokens, selectors):
 
@@ -271,8 +303,11 @@ def post_rule(tokens, selectors):
             # Return a full block here.
             #
             selectors.append(Selector(*elements))
-            post_block(tokens)
-            return selectors
+            
+            for (selector, property_value) in product(selectors, post_block(tokens)):
+                print selector, property_value
+            
+            return None
 
 print css
 
