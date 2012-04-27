@@ -61,13 +61,13 @@ Layer
     line-width: 0;
 }
 
-.class[zoom>1],
-#id[zoom="1"]
+.class[zoom > 1],
+#id[zoom = "1"]
 {
     line-width: 1;
 }
 
-Layer#id[zoom>2][zoom<=3]
+Layer#id[zoom >2][ zoom<= 3]
 {
     line-width: 2;
     line-width: 3 3;
@@ -82,67 +82,110 @@ Layer#id[zoom>2][zoom<=3]
 
 def post_attribute(tokens):
 
-    test_args = [None, None, None]
-
+    def next_scalar(tokens):
+        while True:
+            tname, tvalue, line, col = tokens.next()
+            if tname == 'NUMBER':
+                return tvalue
+            elif tname == 'STRING':
+                return tvalue[1:-1]
+            elif tname != 'S':
+                raise ParseException('', line, col)
+    
+    def finish_attribute(tokens):
+        while True:
+            tname, tvalue, line, col = tokens.next()
+            if (tname, tvalue) == ('CHAR', ']'):
+                return
+            elif tname != 'S':
+                raise ParseException('', line, col)
+    
     while True:
-        nname, value, line, col = tokens.next()
+        tname, tvalue, line, col = tokens.next()
         
-        if nname == 'IDENT':
-            test_args[0] = value
+        if tname == 'IDENT':
+            property = tvalue
             
             while True:
-                nname, value, line, col = tokens.next()
+                tname, tvalue, line, col = tokens.next()
                 
-                if (nname, value) in [('CHAR', '<'), ('CHAR', '>'), ('CHAR', '!')]:
-                    _nname, _value, line, col = tokens.next()
+                if (tname, tvalue) in [('CHAR', '<'), ('CHAR', '>')]:
+                    _tname, _tvalue, line, col = tokens.next()
         
-                    if (_nname, _value) == ('CHAR', '='):
-                        test_args[1] = value + _value
-                    
-                    elif _nname in ('NUMBER', 'STRING'):
-                        test_args[1:3] = value, _value
+                    if (_tname, _tvalue) == ('CHAR', '='):
+                        #
+                        # One of <=, >=
+                        #
+                        op = tvalue + _tvalue
+                        value = next_scalar(tokens)
+                        finish_attribute(tokens)
+                        return SelectorAttributeTest(property, op, value)
                     
                     else:
-                        raise Exception()
+                        #
+                        # One of <, > and we popped a token too early
+                        #
+                        op = tvalue
+                        value = next_scalar(chain([(_tname, _tvalue, line, col)], tokens))
+                        finish_attribute(tokens)
+                        return SelectorAttributeTest(property, op, value)
                 
-                elif (nname, value) == ('CHAR', '='):
-                    test_args[1] = value
+                elif (tname, tvalue) == ('CHAR', '!'):
+                    _tname, _tvalue, line, col = tokens.next()
+        
+                    if (_tname, _tvalue) == ('CHAR', '='):
+                        #
+                        # !=
+                        #
+                        op = tvalue + _tvalue
+                        value = next_scalar(tokens)
+                        finish_attribute(tokens)
+                        return SelectorAttributeTest(property, op, value)
+                    
+                    else:
+                        raise ParseException('', line, col)
                 
-                elif nname in ('NUMBER', 'STRING'):
-                    test_args[2] = value
+                elif (tname, tvalue) == ('CHAR', '='):
+                    #
+                    # =
+                    #
+                    op = tvalue
+                    value = next_scalar(tokens)
+                    finish_attribute(tokens)
+                    return SelectorAttributeTest(property, op, value)
                 
-                elif (nname, value) == ('CHAR', ']'):
-                    return SelectorAttributeTest(*test_args)
-                
-                else:
-                    raise Exception()
+                elif tname != 'S':
+                    raise ParseException('', line, col)
+        
+        elif tname != 'S':
+            raise ParseException('', line, col)
 
-    raise Exception()
+    raise ParseException('', line, col)
     
 def post_block(tokens):
 
     while True:
-        nname, value, line, col = tokens.next()
+        tname, tvalue, line, col = tokens.next()
         
-        if nname == 'IDENT':
-            _nname, _value, line, col = tokens.next()
+        if tname == 'IDENT':
+            _tname, _tvalue, line, col = tokens.next()
             
-            if (_nname, _value) == ('CHAR', ':'):
-                print '    a.', value
+            if (_tname, _tvalue) == ('CHAR', ':'):
+                print '    a.', tvalue
                 
                 while True:
-                    nname, value, line, col = tokens.next()
+                    tname, tvalue, line, col = tokens.next()
                     
-                    if (nname, value) == ('CHAR', ';'):
+                    if (tname, tvalue) == ('CHAR', ';'):
                         break
                     
-                    elif nname != 'S':
-                        print '    b.', nname, repr(value)
+                    elif tname != 'S':
+                        print '    b.', tname, repr(tvalue)
                 
             else:
-                raise Exception()
+                raise ParseException('', line, col)
         
-        if (nname, value) == ('CHAR', '}'):
+        if (tname, tvalue) == ('CHAR', '}'):
             break
 
 def post_rule(tokens, selectors):
@@ -151,17 +194,17 @@ def post_rule(tokens, selectors):
     elements = []
     
     while True:
-        nname, value, line, col = tokens.next()
+        tname, tvalue, line, col = tokens.next()
         
-        if nname == 'IDENT':
+        if tname == 'IDENT':
             #
             # Identifier always starts a new element.
             #
             element = SelectorElement()
             elements.append(element)
-            element.addName(value)
+            element.addName(tvalue)
             
-        elif nname == 'HASH':
+        elif tname == 'HASH':
             #
             # Hash is an ID selector:
             # http://www.w3.org/TR/CSS2/selector.html#id-selectors
@@ -170,13 +213,13 @@ def post_rule(tokens, selectors):
                 element = SelectorElement()
                 elements.append(element)
         
-            element.addName(value)
+            element.addName(tvalue)
         
-        elif (nname, value) == ('CHAR', '.'):
+        elif (tname, tvalue) == ('CHAR', '.'):
             while True:
-                nname, value, line, col = tokens.next()
+                tname, tvalue, line, col = tokens.next()
                 
-                if nname == 'IDENT':
+                if tname == 'IDENT':
                     #
                     # Identifier after a period is a class selector:
                     # http://www.w3.org/TR/CSS2/selector.html#class-html
@@ -185,13 +228,13 @@ def post_rule(tokens, selectors):
                         element = SelectorElement()
                         elements.append(element)
                 
-                    element.addName('.'+value)
+                    element.addName('.'+tvalue)
                     break
                 
                 else:
                     raise ParseException('', line, col)
         
-        elif (nname, value) == ('CHAR', '*'):
+        elif (tname, tvalue) == ('CHAR', '*'):
             #
             # Asterisk character is a universal selector:
             # http://www.w3.org/TR/CSS2/selector.html#universal-selector
@@ -200,9 +243,9 @@ def post_rule(tokens, selectors):
                 element = SelectorElement()
                 elements.append(element)
         
-            element.addName(value)
+            element.addName(tvalue)
 
-        elif (nname, value) == ('CHAR', '['):
+        elif (tname, tvalue) == ('CHAR', '['):
             #
             # Left-bracket is the start of an attribute selector:
             # http://www.w3.org/TR/CSS2/selector.html#attribute-selectors
@@ -210,7 +253,7 @@ def post_rule(tokens, selectors):
             test = post_attribute(tokens)
             element.addTest(test)
         
-        elif (nname, value) == ('CHAR', ','):
+        elif (tname, tvalue) == ('CHAR', ','):
             #
             # Comma delineates one of a group of selectors:
             # http://www.w3.org/TR/CSS2/selector.html#grouping
@@ -220,7 +263,7 @@ def post_rule(tokens, selectors):
             selectors.append(Selector(*elements))
             return post_rule(tokens, selectors)
         
-        elif (nname, value) == ('CHAR', '{'):
+        elif (tname, tvalue) == ('CHAR', '{'):
             #
             # Left-brace is the start of a block:
             # http://www.w3.org/TR/CSS2/syndata.html#block
