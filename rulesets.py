@@ -2,57 +2,7 @@ from itertools import chain, product
 
 from cssutils.tokenize2 import Tokenizer as cssTokenizer
 
-#
-# Dummy classes.
-#
-
-class ParseException (Exception): pass
-
-class Dummy:
-    def __str__(self):
-        return str(self.__class__) \
-             + '(' + ', '.join( [k+'='+repr(v) for (k, v) in self.__dict__.items()] ) + ')'
-    
-    def __repr__(self):
-        return str(self)
-
-class Declaration (Dummy):
-    def __init__(self, selector, property, value, sort_key):
-        self.selector = selector
-        self.property = property
-        self.value = value
-        self.sort_key = sort_key
-
-class Selector (Dummy):
-    def __init__(self, *elements):
-        self.elements = elements[:]
-
-class SelectorElement (Dummy):
-    def __init__(self, names=None, tests=None):
-        self.names = names or []
-        self.tests = tests or []
-
-    def addName(self, name):
-        self.names.append(str(name))
-    
-    def addTest(self, test):
-        self.tests.append(test)
-
-class SelectorAttributeTest (Dummy):
-    def __init__(self, property, op, value):
-        assert op in ('<', '<=', '=', '!=', '>=', '>')
-        self.op = op
-        self.property = str(property)
-        self.value = value
-
-class Property (Dummy):
-    def __init__(self, name):
-        self.name = name
-
-class Value (Dummy):
-    def __init__(self, value, important):
-        self.value = value
-        self.important = important
+from cascadenik.style import ParseException, Declaration, Selector, SelectorElement, SelectorAttributeTest, Property, Value
 
 css = """
 
