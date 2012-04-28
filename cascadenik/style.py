@@ -3,6 +3,7 @@ import sys
 import os.path
 import urlparse
 import operator
+from itertools import chain, product
 from binascii import unhexlify as unhex
 from cssutils.tokenize2 import Tokenizer as cssTokenizer
 
@@ -784,7 +785,15 @@ def stylesheet_declarations(string, is_merc):
         be interpreted as spherical mercator, so we know what to do with
         zoom/scale-denominator in postprocess_selector().
     """
-    return rulesets_declarations(stylesheet_rulesets(string, is_merc))
+    declarations = []
+    tokens = cssTokenizer().tokenize(string)
+    
+    while True:
+        for declaration in parse_rule(tokens, []):
+            declarations.append(declaration)
+    
+    # sort by a css-like method
+    return sorted(declarations, key=operator.attrgetter('sort_key'))
 
 def stylesheet_rulesets(string, is_merc=False):
     """ Parse a string representing a stylesheet into a list of rulesets.
@@ -909,140 +918,89 @@ def trim_extra(tokens):
         
     return tokens
 
-def postprocess_selector(tokens, is_merc, line=0, col=0):
-    """ Convert a list of tokens into a Selector.
-    """
-    tokens = (token for token in trim_extra(tokens))
+def parse_attribute(tokens):
+
+    def next_scalar(tokens):
+        while True:
+            tname, tvalue, line, col = tokens.next()
+            if tname == 'NUMBER':
+                return tvalue
+            elif tname == 'STRING':
+                return tvalue[1:-1]
+            elif tname != 'S':
+                raise ParseException('', line, col)
     
-    elements = []
-    parts = []
+    def finish_attribute(tokens):
+        while True:
+            tname, tvalue, line, col = tokens.next()
+            if (tname, tvalue) == ('CHAR', ']'):
+                return
+            elif tname != 'S':
+                raise ParseException('', line, col)
     
-    in_element = False
-    in_attribute = False
-    
-    for token in tokens:
-        nname, value = token
+    while True:
+        tname, tvalue, line, col = tokens.next()
         
-        if not in_element:
-            if (nname == 'CHAR' and value in ('.', '*')) or nname in ('IDENT', 'HASH'):
-                elements.append(SelectorElement())
-                in_element = True
-                # continue on to if in_element below...
-
-        if in_element and not in_attribute:
-            if nname == 'CHAR' and value == '.':
-                next_nname, next_value = tokens.next()
+        if tname == 'IDENT':
+            property = tvalue
+            
+            while True:
+                tname, tvalue, line, col = tokens.next()
                 
-                if next_nname == 'IDENT':
-                    elements[-1].addName(value + next_value)
+                if (tname, tvalue) in [('CHAR', '<'), ('CHAR', '>')]:
+                    _tname, _tvalue, line, col = tokens.next()
+        
+                    if (_tname, _tvalue) == ('CHAR', '='):
+                        #
+                        # One of <=, >=
+                        #
+                        op = tvalue + _tvalue
+                        value = next_scalar(tokens)
+                        finish_attribute(tokens)
+                        return SelectorAttributeTest(property, op, value)
+                    
+                    else:
+                        #
+                        # One of <, > and we popped a token too early
+                        #
+                        op = tvalue
+                        value = next_scalar(chain([(_tname, _tvalue, line, col)], tokens))
+                        finish_attribute(tokens)
+                        return SelectorAttributeTest(property, op, value)
                 
-            elif nname in ('IDENT', 'HASH') or (nname == 'CHAR' and value == '*'):
-                elements[-1].addName(value)
-
-            elif nname == 'CHAR' and value == '[':
-                in_attribute = True
-
-            elif nname == 'S':
-                in_element = False
+                elif (tname, tvalue) == ('CHAR', '!'):
+                    _tname, _tvalue, line, col = tokens.next()
+        
+                    if (_tname, _tvalue) == ('CHAR', '='):
+                        #
+                        # !=
+                        #
+                        op = tvalue + _tvalue
+                        value = next_scalar(tokens)
+                        finish_attribute(tokens)
+                        return SelectorAttributeTest(property, op, value)
+                    
+                    else:
+                        raise ParseException('', line, col)
                 
-        elif in_attribute:
-            if nname in ('IDENT', 'NUMBER', 'STRING'):
-                parts.append(value)
+                elif (tname, tvalue) == ('CHAR', '='):
+                    #
+                    # =
+                    #
+                    op = tvalue
+                    value = next_scalar(tokens)
+                    finish_attribute(tokens)
+                    return SelectorAttributeTest(property, op, value)
                 
-            elif nname == 'CHAR' and value in ('<', '=', '>', '!'):
-                if value == '=' and parts[-1] in ('<', '>', '!'):
-                    parts[-1] += value
-                else:
-                    if len(parts) != 1:
-                        raise ParseException('Comparison operator must be in the middle of selector attribute', line, col)
-                
-                    parts.append(value)
+                elif tname != 'S':
+                    raise ParseException('', line, col)
+        
+        elif tname != 'S':
+            raise ParseException('', line, col)
 
-            elif nname == 'CHAR' and value == ']':
-                if len(parts) != 3:
-                    raise ParseException('Incorrect number of items in selector attribute', line, col)
+    raise ParseException('', line, col)
 
-                args = parts[-3:]
-                parts = []
-
-                try:
-                    args[2] = int(args[2])
-                except ValueError:
-                    try:
-                        args[2] = float(args[2])
-                    except ValueError:
-                        if args[1] in ('<', '<=', '=>', '>'):
-                            raise ParseException('Selector attribute must use a number for comparison tests', line, col)
-                        elif args[2].startswith('"') and args[2].endswith('"'):
-                            args[2] = args[2][1:-1]
-                        elif args[2].startswith("'") and args[2].endswith("'"):
-                            args[2] = args[2][1:-1]
-                        else:
-                            pass
-                
-                elements[-1].addTest(SelectorAttributeTest(*args))
-                in_attribute = False
-
-            elif nname == 'CHAR' and value == ']':
-                in_attribute = False
-    
-    if len(elements) > 2:
-        raise ParseException('Only two-element selectors are supported for Mapnik styles', line, col)
-
-    if len(elements) == 0:
-        raise ParseException('At least one element must be present in selectors for Mapnik styles', line, col)
-
-    if elements[0].names[0] not in ('Map', 'Layer') and elements[0].names[0][0] not in ('.', '#', '*'):
-        raise ParseException('All non-ID, non-class first elements must be "Layer" Mapnik styles', line, col)
-    
-    if len(elements) == 2 and elements[1].countTests():
-        raise ParseException('Only the first element in a selector may have attributes in Mapnik styles', line, col)
-
-    if len(elements) == 2 and elements[1].countIDs():
-        raise ParseException('Only the first element in a selector may have an ID in Mapnik styles', line, col)
-
-    if len(elements) == 2 and elements[1].countClasses():
-        raise ParseException('Only the first element in a selector may have a class in Mapnik styles', line, col)
-
-    selector = Selector(*elements)
-    
-    selector.convertZoomTests(is_merc=is_merc)
-    
-    return selector
-
-def postprocess_property(tokens, line=0, col=0):
-    """ Convert a one-element list of tokens into a Property.
-    """
-    tokens = trim_extra(tokens)
-    
-    if len(tokens) != 1:
-        raise ParseException('Too many tokens in property: ' + repr(tokens), line, col)
-    
-    if tokens[0][0] != 'IDENT':
-        raise ParseException('Incorrect type of token in property: ' + repr(tokens), line, col)
-    
-    if tokens[0][1] not in properties:
-        raise ParseException('"%s" is not a recognized property name' % tokens[0][1], line, col)
-    
-    return Property(tokens[0][1])
-
-def postprocess_value(tokens, property, line=0, col=0):
-    """
-    """
-    tokens = trim_extra(tokens)
-    
-    if len(tokens) >= 2 and (tokens[-2] == ('CHAR', '!')) and (tokens[-1] == ('IDENT', 'important')):
-        important = True
-        tokens = trim_extra(tokens[:-2])
-
-    else:
-        important = False
-    
-    if properties[property.name] in (int, float) and len(tokens) == 2 and tokens[0] == ('CHAR', '-') and tokens[1][0] == 'NUMBER':
-        # put the negative sign on the number
-        tokens = [(tokens[1][0], '-' + tokens[1][1])]
-    
-    value = tokens
+def postprocess_value(property, tokens, important, line, col):
     
     if properties[property.name] in (int, float, str, color, uri, boolean) or type(properties[property.name]) is tuple:
         if len(tokens) != 1:
@@ -1160,3 +1118,160 @@ def postprocess_value(tokens, property, line=0, col=0):
         value = numbers(*values)
 
     return Value(value, important)
+
+def parse_block(tokens):
+    """ Return an array of tuples: (property, value, (line, col), importance)
+    """
+    def parse_value(tokens):
+        value = []
+        while True:
+            tname, tvalue, line, col = tokens.next()
+            if (tname, tvalue) == ('CHAR', '!'):
+                while True:
+                    tname, tvalue, line, col = tokens.next()
+                    if (tname, tvalue) == ('IDENT', 'important'):
+                        while True:
+                            tname, tvalue, line, col = tokens.next()
+                            if (tname, tvalue) == ('CHAR', ';'):
+                                #
+                                # end of a high-importance value
+                                #
+                                return value, True
+                            elif tname != 'S':
+                                raise ParseException('', line, col)
+                        break
+                    else:
+                        raise ParseException('', line, col)
+                break
+            elif (tname, tvalue) == ('CHAR', ';'):
+                #
+                # end of a low-importance value
+                #
+                return value, False
+            elif tname != 'S':
+                value.append((tname, tvalue))
+        raise ParseException('', line, col)
+    
+    property_values = []
+    
+    while True:
+        tname, tvalue, line, col = tokens.next()
+        
+        if tname == 'IDENT':
+            _tname, _tvalue, _line, _col = tokens.next()
+            
+            if (_tname, _tvalue) == ('CHAR', ':'):
+            
+                if tvalue not in properties:
+                    raise ParseException('', line, col)
+
+                property = Property(tvalue)
+                vtokens, importance = parse_value(tokens)
+                value = postprocess_value(property, vtokens, importance, line, col)
+                
+                property_values.append((property, value, (line, col), importance))
+                
+            else:
+                raise ParseException('', line, col)
+        
+        elif (tname, tvalue) == ('CHAR', '}'):
+            return property_values
+        
+        elif tname != 'S':
+            raise ParseException('', line, col)
+
+    raise ParseException('', line, col)
+
+def parse_rule(tokens, selectors):
+
+    element = None
+    elements = []
+    
+    while True:
+        tname, tvalue, line, col = tokens.next()
+        
+        if tname == 'IDENT':
+            #
+            # Identifier always starts a new element.
+            #
+            element = SelectorElement()
+            elements.append(element)
+            element.addName(tvalue)
+            
+        elif tname == 'HASH':
+            #
+            # Hash is an ID selector:
+            # http://www.w3.org/TR/CSS2/selector.html#id-selectors
+            #
+            if not element:
+                element = SelectorElement()
+                elements.append(element)
+        
+            element.addName(tvalue)
+        
+        elif (tname, tvalue) == ('CHAR', '.'):
+            while True:
+                tname, tvalue, line, col = tokens.next()
+                
+                if tname == 'IDENT':
+                    #
+                    # Identifier after a period is a class selector:
+                    # http://www.w3.org/TR/CSS2/selector.html#class-html
+                    #
+                    if not element:
+                        element = SelectorElement()
+                        elements.append(element)
+                
+                    element.addName('.'+tvalue)
+                    break
+                
+                else:
+                    raise ParseException('', line, col)
+        
+        elif (tname, tvalue) == ('CHAR', '*'):
+            #
+            # Asterisk character is a universal selector:
+            # http://www.w3.org/TR/CSS2/selector.html#universal-selector
+            #
+            if not element:
+                element = SelectorElement()
+                elements.append(element)
+        
+            element.addName(tvalue)
+
+        elif (tname, tvalue) == ('CHAR', '['):
+            #
+            # Left-bracket is the start of an attribute selector:
+            # http://www.w3.org/TR/CSS2/selector.html#attribute-selectors
+            #
+            test = parse_attribute(tokens)
+            element.addTest(test)
+        
+        elif (tname, tvalue) == ('CHAR', ','):
+            #
+            # Comma delineates one of a group of selectors:
+            # http://www.w3.org/TR/CSS2/selector.html#grouping
+            #
+            # Recurse here.
+            #
+            selectors.append(Selector(*elements))
+            return parse_rule(tokens, selectors)
+        
+        elif (tname, tvalue) == ('CHAR', '{'):
+            #
+            # Left-brace is the start of a block:
+            # http://www.w3.org/TR/CSS2/syndata.html#block
+            #
+            # Return a full block here.
+            #
+            selectors.append(Selector(*elements))
+            ruleset = []
+            
+            for (selector, property_value) in product(selectors, parse_block(tokens)):
+
+                property, value, (line, col), importance = property_value
+                sort_key = value.importance(), selector.specificity(), (line, col)
+
+                ruleset.append(Declaration(selector, property, value, sort_key))
+            
+            return ruleset

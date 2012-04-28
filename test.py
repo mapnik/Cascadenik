@@ -14,7 +14,7 @@ import mapnik
 
 from cascadenik.style import ParseException, stylesheet_rulesets, rulesets_declarations, stylesheet_declarations
 from cascadenik.style import Selector, SelectorElement, SelectorAttributeTest
-from cascadenik.style import postprocess_property, postprocess_value, Property
+from cascadenik.style import postprocess_value, Property
 from cascadenik.style import color, numbers, boolean
 from cascadenik.compile import tests_filter_combinations, Filter, selectors_tests
 from cascadenik.compile import filtered_property_declarations, is_applicable_selector
@@ -214,23 +214,6 @@ class SelectorTests(unittest.TestCase):
         assert not selector.inRange(99)
         assert not selector.inRange(100)
         assert not selector.inRange(1000)
-
-class PropertyTests(unittest.TestCase):
-
-    def testProperty1(self):
-        self.assertRaises(ParseException, postprocess_property, [('IDENT', 'too-many'), ('IDENT', 'properties')])
-
-    def testProperty2(self):
-        self.assertRaises(ParseException, postprocess_property, [])
-
-    def testProperty3(self):
-        self.assertRaises(ParseException, postprocess_property, [('IDENT', 'illegal-property')])
-
-    def testProperty4(self):
-        self.assertEqual('shield', postprocess_property([('IDENT', 'shield-fill')]).group())
-
-    def testProperty5(self):
-        self.assertEqual('shield', postprocess_property([('S', ' '), ('IDENT', 'shield-fill'), ('COMMENT', 'ignored comment')]).group())
 
 class ValueTests(unittest.TestCase):
 
