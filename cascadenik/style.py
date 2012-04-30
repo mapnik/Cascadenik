@@ -778,7 +778,7 @@ class Value:
     def __str__(self):
         return str(self.value)
 
-def stylesheet_declarations(string, is_merc):
+def stylesheet_declarations(string, is_merc=False):
     """ Parse a string representing a stylesheet into a list of declarations.
     
         Required boolean is_merc indicates whether the projection should

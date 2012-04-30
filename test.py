@@ -31,64 +31,64 @@ MAPNIK_AUTO_IMAGE_SUPPORT = (MAPNIK_VERSION >= 701)
 class ParseTests(unittest.TestCase):
     
     def testBadSelector1(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Too Many Things { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Too Many Things { }')
 
     def testBadSelector2(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, '{ }')
+        self.assertRaises(ParseException, stylesheet_declarations, '{ }')
 
     def testBadSelector3(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Illegal { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Illegal { }')
 
     def testBadSelector4(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer foo[this=that] { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer foo[this=that] { }')
 
     def testBadSelector5(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[this>that] foo { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer[this>that] foo { }')
 
     def testBadSelector6(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer foo#bar { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer foo#bar { }')
 
     def testBadSelector7(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer foo.bar { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer foo.bar { }')
 
     def testBadSelectorTest1(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[foo>] { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer[foo>] { }')
 
     def testBadSelectorTest2(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[foo><bar] { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer[foo><bar] { }')
 
     def testBadSelectorTest3(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[foo<<bar] { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer[foo<<bar] { }')
 
     def testBadSelectorTest4(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[<bar] { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer[<bar] { }')
 
     def testBadSelectorTest5(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer[<<bar] { }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer[<<bar] { }')
 
     def testBadProperty1(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer { unknown-property: none; }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer { unknown-property: none; }')
 
     def testBadProperty2(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer { extra thing: none; }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer { extra thing: none; }')
 
     def testBadProperty3(self):
-        self.assertRaises(ParseException, stylesheet_rulesets, 'Layer { "not an ident": none; }')
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer { "not an ident": none; }')
 
     def testRulesets1(self):
-        self.assertEqual(0, len(stylesheet_rulesets('/* empty stylesheet */')))
+        self.assertEqual(0, len(stylesheet_declarations('/* empty stylesheet */')))
 
     def testRulesets2(self):
-        self.assertEqual(1, len(stylesheet_rulesets('Layer { }')))
+        self.assertEqual(1, len(stylesheet_declarations('Layer { }')))
 
     def testRulesets3(self):
-        self.assertEqual(2, len(stylesheet_rulesets('Layer { } Layer { }')))
+        self.assertEqual(2, len(stylesheet_declarations('Layer { } Layer { }')))
 
     def testRulesets4(self):
-        self.assertEqual(3, len(stylesheet_rulesets('Layer { } /* something */ Layer { } /* extra */ Layer { }')))
+        self.assertEqual(3, len(stylesheet_declarations('Layer { } /* something */ Layer { } /* extra */ Layer { }')))
 
     def testRulesets5(self):
-        self.assertEqual(1, len(stylesheet_rulesets('Map { }')))
+        self.assertEqual(1, len(stylesheet_declarations('Map { }')))
 
 class SelectorTests(unittest.TestCase):
     
