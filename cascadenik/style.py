@@ -789,8 +789,11 @@ def stylesheet_declarations(string, is_merc):
     tokens = cssTokenizer().tokenize(string)
     
     while True:
-        for declaration in parse_rule(tokens, []):
-            declarations.append(declaration)
+        try:
+            for declaration in parse_rule(tokens, []):
+                declarations.append(declaration)
+        except StopIteration:
+            break
     
     # sort by a css-like method
     return sorted(declarations, key=operator.attrgetter('sort_key'))
