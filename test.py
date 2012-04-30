@@ -218,91 +218,91 @@ class SelectorTests(unittest.TestCase):
 class ValueTests(unittest.TestCase):
 
     def testBadValue1(self):
-        self.assertRaises(ParseException, postprocess_value, [], Property('polygon-opacity'))
+        self.assertRaises(ParseException, postprocess_value, Property('polygon-opacity'), [], False, 0, 0)
 
     def testBadValue2(self):
-        self.assertRaises(ParseException, postprocess_value, [('IDENT', 'too'), ('IDENT', 'many')], Property('polygon-opacity'))
+        self.assertRaises(ParseException, postprocess_value, Property('polygon-opacity'), [('IDENT', 'too'), ('IDENT', 'many')], False, 0, 0)
 
     def testBadValue3(self):
-        self.assertRaises(ParseException, postprocess_value, [('IDENT', 'non-number')], Property('polygon-opacity'))
+        self.assertRaises(ParseException, postprocess_value, Property('polygon-opacity'), [('IDENT', 'non-number')], False, 0, 0)
 
     def testBadValue3b(self):
-        self.assertRaises(ParseException, postprocess_value, [('IDENT', 'non-number')], Property('polygon-gamma'))
+        self.assertRaises(ParseException, postprocess_value, Property('polygon-gamma'), [('IDENT', 'non-number')], False, 0, 0)
 
     def testBadValue4(self):
-        self.assertRaises(ParseException, postprocess_value, [('IDENT', 'non-string')], Property('text-face-name'))
+        self.assertRaises(ParseException, postprocess_value, Property('text-face-name'), [('IDENT', 'non-string')], False, 0, 0)
 
     def testBadValue5(self):
-        self.assertRaises(ParseException, postprocess_value, [('IDENT', 'non-hash')], Property('polygon-fill'))
+        self.assertRaises(ParseException, postprocess_value, Property('polygon-fill'), [('IDENT', 'non-hash')], False, 0, 0)
 
     def testBadValue6(self):
-        self.assertRaises(ParseException, postprocess_value, [('HASH', '#badcolor')], Property('polygon-fill'))
+        self.assertRaises(ParseException, postprocess_value, Property('polygon-fill'), [('HASH', '#badcolor')], False, 0, 0)
 
     def testBadValue7(self):
-        self.assertRaises(ParseException, postprocess_value, [('IDENT', 'non-URI')], Property('point-file'))
+        self.assertRaises(ParseException, postprocess_value, Property('point-file'), [('IDENT', 'non-URI')], False, 0, 0)
 
     def testBadValue8(self):
-        self.assertRaises(ParseException, postprocess_value, [('IDENT', 'bad-boolean')], Property('text-avoid-edges'))
+        self.assertRaises(ParseException, postprocess_value, Property('text-avoid-edges'), [('IDENT', 'bad-boolean')], False, 0, 0)
 
     def testBadValue9(self):
-        self.assertRaises(ParseException, postprocess_value, [('STRING', 'not an IDENT')], Property('line-join'))
+        self.assertRaises(ParseException, postprocess_value, Property('line-join'), [('STRING', 'not an IDENT')], False, 0, 0)
 
     def testBadValue10(self):
-        self.assertRaises(ParseException, postprocess_value, [('IDENT', 'not-in-tuple')], Property('line-join'))
+        self.assertRaises(ParseException, postprocess_value, Property('line-join'), [('IDENT', 'not-in-tuple')], False, 0, 0)
 
     def testBadValue11(self):
-        self.assertRaises(ParseException, postprocess_value, [('NUMBER', '1'), ('CHAR', ','), ('CHAR', ','), ('NUMBER', '3')], Property('line-dasharray'))
+        self.assertRaises(ParseException, postprocess_value, Property('line-dasharray'), [('NUMBER', '1'), ('CHAR', ','), ('CHAR', ','), ('NUMBER', '3')], False, 0, 0)
 
     def testValue1(self):
-        self.assertEqual(1.0, postprocess_value([('NUMBER', '1.0')], Property('polygon-opacity')).value)
+        self.assertEqual(1.0, postprocess_value(Property('polygon-opacity'), [('NUMBER', '1.0')], False, 0, 0).value)
 
     def testValue1b(self):
-        self.assertEqual(1.0, postprocess_value([('NUMBER', '1.0')], Property('polygon-gamma')).value)
+        self.assertEqual(1.0, postprocess_value(Property('polygon-gamma'), [('NUMBER', '1.0')], False, 0, 0).value)
 
     def testValue2(self):
-        self.assertEqual(10, postprocess_value([('NUMBER', '10')], Property('line-width')).value)
+        self.assertEqual(10, postprocess_value(Property('line-width'), [('NUMBER', '10')], False, 0, 0).value)
 
     def testValue2b(self):
-        self.assertEqual(-10, postprocess_value([('CHAR', '-'), ('NUMBER', '10')], Property('text-dx')).value)
+        self.assertEqual(-10, postprocess_value(Property('text-dx'), [('CHAR', '-'), ('NUMBER', '10')], False, 0, 0).value)
 
     def testValue3(self):
-        self.assertEqual('DejaVu', str(postprocess_value([('STRING', '"DejaVu"')], Property('text-face-name'))))
+        self.assertEqual('DejaVu', str(postprocess_value(Property('text-face-name'), [('STRING', '"DejaVu"')], False, 0, 0)))
 
     def testValue4(self):
-        self.assertEqual('#ff9900', str(postprocess_value([('HASH', '#ff9900')], Property('map-bgcolor'))))
+        self.assertEqual('#ff9900', str(postprocess_value(Property('map-bgcolor'), [('HASH', '#ff9900')], False, 0, 0)))
 
     def testValue5(self):
-        self.assertEqual('#ff9900', str(postprocess_value([('HASH', '#f90')], Property('map-bgcolor'))))
+        self.assertEqual('#ff9900', str(postprocess_value(Property('map-bgcolor'), [('HASH', '#f90')], False, 0, 0)))
 
     def testValue6(self):
-        self.assertEqual('http://example.com', str(postprocess_value([('URI', 'url("http://example.com")')], Property('point-file'))))
+        self.assertEqual('http://example.com', str(postprocess_value(Property('point-file'), [('URI', 'url("http://example.com")')], False, 0, 0)))
 
     def testValue7(self):
-        self.assertEqual('true', str(postprocess_value([('IDENT', 'true')], Property('text-avoid-edges'))))
+        self.assertEqual('true', str(postprocess_value(Property('text-avoid-edges'), [('IDENT', 'true')], False, 0, 0)))
 
     def testValue8(self):
-        self.assertEqual('false', str(postprocess_value([('IDENT', 'false')], Property('text-avoid-edges'))))
+        self.assertEqual('false', str(postprocess_value(Property('text-avoid-edges'), [('IDENT', 'false')], False, 0, 0)))
 
     def testValue9(self):
-        self.assertEqual('bevel', str(postprocess_value([('IDENT', 'bevel')], Property('line-join'))))
+        self.assertEqual('bevel', str(postprocess_value(Property('line-join'), [('IDENT', 'bevel')], False, 0, 0)))
 
     def testValue10(self):
-        self.assertEqual('1,2,3', str(postprocess_value([('NUMBER', '1'), ('CHAR', ','), ('NUMBER', '2'), ('CHAR', ','), ('NUMBER', '3')], Property('line-dasharray'))))
+        self.assertEqual('1,2,3', str(postprocess_value(Property('line-dasharray'), [('NUMBER', '1'), ('CHAR', ','), ('NUMBER', '2'), ('CHAR', ','), ('NUMBER', '3')], False, 0, 0)))
 
     def testValue11(self):
-        self.assertEqual('1,2.0,3', str(postprocess_value([('NUMBER', '1'), ('CHAR', ','), ('S', ' '), ('NUMBER', '2.0'), ('CHAR', ','), ('NUMBER', '3')], Property('line-dasharray'))))
+        self.assertEqual('1,2.0,3', str(postprocess_value(Property('line-dasharray'), [('NUMBER', '1'), ('CHAR', ','), ('S', ' '), ('NUMBER', '2.0'), ('CHAR', ','), ('NUMBER', '3')], False, 0, 0)))
 
     def testValue12(self):
-        self.assertEqual(12, postprocess_value([('NUMBER', '12')], Property('text-character-spacing')).value)
+        self.assertEqual(12, postprocess_value(Property('text-character-spacing'), [('NUMBER', '12')], False, 0, 0).value)
 
     def testValue13(self):
-        self.assertEqual(14, postprocess_value([('NUMBER', '14')], Property('shield-character-spacing')).value)
+        self.assertEqual(14, postprocess_value(Property('shield-character-spacing'), [('NUMBER', '14')], False, 0, 0).value)
 
     def testValue14(self):
-        self.assertEqual(12, postprocess_value([('NUMBER', '12')], Property('text-line-spacing')).value)
+        self.assertEqual(12, postprocess_value(Property('text-line-spacing'), [('NUMBER', '12')], False, 0, 0).value)
 
     def testValue15(self):
-        self.assertEqual(14, postprocess_value([('NUMBER', '14')], Property('shield-line-spacing')).value)
+        self.assertEqual(14, postprocess_value(Property('shield-line-spacing'), [('NUMBER', '14')], False, 0, 0).value)
     
 class CascadeTests(unittest.TestCase):
 
