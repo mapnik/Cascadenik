@@ -9,6 +9,18 @@ from os import mkdir, chmod
 from os.path import isdir, realpath, expanduser, dirname, exists
 from urlparse import urlparse
 
+# import mapnik
+try:
+    import mapnik
+except ImportError:
+    import mapnik2 as mapnik
+
+# detect mapnik version, or assume 0.7.1 if no function exists.
+MAPNIK_VERSION = hasattr(mapnik, 'mapnik_version') and mapnik.mapnik_version() or 701
+
+# make a nice version-looking string out of it, like "0.7.1".
+MAPNIK_VERSION_STR = '.'.join(map(str, map(int, (('%06d' % MAPNIK_VERSION)[o:][:2] for o in (-6, -4, -2)))))
+
 from . import style
 from .parse import stylesheet_declarations
 
@@ -22,7 +34,7 @@ from .compile import compile, Directories
 VERSION = '1.0.0'
 CACHE_DIR = '~/.cascadenik'
 
-__all__ = ['load_map', 'compile','_compile','style','stylesheet_declarations']
+__all__ = ['load_map', 'compile', '_compile', 'style', 'stylesheet_declarations']
 
 def load_map(map, src_file, output_dir, cache_dir=None, datasources_cfg=None, verbose=False):
     """ Apply a stylesheet source file to a given mapnik Map instance, like mapnik.load_map().

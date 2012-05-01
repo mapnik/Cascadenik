@@ -54,15 +54,10 @@ else:
 
 
 # cascadenik
-from . import safe64
-from . import style
-from . import output
-from . import sources
+from . import safe64, style, output, sources
+from . import MAPNIK_VERSION, MAPNIK_VERSION_STR
 from .nonposix import un_posix, to_posix
 from .parse import stylesheet_declarations
-
-# mapnik
-import mapnik
 
 try:
     from PIL import Image
@@ -99,20 +94,6 @@ VERBOSE = False
 def msg(msg):
     if VERBOSE:
         sys.stderr.write('Cascadenik debug: %s\n' % msg)
-
-def mapnik_version_string(version):
-    patch_level = version % 100
-    minor_version = version / 100 % 1000
-    major_version = version / 100000
-    return '%s.%s.%s' % ( major_version, minor_version,patch_level)
-            
-if hasattr(mapnik,'mapnik_version'):
-    MAPNIK_VERSION = mapnik.mapnik_version()
-    msg('Autodetected Mapnik version: %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
-
-else:
-    MAPNIK_VERSION = 701 # 0.7.1
-    msg('Failed to autodetect "mapnik_version" falling back to %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
 
 counter = 0
 
@@ -1448,7 +1429,7 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
         VERBOSE = True
         sys.stderr.write('\n')
     
-    msg('Targeting mapnik version: %s | %s' % (MAPNIK_VERSION, mapnik_version_string(MAPNIK_VERSION)))
+    msg('Targeting mapnik version: %s | %s' % (MAPNIK_VERSION, MAPNIK_VERSION_STR))
         
     if posixpath.exists(src):
         doc = ElementTree.parse(src)

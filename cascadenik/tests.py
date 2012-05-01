@@ -15,8 +15,6 @@ import unittest
 import tempfile
 import xml.etree.ElementTree
 
-import mapnik
-
 from .style import color, numbers, boolean
 from .style import Property, Selector, SelectorElement, SelectorAttributeTest
 from .parse import ParseException, postprocess_value, stylesheet_declarations
@@ -25,9 +23,9 @@ from .compile import filtered_property_declarations, is_applicable_selector
 from .compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
 from .compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
 from .compile import test2str, compile
-from .compile import MAPNIK_VERSION
 from .compile import Directories
 from .sources import DataSources
+from . import mapnik, MAPNIK_VERSION
 from . import output
     
 MAPNIK_AUTO_IMAGE_SUPPORT = (MAPNIK_VERSION >= 701)

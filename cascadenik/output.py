@@ -1,9 +1,7 @@
 import sys
 from os import getcwd, chdir
 
-import style
-
-import mapnik
+from . import style, mapnik
 
 def safe_str(s):
     return None if not s else unicode(s).encode('utf-8')

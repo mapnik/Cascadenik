@@ -4,12 +4,11 @@ import os
 import sys
 import shutil
 import optparse
-import cascadenik
 import tempfile
-
-import mapnik
-
 from os.path import realpath, dirname
+
+import cascadenik
+from cascadenik import mapnik
 
 try:
     import xml.etree.ElementTree as ElementTree
