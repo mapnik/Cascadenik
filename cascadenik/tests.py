@@ -1,3 +1,8 @@
+""" Tests for Cascadenik.
+
+Run as a module, like this:
+    python -m cascadenik.tests
+"""
 # -*- coding: utf-8 -*-
 
 import os
@@ -12,19 +17,19 @@ import xml.etree.ElementTree
 
 import mapnik
 
-from cascadenik.style import ParseException, stylesheet_declarations
-from cascadenik.style import Selector, SelectorElement, SelectorAttributeTest
-from cascadenik.style import postprocess_value, Property
-from cascadenik.style import color, numbers, boolean
-from cascadenik.compile import tests_filter_combinations, Filter, selectors_tests
-from cascadenik.compile import filtered_property_declarations, is_applicable_selector
-from cascadenik.compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
-from cascadenik.compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
-from cascadenik.compile import test2str, compile
-from cascadenik.compile import MAPNIK_VERSION
-from cascadenik.compile import Directories
-from cascadenik.sources import DataSources
-import cascadenik.output as output
+from .style import ParseException, stylesheet_declarations
+from .style import Selector, SelectorElement, SelectorAttributeTest
+from .style import postprocess_value, Property
+from .style import color, numbers, boolean
+from .compile import tests_filter_combinations, Filter, selectors_tests
+from .compile import filtered_property_declarations, is_applicable_selector
+from .compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups
+from .compile import get_point_rules, get_polygon_pattern_rules, get_line_pattern_rules
+from .compile import test2str, compile
+from .compile import MAPNIK_VERSION
+from .compile import Directories
+from .sources import DataSources
+from . import output
     
 MAPNIK_AUTO_IMAGE_SUPPORT = (MAPNIK_VERSION >= 701)
 
