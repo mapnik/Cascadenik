@@ -378,7 +378,7 @@ class Selector:
     
         self.elements = elements[:]
 
-    def convertZoomTests(self, is_merc=True):
+    def convertZoomTests(self, is_merc):
         """ Modify the tests on this selector to use mapnik-friendly
             scale-denominator instead of shorthand zoom.
         """
@@ -790,7 +790,7 @@ def stylesheet_declarations(string, is_merc=False):
     
     while True:
         try:
-            for declaration in parse_rule(tokens, []):
+            for declaration in parse_rule(tokens, [], is_merc):
                 declarations.append(declaration)
         except StopIteration:
             break
@@ -921,7 +921,7 @@ def trim_extra(tokens):
         
     return tokens
 
-def parse_attribute(tokens):
+def parse_attribute(tokens, is_merc):
 
     def next_scalar(tokens, op):
         while True:
@@ -1194,7 +1194,7 @@ def parse_block(tokens):
 
     raise ParseException('', line, col)
 
-def parse_rule(tokens, selectors):
+def parse_rule(tokens, selectors, is_merc):
 
     def validate_selector_elements(elements, line, col):
         if len(elements) > 2:
@@ -1275,7 +1275,7 @@ def parse_rule(tokens, selectors):
             # Left-bracket is the start of an attribute selector:
             # http://www.w3.org/TR/CSS2/selector.html#attribute-selectors
             #
-            test = parse_attribute(tokens)
+            test = parse_attribute(tokens, is_merc)
             element.addTest(test)
         
         elif (tname, tvalue) == ('CHAR', ','):
@@ -1286,7 +1286,8 @@ def parse_rule(tokens, selectors):
             # Recurse here.
             #
             selectors.append(Selector(*elements))
-            return parse_rule(tokens, selectors)
+            selectors[-1].convertZoomTests(is_merc)
+            return parse_rule(tokens, selectors, is_merc)
         
         elif (tname, tvalue) == ('CHAR', '{'):
             #
@@ -1297,6 +1298,7 @@ def parse_rule(tokens, selectors):
             #
             validate_selector_elements(elements, line, col)
             selectors.append(Selector(*elements))
+            selectors[-1].convertZoomTests(is_merc)
             ruleset = []
             
             for (selector, property_value) in product(selectors, parse_block(tokens)):
