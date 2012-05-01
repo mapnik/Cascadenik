@@ -841,7 +841,7 @@ def stylesheet_rulesets(string, is_merc=False):
                     ruleset['selectors'][-1] = postprocess_selector(ruleset['selectors'][-1], is_merc, line, col)
                     ruleset['selectors'].append([])
     
-                elif nname not in ('COMMENT'):
+                elif nname != 'COMMENT':
                     # we're just in a selector is all
                     ruleset['selectors'][-1].append((nname, value))
     
@@ -870,7 +870,7 @@ def stylesheet_rulesets(string, is_merc=False):
                     declaration['property'] = postprocess_property(declaration['property'], line, col)
                     in_property = False
     
-                elif nname not in ('COMMENT'):
+                elif nname != 'COMMENT':
                     # in a declaration property
                     declaration['property'].append((nname, value))
     
@@ -882,7 +882,7 @@ def stylesheet_rulesets(string, is_merc=False):
                     declaration['value'] = postprocess_value(declaration['value'], declaration['property'], line, col)
                     in_declaration = False
     
-                elif nname not in ('COMMENT'):
+                elif nname != 'COMMENT':
                     # in a declaration value
                     declaration['value'].append((nname, value))
 
@@ -1149,7 +1149,7 @@ def parse_block(tokens):
                                 # end of a high-importance value
                                 #
                                 return value, True
-                            elif tname != 'S':
+                            elif tname not in ('S', 'COMMENT'):
                                 raise ParseException('', line, col)
                         break
                     else:
@@ -1160,7 +1160,14 @@ def parse_block(tokens):
                 # end of a low-importance value
                 #
                 return value, False
-            elif tname != 'S':
+            elif (tname, tvalue) == ('CHAR', '-'):
+                tname, tvalue, line, col = tokens.next()
+                if tname == 'NUMBER':
+                    # minus sign with a number is a negative number
+                    value.append(('NUMBER', '-'+tvalue))
+                else:
+                    raise ParseException('', line, col)
+            elif tname not in ('S', 'COMMENT'):
                 value.append((tname, tvalue))
         raise ParseException('', line, col)
     
@@ -1189,7 +1196,7 @@ def parse_block(tokens):
         elif (tname, tvalue) == ('CHAR', '}'):
             return property_values
         
-        elif tname != 'S':
+        elif tname not in ('S', 'COMMENT'):
             raise ParseException('', line, col)
 
     raise ParseException('', line, col)
