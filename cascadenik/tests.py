@@ -17,10 +17,9 @@ import xml.etree.ElementTree
 
 import mapnik
 
-from .style import ParseException, stylesheet_declarations
-from .style import Selector, SelectorElement, SelectorAttributeTest
-from .style import postprocess_value, Property
 from .style import color, numbers, boolean
+from .style import Property, Selector, SelectorElement, SelectorAttributeTest
+from .parse import ParseException, postprocess_value, stylesheet_declarations
 from .compile import tests_filter_combinations, Filter, selectors_tests
 from .compile import filtered_property_declarations, is_applicable_selector
 from .compile import get_polygon_rules, get_line_rules, get_text_rule_groups, get_shield_rule_groups

@@ -54,12 +54,12 @@ else:
 
 
 # cascadenik
-import safe64
-import style
-import sources
-import style
-import output
-from cascadenik.nonposix import un_posix, to_posix
+from . import safe64
+from . import style
+from . import output
+from . import sources
+from .nonposix import un_posix, to_posix
+from .parse import stylesheet_declarations
 
 # mapnik
 import mapnik
@@ -642,7 +642,7 @@ def extract_declarations(map_el, dirs):
             continue
             
         is_merc = is_merc_projection(map_el.get('srs',''))
-        declarations.extend(style.stylesheet_declarations(styles, is_merc))
+        declarations.extend(stylesheet_declarations(styles, is_merc))
 
     return declarations
 

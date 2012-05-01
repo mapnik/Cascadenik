@@ -9,12 +9,14 @@ from os import mkdir, chmod
 from os.path import isdir, realpath, expanduser, dirname, exists
 from urlparse import urlparse
 
-import style
-# compile module
-import compile as _compile
-# compile function
-from compile import compile, Directories
-from style import stylesheet_declarations
+from . import style
+from .parse import stylesheet_declarations
+
+# compile module -> "_compile"
+from . import compile as _compile
+
+# compile function -> "compile"
+from .compile import compile, Directories
 
 # define Cascadenik version
 VERSION = '1.0.0'
