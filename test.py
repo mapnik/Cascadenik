@@ -78,17 +78,17 @@ class ParseTests(unittest.TestCase):
     def testRulesets1(self):
         self.assertEqual(0, len(stylesheet_declarations('/* empty stylesheet */')))
 
-    def testRulesets2(self):
-        self.assertEqual(1, len(stylesheet_declarations('Layer { }')))
+    def testDeclarations2(self):
+        self.assertEqual(1, len(stylesheet_declarations('Layer { line-width: 1; }')))
 
-    def testRulesets3(self):
-        self.assertEqual(2, len(stylesheet_declarations('Layer { } Layer { }')))
+    def testDeclarations3(self):
+        self.assertEqual(2, len(stylesheet_declarations('Layer { line-width: 1; } Layer { line-width: 1; }')))
 
-    def testRulesets4(self):
-        self.assertEqual(3, len(stylesheet_declarations('Layer { } /* something */ Layer { } /* extra */ Layer { }')))
+    def testDeclarations4(self):
+        self.assertEqual(3, len(stylesheet_declarations('Layer { line-width: 1; } /* something */ Layer { line-width: 1; } /* extra */ Layer { line-width: 1; }')))
 
-    def testRulesets5(self):
-        self.assertEqual(1, len(stylesheet_declarations('Map { }')))
+    def testDeclarations5(self):
+        self.assertEqual(1, len(stylesheet_declarations('Map { line-width: 1; }')))
 
 class SelectorTests(unittest.TestCase):
     
@@ -314,21 +314,13 @@ class CascadeTests(unittest.TestCase):
                 text-dy: -10;
             }
         """
-        rulesets = stylesheet_rulesets(s)
-        
-        self.assertEqual(1, len(rulesets))
-        self.assertEqual(1, len(rulesets[0]['selectors']))
-        self.assertEqual(1, len(rulesets[0]['selectors'][0].elements))
-
-        self.assertEqual(2, len(rulesets[0]['declarations']))
-        self.assertEqual('text-dx', rulesets[0]['declarations'][0]['property'].name)
-        self.assertEqual(-10, rulesets[0]['declarations'][0]['value'].value)
-        
-        declarations = rulesets_declarations(rulesets)
+        declarations = stylesheet_declarations(s)
         
         self.assertEqual(2, len(declarations))
+        self.assertEqual(1, len(declarations[0].selector.elements))
         self.assertEqual('text-dx', declarations[0].property.name)
         self.assertEqual('text-dy', declarations[1].property.name)
+        self.assertEqual(-10, declarations[1].value.value)
 
     def testCascade2(self):
         s = """
@@ -348,17 +340,17 @@ class CascadeTests(unittest.TestCase):
                 text-character-spacing: 4;
             }
         """
-        rulesets = stylesheet_rulesets(s)
+        declarations = stylesheet_declarations(s)
         
-        self.assertEqual(2, len(rulesets))
-        self.assertEqual(1, len(rulesets[0]['selectors']))
-        self.assertEqual(1, len(rulesets[0]['selectors'][0].elements))
-        self.assertEqual(2, len(rulesets[1]['selectors']))
-        self.assertEqual(2, len(rulesets[1]['selectors'][0].elements))
-        self.assertEqual(1, len(rulesets[1]['selectors'][1].elements))
-        
-        declarations = rulesets_declarations(rulesets)
+        # first declaration is the unimportant polygon-fill: #f90
+        self.assertEqual(1, len(declarations[0].selector.elements))
 
+        # last declaration is the !important one, text-fill: #ff9900
+        self.assertEqual(1, len(declarations[-1].selector.elements))
+
+        # second-last declaration is the highly-specific one, text-character-spacing
+        self.assertEqual(2, len(declarations[-2].selector.elements))
+        
         self.assertEqual(19, len(declarations))
 
         self.assertEqual('*', str(declarations[0].selector))
