@@ -783,7 +783,7 @@ def stylesheet_declarations(string, is_merc=False):
     
         Required boolean is_merc indicates whether the projection should
         be interpreted as spherical mercator, so we know what to do with
-        zoom/scale-denominator in postprocess_selector().
+        zoom/scale-denominator in parse_rule().
     """
     declarations = []
     tokens = cssTokenizer().tokenize(string)
@@ -797,129 +797,6 @@ def stylesheet_declarations(string, is_merc=False):
     
     # sort by a css-like method
     return sorted(declarations, key=operator.attrgetter('sort_key'))
-
-def stylesheet_rulesets(string, is_merc=False):
-    """ Parse a string representing a stylesheet into a list of rulesets.
-    
-        Required boolean is_merc indicates whether the projection should
-        be interpreted as spherical mercator, so we know what to do with
-        zoom/scale-denominator in postprocess_selector().
-    """
-    in_selectors = False
-    in_block = False
-    in_declaration = False # implies in_block
-    in_property = False # implies in_declaration
-    
-    rulesets = []
-    tokens = cssTokenizer().tokenize(string)
-    
-    for token in tokens:
-        nname, value, line, col = token
-        
-        try:
-            if not in_selectors and not in_block:
-                if nname == 'CHAR' and value == '{':
-                    # 
-                    raise ParseException('Encountered unexpected opening "{"', line, col)
-
-                elif (nname in ('IDENT', 'HASH')) or (nname == 'CHAR' and value != '{'):
-                    # beginning of a 
-                    rulesets.append({'selectors': [[(nname, value)]], 'declarations': []})
-                    in_selectors = True
-                    
-            elif in_selectors and not in_block:
-                ruleset = rulesets[-1]
-            
-                if (nname == 'CHAR' and value == '{'):
-                    # open curly-brace means we're on to the actual rule sets
-                    ruleset['selectors'][-1] = postprocess_selector(ruleset['selectors'][-1], is_merc, line, col)
-                    in_selectors = False
-                    in_block = True
-    
-                elif (nname == 'CHAR' and value == ','):
-                    # comma means there's a break between selectors
-                    ruleset['selectors'][-1] = postprocess_selector(ruleset['selectors'][-1], is_merc, line, col)
-                    ruleset['selectors'].append([])
-    
-                elif nname != 'COMMENT':
-                    # we're just in a selector is all
-                    ruleset['selectors'][-1].append((nname, value))
-    
-            elif in_block and not in_declaration:
-                ruleset = rulesets[-1]
-            
-                if nname == 'IDENT':
-                    # right at the start of a declaration
-                    ruleset['declarations'].append({'property': [(nname, value)], 'value': [], 'position': (line, col)})
-                    in_declaration = True
-                    in_property = True
-                    
-                elif (nname == 'CHAR' and value == '}'):
-                    # end of block
-                    in_block = False
-
-                elif nname not in ('S', 'COMMENT'):
-                    # something else
-                    raise ParseException('Unexpected %(nname)s while looking for a property' % locals(), line, col)
-    
-            elif in_declaration and in_property:
-                declaration = rulesets[-1]['declarations'][-1]
-            
-                if nname == 'CHAR' and value == ':':
-                    # end of property
-                    declaration['property'] = postprocess_property(declaration['property'], line, col)
-                    in_property = False
-    
-                elif nname != 'COMMENT':
-                    # in a declaration property
-                    declaration['property'].append((nname, value))
-    
-            elif in_declaration and not in_property:
-                declaration = rulesets[-1]['declarations'][-1]
-            
-                if nname == 'CHAR' and value == ';':
-                    # end of declaration
-                    declaration['value'] = postprocess_value(declaration['value'], declaration['property'], line, col)
-                    in_declaration = False
-    
-                elif nname != 'COMMENT':
-                    # in a declaration value
-                    declaration['value'].append((nname, value))
-
-        except ParseException, e:
-            #raise ParseException(e.message + ' (line %(line)d, column %(col)d)' % locals(), line, col)
-            raise
-
-    return rulesets
-
-def rulesets_declarations(rulesets):
-    """ Convert a list of rulesets (as returned by stylesheet_rulesets)
-        into an ordered list of individual selectors and declarations.
-    """
-    declarations = []
-    
-    for ruleset in rulesets:
-        for declaration in ruleset['declarations']:
-            for selector in ruleset['selectors']:
-                declarations.append(Declaration(selector, declaration['property'], declaration['value'],
-                                                (declaration['value'].importance(), selector.specificity(), declaration['position'])))
-
-    # sort by a css-like method
-    return sorted(declarations, key=operator.attrgetter('sort_key'))
-
-def trim_extra(tokens):
-    """ Trim comments and whitespace from each end of a list of tokens.
-    """
-    if len(tokens) == 0:
-        return tokens
-    
-    while tokens[0][0] in ('S', 'COMMENT'):
-        tokens = tokens[1:]
-
-    while tokens[-1][0] in ('S', 'COMMENT'):
-        tokens = tokens[:-1]
-        
-    return tokens
 
 def parse_attribute(tokens, is_merc):
 

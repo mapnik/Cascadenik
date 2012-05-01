@@ -12,7 +12,7 @@ import xml.etree.ElementTree
 
 import mapnik
 
-from cascadenik.style import ParseException, stylesheet_rulesets, rulesets_declarations, stylesheet_declarations
+from cascadenik.style import ParseException, stylesheet_declarations
 from cascadenik.style import Selector, SelectorElement, SelectorAttributeTest
 from cascadenik.style import postprocess_value, Property
 from cascadenik.style import color, numbers, boolean
