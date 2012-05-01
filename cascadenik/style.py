@@ -1012,7 +1012,35 @@ def parse_attribute(tokens, is_merc):
 
     raise ParseException('', line, col)
 
+def combine_negative_numbers(tokens, line, col):
+    """
+    """
+    tokens, original_tokens = [], iter(tokens)
+    
+    while True:
+        try:
+            tname, tvalue = original_tokens.next()[:2]
+            
+            if (tname, tvalue) == ('CHAR', '-'):
+                tname, tvalue = original_tokens.next()[:2]
+
+                if tname == 'NUMBER':
+                    # minus sign with a number is a negative number
+                    tokens.append(('NUMBER', '-'+tvalue))
+                else:
+                    raise ParseException('', line, col)
+
+            else:
+                tokens.append((tname, tvalue))
+
+        except StopIteration:
+            break
+    
+    return tokens
+
 def postprocess_value(property, tokens, important, line, col):
+
+    tokens = combine_negative_numbers(tokens, line, col)
     
     if properties[property.name] in (int, float, str, color, uri, boolean) or type(properties[property.name]) is tuple:
         if len(tokens) != 1:
@@ -1160,13 +1188,6 @@ def parse_block(tokens):
                 # end of a low-importance value
                 #
                 return value, False
-            elif (tname, tvalue) == ('CHAR', '-'):
-                tname, tvalue, line, col = tokens.next()
-                if tname == 'NUMBER':
-                    # minus sign with a number is a negative number
-                    value.append(('NUMBER', '-'+tvalue))
-                else:
-                    raise ParseException('', line, col)
             elif tname not in ('S', 'COMMENT'):
                 value.append((tname, tvalue))
         raise ParseException('', line, col)
