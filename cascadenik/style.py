@@ -799,8 +799,18 @@ def stylesheet_declarations(string, is_merc=False):
     return sorted(declarations, key=operator.attrgetter('sort_key'))
 
 def parse_attribute(tokens, is_merc):
+    """ Parse a token stream from inside an attribute selector.
+    
+        Enter this function after a left-bracket is found:
+        http://www.w3.org/TR/CSS2/selector.html#attribute-selectors
+    """
+    #
+    # Local helper functions
+    #
 
     def next_scalar(tokens, op):
+        """ Look for a scalar value just after an attribute selector operator.
+        """
         while True:
             tname, tvalue, line, col = tokens.next()
             if tname == 'NUMBER':
@@ -817,15 +827,21 @@ def parse_attribute(tokens, is_merc):
                 else:
                     return tvalue
             elif tname != 'S':
-                raise ParseException((tname, tvalue), line, col)
+                raise ParseException('Unexpected non-scalar token in attribute', line, col)
     
     def finish_attribute(tokens):
+        """ Look for the end of an attribute selector operator.
+        """
         while True:
             tname, tvalue, line, col = tokens.next()
             if (tname, tvalue) == ('CHAR', ']'):
                 return
             elif tname != 'S':
-                raise ParseException('', line, col)
+                raise ParseException('Found something other than a closing right-bracket at the end of attribute', line, col)
+    
+    #
+    # The work.
+    #
     
     while True:
         tname, tvalue, line, col = tokens.next()
@@ -841,7 +857,7 @@ def parse_attribute(tokens, is_merc):
         
                     if (_tname, _tvalue) == ('CHAR', '='):
                         #
-                        # One of <=, >=
+                        # Operator is one of '<=', '>='
                         #
                         op = tvalue + _tvalue
                         value = next_scalar(tokens, op)
@@ -850,7 +866,7 @@ def parse_attribute(tokens, is_merc):
                     
                     else:
                         #
-                        # One of <, > and we popped a token too early
+                        # Operator is one of '<', '>' and we popped a token too early
                         #
                         op = tvalue
                         value = next_scalar(chain([(_tname, _tvalue, line, col)], tokens), op)
@@ -862,7 +878,7 @@ def parse_attribute(tokens, is_merc):
         
                     if (_tname, _tvalue) == ('CHAR', '='):
                         #
-                        # !=
+                        # Operator is '!='
                         #
                         op = tvalue + _tvalue
                         value = next_scalar(tokens, op)
@@ -870,11 +886,11 @@ def parse_attribute(tokens, is_merc):
                         return SelectorAttributeTest(property, op, value)
                     
                     else:
-                        raise ParseException('', line, col)
+                        raise ParseException('Malformed operator in attribute selector', line, col)
                 
                 elif (tname, tvalue) == ('CHAR', '='):
                     #
-                    # =
+                    # Operator is '='
                     #
                     op = tvalue
                     value = next_scalar(tokens, op)
@@ -882,15 +898,17 @@ def parse_attribute(tokens, is_merc):
                     return SelectorAttributeTest(property, op, value)
                 
                 elif tname != 'S':
-                    raise ParseException('', line, col)
+                    raise ParseException('Missing operator in attribute selector', line, col)
         
         elif tname != 'S':
-            raise ParseException('', line, col)
+            raise ParseException('Unexpected token in attribute selector', line, col)
 
-    raise ParseException('', line, col)
+    raise ParseException('Malformed attribute selector', line, col)
 
 def combine_negative_numbers(tokens, line, col):
-    """
+    """ Find negative numbers in a list of tokens, return a new list.
+    
+        Negative numbers come as two tokens, a minus sign and a number.
     """
     tokens, original_tokens = [], iter(tokens)
     
@@ -905,7 +923,7 @@ def combine_negative_numbers(tokens, line, col):
                     # minus sign with a number is a negative number
                     tokens.append(('NUMBER', '-'+tvalue))
                 else:
-                    raise ParseException('', line, col)
+                    raise ParseException('Unexpected non-number after a minus sign', line, col)
 
             else:
                 tokens.append((tname, tvalue))
@@ -916,7 +934,11 @@ def combine_negative_numbers(tokens, line, col):
     return tokens
 
 def postprocess_value(property, tokens, important, line, col):
-
+    """ Convert a list of property value tokens into a single Value instance.
+    
+        Values can be numbers, strings, colors, uris, or booleans:
+        http://www.w3.org/TR/CSS2/syndata.html#values
+    """
     tokens = combine_negative_numbers(tokens, line, col)
     
     if properties[property.name] in (int, float, str, color, uri, boolean) or type(properties[property.name]) is tuple:
@@ -1037,9 +1059,20 @@ def postprocess_value(property, tokens, important, line, col):
     return Value(value, important)
 
 def parse_block(tokens):
-    """ Return an array of tuples: (property, value, (line, col), importance)
+    """ Parse a token stream into an array of declaration tuples.
+    
+        Return an array of (property, value, (line, col), importance).
+    
+        Enter this function after a left-brace is found:
+        http://www.w3.org/TR/CSS2/syndata.html#block
     """
+    #
+    # Local helper functions
+    #
+
     def parse_value(tokens):
+        """ Look for value tokens after a property name, possibly !important.
+        """
         value = []
         while True:
             tname, tvalue, line, col = tokens.next()
@@ -1055,10 +1088,10 @@ def parse_block(tokens):
                                 #
                                 return value, True
                             elif tname not in ('S', 'COMMENT'):
-                                raise ParseException('', line, col)
+                                raise ParseException('Unexpected values after !important declaration', line, col)
                         break
                     else:
-                        raise ParseException('', line, col)
+                        raise ParseException('Malformed declaration after "!"', line, col)
                 break
             elif (tname, tvalue) == ('CHAR', ';'):
                 #
@@ -1067,7 +1100,11 @@ def parse_block(tokens):
                 return value, False
             elif tname not in ('S', 'COMMENT'):
                 value.append((tname, tvalue))
-        raise ParseException('', line, col)
+        raise ParseException('Malformed property value', line, col)
+    
+    #
+    # The work.
+    #
     
     property_values = []
     
@@ -1080,7 +1117,7 @@ def parse_block(tokens):
             if (_tname, _tvalue) == ('CHAR', ':'):
             
                 if tvalue not in properties:
-                    raise ParseException('', line, col)
+                    raise ParseException('Unsupported property name, %s' % tvalue, line, col)
 
                 property = Property(tvalue)
                 vtokens, importance = parse_value(tokens)
@@ -1089,17 +1126,28 @@ def parse_block(tokens):
                 property_values.append((property, value, (line, col), importance))
                 
             else:
-                raise ParseException('', line, col)
+                raise ParseException('Malformed property name', line, col)
         
         elif (tname, tvalue) == ('CHAR', '}'):
             return property_values
         
         elif tname not in ('S', 'COMMENT'):
-            raise ParseException('', line, col)
+            raise ParseException('Malformed style rule', line, col)
 
-    raise ParseException('', line, col)
+    raise ParseException('Malformed block', line, col)
 
 def parse_rule(tokens, selectors, is_merc):
+    """ Parse a rule set, return a list of declarations.
+        
+        A rule set is a combination of selectors and declarations:
+        http://www.w3.org/TR/CSS2/syndata.html#rule-sets
+    
+        To handle groups of selectors, use recursion:
+        http://www.w3.org/TR/CSS2/selector.html#grouping
+    """
+    #
+    # Local helper function
+    #
 
     def validate_selector_elements(elements, line, col):
         if len(elements) > 2:
@@ -1119,6 +1167,10 @@ def parse_rule(tokens, selectors, is_merc):
     
         if len(elements) == 2 and elements[1].countClasses():
             raise ParseException('Only the first element in a selector may have a class in Mapnik styles', line, col)
+    
+    #
+    # The work.
+    #
     
     element = None
     elements = []
@@ -1162,7 +1214,7 @@ def parse_rule(tokens, selectors, is_merc):
                     break
                 
                 else:
-                    raise ParseException('', line, col)
+                    raise ParseException('Malformed class selector', line, col)
         
         elif (tname, tvalue) == ('CHAR', '*'):
             #
