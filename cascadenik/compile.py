@@ -641,8 +641,8 @@ def extract_declarations(map_el, dirs):
         if not styles:
             continue
             
-        rulesets = style.stylesheet_rulesets(styles, is_merc_projection(map_el.get('srs','')))
-        declarations += style.rulesets_declarations(rulesets)
+        is_merc = is_merc_projection(map_el.get('srs',''))
+        declarations.extend(style.stylesheet_declarations(styles, is_merc))
 
     return declarations
 

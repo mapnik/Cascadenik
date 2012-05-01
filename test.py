@@ -439,8 +439,7 @@ class SelectorParseTests(unittest.TestCase):
         s = """
             Layer[landuse=military] { polygon-fill: #000; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual("[landuse] = 'military'", test2str(filters[1].tests[0]))
@@ -449,8 +448,7 @@ class SelectorParseTests(unittest.TestCase):
         s = """
             Layer[landuse='military'] { polygon-fill: #000; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual("[landuse] = 'military'", test2str(filters[1].tests[0]))
@@ -459,8 +457,7 @@ class SelectorParseTests(unittest.TestCase):
         s = """
             Layer[landuse="military"] { polygon-fill: #000; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual("[landuse] = 'military'", test2str(filters[1].tests[0]))
@@ -469,8 +466,7 @@ class SelectorParseTests(unittest.TestCase):
         s = """
             Layer[foo=1] { polygon-fill: #000; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual("[foo] = 1", test2str(filters[1].tests[0]))
@@ -479,8 +475,7 @@ class SelectorParseTests(unittest.TestCase):
         s = """
             Layer[foo=1.1] { polygon-fill: #000; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual("[foo] = 1.1", test2str(filters[1].tests[0]))
@@ -489,8 +484,7 @@ class SelectorParseTests(unittest.TestCase):
         s = """
             Layer[foo="1.1"] { polygon-fill: #000; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual("[foo] = '1.1'", test2str(filters[1].tests[0]))
@@ -499,8 +493,7 @@ class SelectorParseTests(unittest.TestCase):
         s = """
             Layer[landuse= "military"] { polygon-fill: #000; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual("[landuse] = 'military'", test2str(filters[1].tests[0]))
@@ -509,8 +502,7 @@ class SelectorParseTests(unittest.TestCase):
         s = """
             Layer[foo =1] { polygon-fill: #000; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual("[foo] = 1", test2str(filters[1].tests[0]))
@@ -519,8 +511,7 @@ class SelectorParseTests(unittest.TestCase):
         s = """
             Layer[foo = "1.1"] { polygon-fill: #000; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual("[foo] = '1.1'", test2str(filters[1].tests[0]))
@@ -531,8 +522,7 @@ class SelectorParseTests(unittest.TestCase):
         s = u'''
         Layer[name="Grüner Strich"] { polygon-fill: #000; }
         '''
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(u"[name] = 'Grüner Strich'", test2str(filters[1].tests[0]))
@@ -564,8 +554,7 @@ class FilterCombinationTests(unittest.TestCase):
             Layer[landuse=civilian]     { polygon-fill: #001; }
             Layer[landuse=agriculture]  { polygon-fill: #010; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 4)
@@ -578,8 +567,7 @@ class FilterCombinationTests(unittest.TestCase):
             Layer[landuse=agriculture]  { polygon-fill: #010; }
             Layer[horse=yes]    { polygon-fill: #011; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 8)
@@ -593,8 +581,7 @@ class FilterCombinationTests(unittest.TestCase):
             Layer[horse=yes]    { polygon-fill: #011; }
             Layer[horse=no]     { polygon-fill: #100; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 12)
@@ -608,8 +595,7 @@ class FilterCombinationTests(unittest.TestCase):
             Layer[horse=yes]    { polygon-fill: #011; }
             Layer[leisure=park] { polygon-fill: #100; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 16)
@@ -622,8 +608,7 @@ class SimpleRangeTests(unittest.TestCase):
             Layer[foo<1000] { polygon-fill: #000; }
             Layer[foo>1000] { polygon-fill: #001; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 3)
@@ -634,8 +619,7 @@ class SimpleRangeTests(unittest.TestCase):
             Layer[foo>1] { polygon-fill: #000; }
             Layer[foo<2] { polygon-fill: #001; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 3)
@@ -648,8 +632,7 @@ class SimpleRangeTests(unittest.TestCase):
             Layer[bar>4] { polygon-fill: #010; }
             Layer[bar<8] { polygon-fill: #011; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 9)
@@ -662,8 +645,7 @@ class SimpleRangeTests(unittest.TestCase):
             Layer[bar=this] { polygon-fill: #010; }
             Layer[bar=that] { polygon-fill: #011; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 9)
@@ -677,8 +659,7 @@ class SimpleRangeTests(unittest.TestCase):
             Layer[bar=that] { polygon-fill: #011; }
             Layer[bar=blah] { polygon-fill: #100; }
         """
-        rulesets = stylesheet_rulesets(s)
-        selectors = [dec.selector for dec in rulesets_declarations(rulesets)]
+        selectors = [dec.selector for dec in stylesheet_declarations(s)]
         filters = tests_filter_combinations(selectors_tests(selectors))
         
         self.assertEqual(len(filters), 12)
