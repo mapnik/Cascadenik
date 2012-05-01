@@ -54,6 +54,16 @@ def parse_attribute(tokens, is_merc):
                 except ValueError:
                     value = float(tvalue)
                 return value
+            elif (tname, tvalue) == ('CHAR', '-'):
+                tname, tvalue, line, col = tokens.next()
+                if tname == 'NUMBER':
+                    try:
+                        value = int(tvalue)
+                    except ValueError:
+                        value = float(tvalue)
+                    return -value
+                else:
+                    raise ParseException('Unexpected non-number after a minus sign', line, col)
             elif tname in ('STRING', 'IDENT'):
                 if op in ('<', '<=', '=>', '>'):
                     raise ParseException('Selector attribute must use a number for comparison tests', line, col)
@@ -140,40 +150,48 @@ def parse_attribute(tokens, is_merc):
 
     raise ParseException('Malformed attribute selector', line, col)
 
-def combine_negative_numbers(tokens, line, col):
-    """ Find negative numbers in a list of tokens, return a new list.
-    
-        Negative numbers come as two tokens, a minus sign and a number.
-    """
-    tokens, original_tokens = [], iter(tokens)
-    
-    while True:
-        try:
-            tname, tvalue = original_tokens.next()[:2]
-            
-            if (tname, tvalue) == ('CHAR', '-'):
-                tname, tvalue = original_tokens.next()[:2]
-
-                if tname == 'NUMBER':
-                    # minus sign with a number is a negative number
-                    tokens.append(('NUMBER', '-'+tvalue))
-                else:
-                    raise ParseException('Unexpected non-number after a minus sign', line, col)
-
-            else:
-                tokens.append((tname, tvalue))
-
-        except StopIteration:
-            break
-    
-    return tokens
-
 def postprocess_value(property, tokens, important, line, col):
     """ Convert a list of property value tokens into a single Value instance.
     
         Values can be numbers, strings, colors, uris, or booleans:
         http://www.w3.org/TR/CSS2/syndata.html#values
     """
+    #
+    # Helper function.
+    #
+    
+    def combine_negative_numbers(tokens, line, col):
+        """ Find negative numbers in a list of tokens, return a new list.
+        
+            Negative numbers come as two tokens, a minus sign and a number.
+        """
+        tokens, original_tokens = [], iter(tokens)
+        
+        while True:
+            try:
+                tname, tvalue = original_tokens.next()[:2]
+                
+                if (tname, tvalue) == ('CHAR', '-'):
+                    tname, tvalue = original_tokens.next()[:2]
+    
+                    if tname == 'NUMBER':
+                        # minus sign with a number is a negative number
+                        tokens.append(('NUMBER', '-'+tvalue))
+                    else:
+                        raise ParseException('Unexpected non-number after a minus sign', line, col)
+    
+                else:
+                    tokens.append((tname, tvalue))
+    
+            except StopIteration:
+                break
+        
+        return tokens
+    
+    #
+    # The work.
+    #
+    
     tokens = combine_negative_numbers(tokens, line, col)
     
     if properties[property.name] in (int, float, str, color, uri, boolean) or type(properties[property.name]) is tuple:

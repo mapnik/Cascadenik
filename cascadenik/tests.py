@@ -1301,21 +1301,21 @@ class StyleRuleTests(unittest.TestCase):
         self.assertEqual(color(0x00, 0x00, 0x44), polygon_rules[5].symbolizers[0].color)
 
     def testStyleRules11(self):
-        """ Spaces in attribute selectors need to be acceptable
+        """ Spaces and negative numbers in attribute selectors need to be acceptable
         """
         s = """
-            Layer[PERSONS < 2000000] { polygon-fill: #6CAE4C; }
-            Layer[PERSONS >= 2000000][PERSONS < 4000000] { polygon-fill: #3B7AB3; }
+            Layer[PERSONS < -2000000] { polygon-fill: #6CAE4C; }
+            Layer[PERSONS >= -2000000][PERSONS < 4000000] { polygon-fill: #3B7AB3; }
             Layer[PERSONS > 4000000] { polygon-fill: #88000F; }
         """
     
         declarations = stylesheet_declarations(s, False)
         polygon_rules = get_polygon_rules(declarations)
         
-        self.assertEqual("[PERSONS] < 2000000", polygon_rules[0].filter.text)
+        self.assertEqual("[PERSONS] < -2000000", polygon_rules[0].filter.text)
         self.assertEqual(color(0x6c, 0xae, 0x4c), polygon_rules[0].symbolizers[0].color)
         
-        self.assertEqual("[PERSONS] >= 2000000 and [PERSONS] < 4000000", polygon_rules[1].filter.text)
+        self.assertEqual("[PERSONS] >= -2000000 and [PERSONS] < 4000000", polygon_rules[1].filter.text)
         self.assertEqual(color(0x3b, 0x7a, 0xb3), polygon_rules[1].symbolizers[0].color)
         
         self.assertEqual("[PERSONS] > 4000000", polygon_rules[2].filter.text)
