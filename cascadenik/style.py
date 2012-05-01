@@ -923,15 +923,24 @@ def trim_extra(tokens):
 
 def parse_attribute(tokens):
 
-    def next_scalar(tokens):
+    def next_scalar(tokens, op):
         while True:
             tname, tvalue, line, col = tokens.next()
             if tname == 'NUMBER':
-                return tvalue
-            elif tname == 'STRING':
-                return tvalue[1:-1]
+                try:
+                    value = int(tvalue)
+                except ValueError:
+                    value = float(tvalue)
+                return value
+            elif tname in ('STRING', 'IDENT'):
+                if op in ('<', '<=', '=>', '>'):
+                    raise ParseException('Selector attribute must use a number for comparison tests', line, col)
+                if tname == 'STRING':
+                    return tvalue[1:-1]
+                else:
+                    return tvalue
             elif tname != 'S':
-                raise ParseException('', line, col)
+                raise ParseException((tname, tvalue), line, col)
     
     def finish_attribute(tokens):
         while True:
@@ -958,7 +967,7 @@ def parse_attribute(tokens):
                         # One of <=, >=
                         #
                         op = tvalue + _tvalue
-                        value = next_scalar(tokens)
+                        value = next_scalar(tokens, op)
                         finish_attribute(tokens)
                         return SelectorAttributeTest(property, op, value)
                     
@@ -967,7 +976,7 @@ def parse_attribute(tokens):
                         # One of <, > and we popped a token too early
                         #
                         op = tvalue
-                        value = next_scalar(chain([(_tname, _tvalue, line, col)], tokens))
+                        value = next_scalar(chain([(_tname, _tvalue, line, col)], tokens), op)
                         finish_attribute(tokens)
                         return SelectorAttributeTest(property, op, value)
                 
@@ -979,7 +988,7 @@ def parse_attribute(tokens):
                         # !=
                         #
                         op = tvalue + _tvalue
-                        value = next_scalar(tokens)
+                        value = next_scalar(tokens, op)
                         finish_attribute(tokens)
                         return SelectorAttributeTest(property, op, value)
                     
@@ -991,7 +1000,7 @@ def parse_attribute(tokens):
                     # =
                     #
                     op = tvalue
-                    value = next_scalar(tokens)
+                    value = next_scalar(tokens, op)
                     finish_attribute(tokens)
                     return SelectorAttributeTest(property, op, value)
                 
