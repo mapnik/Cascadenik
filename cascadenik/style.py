@@ -1187,6 +1187,25 @@ def parse_block(tokens):
 
 def parse_rule(tokens, selectors):
 
+    def validate_selector_elements(elements, line, col):
+        if len(elements) > 2:
+            raise ParseException('Only two-element selectors are supported for Mapnik styles', line, col)
+    
+        if len(elements) == 0:
+            raise ParseException('At least one element must be present in selectors for Mapnik styles', line, col)
+    
+        if elements[0].names[0] not in ('Map', 'Layer') and elements[0].names[0][0] not in ('.', '#', '*'):
+            raise ParseException('All non-ID, non-class first elements must be "Layer" Mapnik styles', line, col)
+        
+        if len(elements) == 2 and elements[1].countTests():
+            raise ParseException('Only the first element in a selector may have attributes in Mapnik styles', line, col)
+    
+        if len(elements) == 2 and elements[1].countIDs():
+            raise ParseException('Only the first element in a selector may have an ID in Mapnik styles', line, col)
+    
+        if len(elements) == 2 and elements[1].countClasses():
+            raise ParseException('Only the first element in a selector may have a class in Mapnik styles', line, col)
+    
     element = None
     elements = []
     
@@ -1267,6 +1286,7 @@ def parse_rule(tokens, selectors):
             #
             # Return a full block here.
             #
+            validate_selector_elements(elements, line, col)
             selectors.append(Selector(*elements))
             ruleset = []
             
