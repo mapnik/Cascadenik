@@ -11,7 +11,7 @@ except ImportError:
     from distutils.core import setup
     HAS_SETUPTOOLS = False
     
-readme = file('README.txt','rb').read()
+readme = file('README.md','rb').read()
 
 VERSION = open('VERSION.txt', 'r').read().strip()
 

@@ -17,12 +17,12 @@ Dependency information:
 
 Using Pip
 
-    $ pip install cssutils
-    $ pip install PIL
+    % pip install cssutils
+    % pip install PIL
 
 On Ubuntu
 
-    $ apt-get install python-cssutils python-imaging
+    % apt-get install python-cssutils python-imaging
 
 Cascadenik
 ----------
@@ -31,4 +31,8 @@ Cascadenik
 
 Or, run the following command inside this directory:
 
-    $ python setup.py install
+    % python setup.py install
+
+Now run the test suite:
+
+    % python -m cascadenik.tests
