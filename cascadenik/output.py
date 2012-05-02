@@ -294,13 +294,20 @@ class TextSymbolizer:
         return 'Text(%s, %s)' % (self.face_name, self.size)
 
     def to_mapnik(self):
-        # note: these match css in Mapnik2
-        convert_enums = {'uppercase': mapnik.text_convert.TOUPPER,
-                         'lowercase': mapnik.text_convert.TOLOWER
-                        }
+        if MAPNIK_VERSION >= 20000:
+            convert_enums = {'uppercase': mapnik.text_transform.UPPERCASE,
+                             'lowercase': mapnik.text_transform.LOWERCASE}
 
-        sym = mapnik.TextSymbolizer(self.name, self.face_name, self.size,
-                                    mapnik.Color(str(self.color)))
+            sym = mapnik.TextSymbolizer(mapnik.Expression('[%s]' % self.name),
+                                        self.face_name, self.size,
+                                        mapnik.Color(str(self.color)))
+        else:
+            # note: these match css in Mapnik2
+            convert_enums = {'uppercase': mapnik.text_convert.TOUPPER,
+                             'lowercase': mapnik.text_convert.TOLOWER}
+
+            sym = mapnik.TextSymbolizer(self.name, self.face_name, self.size,
+                                        mapnik.Color(str(self.color)))
 
         sym.wrap_width = self.wrap_width or sym.wrap_width
         sym.label_spacing = self.label_spacing or sym.label_spacing
@@ -314,11 +321,16 @@ class TextSymbolizer:
         sym.force_odd_labels = self.force_odd_labels.value if self.force_odd_labels else sym.force_odd_labels
         sym.minimum_distance = self.minimum_distance or sym.minimum_distance
         sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
+
         if self.label_placement:
             sym.label_placement = mapnik.label_placement.names.get(self.label_placement,mapnik.label_placement.POINT_PLACEMENT)
-        # note-renamed in Mapnik2 to 'text_transform'
-        if self.text_transform:
-            sym.text_convert = convert_enums.get(self.text_transform,mapnik.text_convert.NONE)
+
+        if self.text_transform and MAPNIK_VERSION >= 20000:
+            sym.text_convert = convert_enums.get(self.text_transform, mapnik.text_transform.NONE)
+        elif self.text_transform:
+            # note-renamed in Mapnik2 to 'text_transform'
+            sym.text_convert = convert_enums.get(self.text_transform, mapnik.text_convert.NONE)
+
         if self.vertical_alignment:
             # match the logic in load_map.cpp for conditionally applying vertical_alignment default
             default_vertical_alignment = mapnik.vertical_alignment.MIDDLE
@@ -338,7 +350,10 @@ class TextSymbolizer:
              # not viable via python
             sys.stderr.write('\nCascadenik debug: Warning, FontSets will be ignored as they are not yet supported in Mapnik via Python...\n')
         
-        sym.displacement(self.dx or 0.0, self.dy or 0.0)
+        if MAPNIK_VERSION >= 20000:
+            sym.displacement = (self.dx or 0.0, self.dy or 0.0)
+        else:
+            sym.displacement(self.dx or 0.0, self.dy or 0.0)
         
         return sym
 

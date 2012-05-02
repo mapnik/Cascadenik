@@ -2020,7 +2020,12 @@ layer_srs=%(other_srs)s
         declarations = stylesheet_declarations(s, is_merc=True)
         text_rule_groups = get_text_rule_groups(declarations)
         sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik()
-        self.assertEqual([10,15], sym.get_displacement())
+        
+        if MAPNIK_VERSION >= 20000:
+            self.assertEqual((10, 15), sym.displacement)
+        else:
+            self.assertEqual([10, 15], sym.get_displacement())
+        
         # todo - anchor (does not do anything yet in mapnik, but likely will)
         # and is not set in xml, but accepted in python
         #self.assertEqual([0,5], sym.get_anchor())
@@ -2037,7 +2042,11 @@ layer_srs=%(other_srs)s
         self.assertEqual(mapnik.Color("#ff0"), sym.halo_fill)
         self.assertEqual(2, sym.halo_radius)
         
-        self.assertEqual('NAME', sym.name)
+        if MAPNIK_VERSION >= 20000:
+            self.assertEqual('[NAME]', str(sym.name))
+        else:
+            self.assertEqual('NAME', sym.name)
+        
         self.assertEqual(12, sym.text_size)
         self.assertEqual(100, sym.wrap_width)
         self.assertEqual(50, sym.label_spacing)
