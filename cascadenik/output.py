@@ -38,6 +38,7 @@ class Map:
                 for style in layer.styles:
     
                     sty = mapnik.Style()
+                    sty.filter_mode = mapnik.filter_mode.FIRST
                     
                     for rule in style.rules:
                         rul = mapnik.Rule('rule %d' % ids.next())

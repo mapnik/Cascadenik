@@ -1414,7 +1414,7 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
             If True, debugging information will be printed to stderr.
         
           srs:
-            Target spatiral reference system for the compiled stylesheet.
+            Target spatial reference system for the compiled stylesheet.
             If provided, overrides default map srs in the .mml file.
         
           datasources_cfg:
