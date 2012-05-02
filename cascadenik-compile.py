@@ -46,6 +46,8 @@ def main(src_file, dest_file, **kwargs):
     # manually unlinking seems to be required on windows
     if os.path.exists(dest_file):
         os.unlink(dest_file)
+
+    os.chmod(tmp_file, 0666^os.umask(0))
     shutil.move(tmp_file, dest_file)
     return 0
 
