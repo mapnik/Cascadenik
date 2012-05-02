@@ -1,7 +1,7 @@
 import sys
 from os import getcwd, chdir
 
-from . import style, mapnik
+from . import style, mapnik, MAPNIK_VERSION
 
 def safe_str(s):
     return None if not s else unicode(s).encode('utf-8')
@@ -386,15 +386,17 @@ class ShieldSymbolizer:
         return 'Shield(%s, %s, %s, %s)' % (self.name, self.face_name, self.size, self.file)
 
     def to_mapnik(self):
-        sym = mapnik.ShieldSymbolizer(
-                self.name, 
-                self.face_name, 
-                self.size or 10, 
-                mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
-                self.file,
-                self.type,
-                self.width,
-                self.height)
+        
+        if MAPNIK_VERSION >= 20000:
+            sym = mapnik.ShieldSymbolizer(
+                    mapnik.Expression('[%s]' % self.name), self.face_name, self.size or 10, 
+                    mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
+                    mapnik.PathExpression(self.file))
+        else:
+            sym = mapnik.ShieldSymbolizer(
+                    self.name, self.face_name, self.size or 10, 
+                    mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
+                    self.file, self.type, self.width, self.height)
 
         sym.character_spacing = self.character_spacing or sym.character_spacing
         sym.line_spacing = self.line_spacing or sym.line_spacing
@@ -405,7 +407,10 @@ class ShieldSymbolizer:
         if self.fontset:
             sym.fontset = self.fontset.value
         
-        sym.displacement(self.text_dx or 0, self.text_dy or 0)
+        if MAPNIK_VERSION >= 20000:
+            sym.displacement = (self.text_dx or 0, self.text_dy or 0)
+        else:
+            sym.displacement(self.text_dx or 0, self.text_dy or 0)
         
         return sym
 
@@ -426,7 +431,12 @@ class BasePointSymbolizer(object):
 
     def to_mapnik(self):
         sym_class = getattr(mapnik, self.__class__.__name__)
-        sym = sym_class(self.file, self.type, self.width, self.height)
+        
+        if MAPNIK_VERSION >= 20000:
+            sym = sym_class(mapnik.PathExpression(self.file))
+        else:
+            sym = sym_class(self.file, self.type, self.width, self.height)
+        
         return sym
 
 class PointSymbolizer(BasePointSymbolizer):
