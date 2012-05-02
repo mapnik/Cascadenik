@@ -1,6 +1,19 @@
 Cascadenik Changelog
 ====================
 
+Version 2.0.0, May 1, 2012
+
+ * Updated for Mapnik 2.0.0.
+ * Replaced `style.stylesheet_rulesets()`, `style.rulesets_declarations()`,
+   with all-new `style.stylesheet_declarations()`.
+ * Fixed support for negative numbers in attribute selectors.
+ * Added Style `filter-mode="first"` to generated XML.
+ * Switched away from a state machine approach to a generator approach inspired
+   by Eli Bendersky: http://eli.thegreenplace.net/2009/08/29/co-routines-as-an-alternative-to-state-machines/.
+
+Version 1.x.x
+-------------
+
 Version 1.1.2, December 3, 2011
 
  * Switched from `os.rename()` to `shutil.move()` in `cascadenik-compile.py`
