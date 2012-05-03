@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.0.2, May 3, 2012
+
+ * Fixed a bug in setup.py that required README.md to be present when pip-installing.
+
 Version 2.0.1, May 3, 2012
 
  * Fixed line-dasharray bug: https://github.com/mapnik/Cascadenik/issues/11.
