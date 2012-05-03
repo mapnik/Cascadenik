@@ -11,14 +11,11 @@ except ImportError:
     from distutils.core import setup
     HAS_SETUPTOOLS = False
     
-readme = file('README.md','rb').read()
-
 VERSION = open('VERSION.txt', 'r').read().strip()
 
 options = dict(name='cascadenik',
         version = VERSION,
         description='Cascading Stylesheets For Mapnik',
-        long_description=readme,
         author='Michal Migurski',
         author_email='mike@teczno.com',
         platforms='OS Independent',
@@ -40,6 +37,11 @@ options = dict(name='cascadenik',
         scripts=['cascadenik-compile.py','cascadenik-style.py', 'cascadenik-extract-dscfg.py'],
         packages=['cascadenik'],
         )
+
+try:
+    options['long_description'] = file('README.md','rb').read()
+except IOError:
+    pass
 
 if HAS_SETUPTOOLS:
     options.update({'install_requires':['cssutils>0.9.0','PIL']})
