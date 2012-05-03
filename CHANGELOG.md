@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.0.1, May 3, 2012
+
+ * Fixed line-dasharray bug: https://github.com/mapnik/Cascadenik/issues/11.
+
 Version 2.0.0, May 1, 2012
 
  * Updated for Mapnik 2.0.0.

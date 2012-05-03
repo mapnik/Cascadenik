@@ -1906,7 +1906,7 @@ layer_srs=%(other_srs)s
                     Layer {
                         line-color: #0f0;
                         line-width: 3;
-                        line-dasharray: 8,100;
+                        line-dasharray: 8,100,4,50;
                     }
 
                     Layer { 

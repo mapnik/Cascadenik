@@ -227,8 +227,13 @@ class LineSymbolizer:
         stroke.opacity = self.opacity or stroke.opacity
         stroke.line_cap = self.cap and line_caps[self.cap] or stroke.line_cap
         stroke.line_join = self.join and line_joins[self.join] or stroke.line_join
+
         if self.dashes:
-            stroke.add_dash(*self.dashes.values)
+            lengths_gaps = list(self.dashes.values)
+            while lengths_gaps:
+                (length, gap), lengths_gaps = lengths_gaps[:2], lengths_gaps[2:]
+                stroke.add_dash(length, gap)
+
         sym = mapnik.LineSymbolizer(stroke)
         
         return sym
