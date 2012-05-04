@@ -2055,6 +2055,24 @@ layer_srs=%(other_srs)s
         self.assertEqual(10, sym.line_spacing)
         self.assertEqual(5, sym.minimum_distance)
         self.assertEqual(mapnik.label_placement.LINE_PLACEMENT, sym.label_placement)
+    
+    def testCompile7(self):
+        s = """
+            #roads
+            {
+                line-color: #f90;
+                line-width: 1;
+            }
+            
+            #roads[tiny=yes]
+            {
+                display: none;
+            }
+        """
+        declarations = stylesheet_declarations(s, is_merc=True)
+        line_rules = get_line_rules(declarations)
+        
+        self.assertEqual(1, len(line_rules))
 
 class RelativePathTests(unittest.TestCase):
 
