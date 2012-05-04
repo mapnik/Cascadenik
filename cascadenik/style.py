@@ -58,6 +58,9 @@ class numbers:
 # recognized properties
 
 properties = {
+    # 
+    'display': ('map', 'none'),
+
     #--------------- map
 
     # 

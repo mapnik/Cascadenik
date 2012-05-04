@@ -2061,7 +2061,7 @@ layer_srs=%(other_srs)s
             #roads
             {
                 line-color: #f90;
-                line-width: 1;
+                line-width: 1 !important;
             }
             
             #roads[tiny=yes]
@@ -2073,6 +2073,7 @@ layer_srs=%(other_srs)s
         line_rules = get_line_rules(declarations)
         
         self.assertEqual(1, len(line_rules))
+        self.assertEqual(line_rules[0].filter.text, "not [tiny] = 'yes'")
 
 class RelativePathTests(unittest.TestCase):
 

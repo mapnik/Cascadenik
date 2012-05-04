@@ -778,6 +778,8 @@ def get_map_attributes(declarations):
 def filtered_property_declarations(declarations, property_names):
     """
     """
+    property_names += ['display']
+
     # just the ones we care about here
     declarations = [dec for dec in declarations if dec.property.name in property_names]
     selectors = [dec.selector for dec in declarations]
@@ -792,10 +794,14 @@ def filtered_property_declarations(declarations, property_names):
         for dec in declarations:
             if is_applicable_selector(dec.selector, filter):
                 rule[dec.property.name] = dec.value
+                
+                if (dec.property.name, dec.value.value) == ('display', 'none'):
+                    rule = False
+                    break
 
         if rule:
             rules.append((filter, rule))
-
+    
     return rules
 
 def get_polygon_rules(declarations):

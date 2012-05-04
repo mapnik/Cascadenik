@@ -20,7 +20,13 @@ def stylesheet_declarations(string, is_merc=False):
         be interpreted as spherical mercator, so we know what to do with
         zoom/scale-denominator in parse_rule().
     """
-    declarations = []
+    # everything is display: map by default
+    display_map = Declaration(Selector(SelectorElement(['*'], [])),
+                              Property('display'), Value('map', False),
+                              (False, (0, 0, 0), (0, 0)))
+    
+    declarations = [display_map]
+    
     tokens = cssTokenizer().tokenize(string)
     
     while True:
