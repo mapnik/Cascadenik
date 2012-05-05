@@ -78,19 +78,19 @@ class ParseTests(unittest.TestCase):
         self.assertRaises(ParseException, stylesheet_declarations, 'Layer { "not an ident": none; }')
 
     def testRulesets1(self):
-        self.assertEqual(0, len(stylesheet_declarations('/* empty stylesheet */')))
+        self.assertEqual(1, len(stylesheet_declarations('/* empty stylesheet */')))
 
     def testDeclarations2(self):
-        self.assertEqual(1, len(stylesheet_declarations('Layer { line-width: 1; }')))
+        self.assertEqual(2, len(stylesheet_declarations('Layer { line-width: 1; }')))
 
     def testDeclarations3(self):
-        self.assertEqual(2, len(stylesheet_declarations('Layer { line-width: 1; } Layer { line-width: 1; }')))
+        self.assertEqual(3, len(stylesheet_declarations('Layer { line-width: 1; } Layer { line-width: 1; }')))
 
     def testDeclarations4(self):
-        self.assertEqual(3, len(stylesheet_declarations('Layer { line-width: 1; } /* something */ Layer { line-width: 1; } /* extra */ Layer { line-width: 1; }')))
+        self.assertEqual(4, len(stylesheet_declarations('Layer { line-width: 1; } /* something */ Layer { line-width: 1; } /* extra */ Layer { line-width: 1; }')))
 
     def testDeclarations5(self):
-        self.assertEqual(1, len(stylesheet_declarations('Map { line-width: 1; }')))
+        self.assertEqual(2, len(stylesheet_declarations('Map { line-width: 1; }')))
 
 class SelectorTests(unittest.TestCase):
     
@@ -318,6 +318,9 @@ class CascadeTests(unittest.TestCase):
         """
         declarations = stylesheet_declarations(s)
         
+        # ditch the boring display: map declaration
+        declarations.pop(0)
+        
         self.assertEqual(2, len(declarations))
         self.assertEqual(1, len(declarations[0].selector.elements))
         self.assertEqual('text-dx', declarations[0].property.name)
@@ -343,6 +346,9 @@ class CascadeTests(unittest.TestCase):
             }
         """
         declarations = stylesheet_declarations(s)
+        
+        # ditch the boring display: map declaration
+        declarations.pop(0)
         
         # first declaration is the unimportant polygon-fill: #f90
         self.assertEqual(1, len(declarations[0].selector.elements))
