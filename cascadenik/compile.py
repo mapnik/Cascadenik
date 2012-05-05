@@ -795,12 +795,21 @@ def filtered_property_declarations(declarations, property_names):
             if is_applicable_selector(dec.selector, filter):
                 rule[dec.property.name] = dec.value
                 
+                # Presence of display: none means don't add this rule at all.
                 if (dec.property.name, dec.value.value) == ('display', 'none'):
-                    rule = False
+                    rule = {}
                     break
 
-        if rule:
-            rules.append((filter, rule))
+        # Presence of display here probably just means display: map,
+        # which is boring and can be discarded.
+        if rule and 'display' in rule:
+            del rule['display']
+        
+        # If the rule is empty by this point, skip it.
+        if not rule:
+            continue
+
+        rules.append((filter, rule))
     
     return rules
 
