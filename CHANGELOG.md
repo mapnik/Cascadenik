@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.1.1, May 22, 2012
+
+ * Fixed longstanding bug with relative links from relative .mss stylesheet links.
+
 Version 2.1.0, May 22, 2012
 
  * Added new `display: none` property and its opposite, `display: map`.
