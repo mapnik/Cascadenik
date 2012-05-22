@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.1.0, May 22, 2012
+
+ * Added new `display: none` property and its opposite, `display: map`.
+
 Version 2.0.2, May 3, 2012
 
  * Fixed a bug in setup.py that required README.md to be present when pip-installing.
