@@ -58,6 +58,7 @@ from . import safe64, style, output, sources
 from . import MAPNIK_VERSION, MAPNIK_VERSION_STR
 from .nonposix import un_posix, to_posix
 from .parse import stylesheet_declarations
+from .style import uri
 
 try:
     from PIL import Image
@@ -617,13 +618,28 @@ def extract_declarations(map_el, dirs):
     for stylesheet in map_el.findall('Stylesheet'):
         map_el.remove(stylesheet)
 
-        styles, base = fetch_embedded_or_remote_src(stylesheet, dirs)
+        styles, mss_href = fetch_embedded_or_remote_src(stylesheet, dirs)
 
         if not styles:
             continue
             
         is_merc = is_merc_projection(map_el.get('srs',''))
-        declarations.extend(stylesheet_declarations(styles, is_merc))
+        
+        for declaration in stylesheet_declarations(styles, is_merc):
+
+            #
+            # Change the value of each URI relative to the location
+            # of the containing stylesheet. We generally just have
+            # the one instance of "dirs" around for a full parse cycle,
+            # so it's necessary to perform this normalization here
+            # instead of later, while mss_href is still available.
+            #
+            uri_value = declaration.value.value
+            
+            if uri_value.__class__ is uri:
+                uri_value.address = urljoin(mss_href, uri_value.address)
+
+            declarations.append(declaration)
 
     return declarations
 
