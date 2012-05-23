@@ -2096,23 +2096,23 @@ layer_srs=%(other_srs)s
                 text-size: 12;
             }
         """
-        declarations = stylesheet_declarations(s, is_merc=True)
+        declarations = stylesheet_declarations(s, is_merc=True, scale=2)
 
         line_rules = get_line_rules(declarations)
         line_rule = line_rules[0]
         
         self.assertEqual(1, len(line_rules))
-        self.assertEqual(100000, line_rule.minscale.value)
-        self.assertEqual(199999, line_rule.maxscale.value)
-        self.assertEqual(1, line_rule.symbolizers[0].width)
+        self.assertEqual(50000, line_rule.minscale.value)
+        self.assertEqual(99999, line_rule.maxscale.value)
+        self.assertEqual(2, line_rule.symbolizers[0].width)
 
         text_rules = get_text_rule_groups(declarations).get('name', [])
         text_rule = text_rules[0]
         
         self.assertEqual(1, len(text_rules))
-        self.assertEqual(100000, text_rule.minscale.value)
-        self.assertEqual(199999, text_rule.maxscale.value)
-        self.assertEqual(12, text_rule.symbolizers[0].size)
+        self.assertEqual(50000, text_rule.minscale.value)
+        self.assertEqual(99999, text_rule.maxscale.value)
+        self.assertEqual(24, text_rule.symbolizers[0].size)
 
 class RelativePathTests(unittest.TestCase):
 
