@@ -36,7 +36,7 @@ CACHE_DIR = '~/.cascadenik'
 
 __all__ = ['load_map', 'compile', '_compile', 'style', 'stylesheet_declarations']
 
-def load_map(map, src_file, output_dir, cache_dir=None, datasources_cfg=None, verbose=False):
+def load_map(map, src_file, output_dir, scale=1, cache_dir=None, datasources_cfg=None, verbose=False):
     """ Apply a stylesheet source file to a given mapnik Map instance, like mapnik.load_map().
     
         Parameters:
@@ -52,6 +52,9 @@ def load_map(map, src_file, output_dir, cache_dir=None, datasources_cfg=None, ve
             ...
         
         Keyword Parameters:
+        
+          scale:
+            Optional scale value for output map, 2 doubles the size for high-res displays.
         
           cache_dir:
             ...
@@ -76,4 +79,4 @@ def load_map(map, src_file, output_dir, cache_dir=None, datasources_cfg=None, ve
             chmod(cache_dir, 0755)
 
     dirs = Directories(output_dir, realpath(cache_dir), dirname(src_file))
-    compile(src_file, dirs, verbose, datasources_cfg=datasources_cfg).to_mapnik(map, dirs)
+    compile(src_file, dirs, verbose, datasources_cfg=datasources_cfg, scale=scale).to_mapnik(map, dirs)

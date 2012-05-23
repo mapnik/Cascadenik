@@ -609,7 +609,7 @@ def is_merc_projection(srs):
 
     return True
 
-def extract_declarations(map_el, dirs):
+def extract_declarations(map_el, dirs, scale=1):
     """ Given a Map element and directories object, remove and return a complete
         list of style declarations from any Stylesheet elements found within.
     """
@@ -625,7 +625,7 @@ def extract_declarations(map_el, dirs):
             
         is_merc = is_merc_projection(map_el.get('srs',''))
         
-        for declaration in stylesheet_declarations(styles, is_merc):
+        for declaration in stylesheet_declarations(styles, is_merc, scale):
 
             #
             # Change the value of each URI relative to the location
@@ -1426,7 +1426,7 @@ def localize_file_datasource(file_href, dirs):
     else:
         return dirs.output_path(path)
     
-def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
+def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None, scale=1):
     """ Compile a Cascadenik MML file, returning a cascadenik.output.Map object.
     
         Parameters:
@@ -1453,6 +1453,9 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
             (i.e. postgis_dbname) defined in the map's canonical <DataSourcesConfig>
             entities.  This is most useful in development, whereby one redefines
             individual datasources, connection parameters, and/or local paths.
+        
+          scale:
+            Scale value for output map, 2 doubles the size for high-res displays.
     """
     global VERBOSE
 
@@ -1480,7 +1483,7 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None):
             map_el = doc.getroot()
 
     expand_source_declarations(map_el, dirs, datasources_cfg)
-    declarations = extract_declarations(map_el, dirs)
+    declarations = extract_declarations(map_el, dirs, scale)
     
     # a list of layers and a sequential ID generator
     layers, ids = [], (i for i in xrange(1, 999999))
