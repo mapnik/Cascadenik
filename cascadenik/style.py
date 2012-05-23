@@ -1,3 +1,5 @@
+from math import log
+from copy import deepcopy
 import operator
 
 class color:
@@ -356,6 +358,10 @@ class Declaration:
 
     def __repr__(self):
         return u'%(selector)s { %(property)s: %(value)s }' % self.__dict__
+    
+    def scaleBy(self, scale):
+        self.selector = self.selector.scaledBy(scale)
+        self.value = self.value.scaledBy(scale)
 
 class Selector:
     """ Represents a complete selector with elements and attribute checks.
@@ -495,6 +501,20 @@ class Selector:
 
         return True
 
+    def scaledBy(self, scale):
+        """ Return a new Selector with scale denominators scaled by a number.
+        """
+        scaled = deepcopy(self)
+    
+        for test in scaled.elements[0].tests:
+            if type(test.value) in (int, float):
+                if test.property == 'scale-denominator':
+                    test.value /= scale
+                elif test.property == 'zoom':
+                    test.value += log(scale)/log(2)
+        
+        return scaled
+    
     def __repr__(self):
         return u' '.join(repr(a) for a in self.elements)
 
@@ -762,6 +782,16 @@ class Value:
 
     def importance(self):
         return int(self.important)
+    
+    def scaledBy(self, scale):
+        """ Return a new Value scaled by a given number for ints and floats.
+        """
+        scaled = deepcopy(self)
+    
+        if type(scaled.value) in (int, float):
+            scaled.value *= scale
+        
+        return scaled
     
     def __repr__(self):
         return repr(self.value)

@@ -13,7 +13,7 @@ class ParseException(Exception):
     def __init__(self, msg, line, col):
         Exception.__init__(self, '%(msg)s (line %(line)d, column %(col)d)' % locals())
 
-def stylesheet_declarations(string, is_merc=False):
+def stylesheet_declarations(string, is_merc=False, scale=1):
     """ Parse a string representing a stylesheet into a list of declarations.
     
         Required boolean is_merc indicates whether the projection should
@@ -32,6 +32,9 @@ def stylesheet_declarations(string, is_merc=False):
     while True:
         try:
             for declaration in parse_rule(tokens, [], is_merc):
+                if scale != 1:
+                    declaration.scaleBy(scale)
+            
                 declarations.append(declaration)
         except StopIteration:
             break
