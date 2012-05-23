@@ -2081,6 +2081,39 @@ layer_srs=%(other_srs)s
         self.assertEqual(1, len(line_rules))
         self.assertEqual(line_rules[0].filter.text, "not [tiny] = 'yes'")
 
+    def testCompile8(self):
+        s = """
+            #roads[zoom=12]
+            {
+                line-color: #f90;
+                line-width: 1;
+            }
+
+            #roads[zoom=12] name
+            {
+                text-fill: #f90;
+                text-face-name: "Courier New";
+                text-size: 12;
+            }
+        """
+        declarations = stylesheet_declarations(s, is_merc=True)
+
+        line_rules = get_line_rules(declarations)
+        line_rule = line_rules[0]
+        
+        self.assertEqual(1, len(line_rules))
+        self.assertEqual(100000, line_rule.minscale.value)
+        self.assertEqual(199999, line_rule.maxscale.value)
+        self.assertEqual(1, line_rule.symbolizers[0].width)
+
+        text_rules = get_text_rule_groups(declarations).get('name', [])
+        text_rule = text_rules[0]
+        
+        self.assertEqual(1, len(text_rules))
+        self.assertEqual(100000, text_rule.minscale.value)
+        self.assertEqual(199999, text_rule.maxscale.value)
+        self.assertEqual(12, text_rule.symbolizers[0].size)
+
 class RelativePathTests(unittest.TestCase):
 
     def setUp(self):
