@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.2.0, May 23, 2012
+
+ * Added new `scale` argument to load_map(), compile() and `--2x` option to cascadenik-compile.py.
+
 Version 2.1.1, May 22, 2012
 
  * Fixed longstanding bug with relative links from relative .mss stylesheet links.
