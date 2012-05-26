@@ -31,7 +31,7 @@ def stylesheet_declarations(string, is_merc=False, scale=1):
     
     while True:
         try:
-            for declaration in parse_rule(tokens, [], is_merc, False):
+            for declaration in parse_rule(tokens, [], [], is_merc):
                 if scale != 1:
                     declaration.scaleBy(scale)
             
@@ -320,7 +320,7 @@ def postprocess_value(property, tokens, important, line, col):
 
     return Value(value, important)
 
-def parse_block(tokens, selectors):
+def parse_block(tokens, selectors, is_merc):
     """ Parse a token stream into an array of declaration tuples.
     
         Return an array of (property, value, (line, col), importance).
@@ -404,7 +404,16 @@ def parse_block(tokens, selectors):
                 
             return ruleset
         
-        elif tname in ('HASH', ) or (tname, tvalue) in [('CHAR', '.'), ('CHAR', '*'), ('CHAR', '[')]:
+        elif (tname, tvalue) == ('CHAR', '&'):
+            #
+            # Start of a nested block with a "&" combinator
+            # http://lesscss.org/#-nested-rules
+            #
+            print 4, selectors
+            print parse_rule(chain([(tname, tvalue, line, col)], tokens), [], selectors, is_merc)
+            raise Exception('wah')
+        
+        elif tname in ('HASH', ) or (tname, tvalue) in [('CHAR', '.'), ('CHAR', '*'), ('CHAR', '['), ('CHAR', '&')]:
             #
             # one of a bunch of valid ways to start a nested rule
             #
@@ -415,7 +424,7 @@ def parse_block(tokens, selectors):
 
     raise ParseException('Malformed block', line, col)
 
-def parse_rule(tokens, selectors, is_merc, is_nested):
+def parse_rule(tokens, selectors, parents, is_merc):
     """ Parse a rule set, return a list of declarations.
         
         A rule set is a combination of selectors and declarations:
@@ -457,7 +466,14 @@ def parse_rule(tokens, selectors, is_merc, is_nested):
     while True:
         tname, tvalue, line, col = tokens.next()
         
-        if tname == 'IDENT':
+        if (tname, tvalue) == ('CHAR', '&'):
+            #
+            # Start of a nested block with a "&" combinator
+            # http://lesscss.org/#-nested-rules
+            #
+            print 5, selectors, parents, elements
+        
+        elif tname == 'IDENT':
             #
             # Identifier always starts a new element.
             #
@@ -523,7 +539,7 @@ def parse_rule(tokens, selectors, is_merc, is_nested):
             #
             selectors.append(Selector(*elements))
             selectors[-1].convertZoomTests(is_merc)
-            return parse_rule(tokens, selectors, is_merc, is_nested)
+            return parse_rule(tokens, selectors, parents, is_merc)
         
         elif (tname, tvalue) == ('CHAR', '{'):
             #
@@ -532,12 +548,18 @@ def parse_rule(tokens, selectors, is_merc, is_nested):
             #
             # Return a full block here.
             #
-            if not is_nested:
-                validate_selector_elements(elements, line, col)
+            validate_selector_elements(elements, line, col)
 
             selectors.append(Selector(*elements))
             selectors[-1].convertZoomTests(is_merc)
-
-            ruleset = parse_block(tokens, selectors)
             
-            return ruleset
+            print 1, parents
+            print 2, selectors
+
+            for parent in parents:
+                for selector in selectors:
+                    selector.elements += parent.elements
+            
+            print 3, selectors
+            
+            return parse_block(tokens, selectors, is_merc)
