@@ -31,7 +31,7 @@ def stylesheet_declarations(string, is_merc=False, scale=1):
     
     while True:
         try:
-            for declaration in parse_rule(tokens, [], is_merc):
+            for declaration in parse_rule(tokens, [], is_merc, False):
                 if scale != 1:
                     declaration.scaleBy(scale)
             
@@ -393,12 +393,18 @@ def parse_block(tokens):
         elif (tname, tvalue) == ('CHAR', '}'):
             return property_values
         
+        elif tname in ('HASH', ) or (tname, tvalue) in [('CHAR', '.'), ('CHAR', '*'), ('CHAR', '[')]:
+            #
+            # one of a bunch of valid ways to start a nested rule
+            #
+            print parse_rule(tokens, [], None, True)
+        
         elif tname not in ('S', 'COMMENT'):
             raise ParseException('Malformed style rule', line, col)
 
     raise ParseException('Malformed block', line, col)
 
-def parse_rule(tokens, selectors, is_merc):
+def parse_rule(tokens, selectors, is_merc, is_nested):
     """ Parse a rule set, return a list of declarations.
         
         A rule set is a combination of selectors and declarations:
@@ -506,7 +512,7 @@ def parse_rule(tokens, selectors, is_merc):
             #
             selectors.append(Selector(*elements))
             selectors[-1].convertZoomTests(is_merc)
-            return parse_rule(tokens, selectors, is_merc)
+            return parse_rule(tokens, selectors, is_merc, is_nested)
         
         elif (tname, tvalue) == ('CHAR', '{'):
             #
@@ -515,7 +521,9 @@ def parse_rule(tokens, selectors, is_merc):
             #
             # Return a full block here.
             #
-            validate_selector_elements(elements, line, col)
+            if not is_nested:
+                validate_selector_elements(elements, line, col)
+
             selectors.append(Selector(*elements))
             selectors[-1].convertZoomTests(is_merc)
             ruleset = []
