@@ -320,7 +320,7 @@ def postprocess_value(property, tokens, important, line, col):
 
     return Value(value, important)
 
-def parse_block(tokens):
+def parse_block(tokens, selectors):
     """ Parse a token stream into an array of declaration tuples.
     
         Return an array of (property, value, (line, col), importance).
@@ -368,6 +368,7 @@ def parse_block(tokens):
     # The work.
     #
     
+    ruleset = []
     property_values = []
     
     while True:
@@ -391,13 +392,23 @@ def parse_block(tokens):
                 raise ParseException('Malformed property name', line, col)
         
         elif (tname, tvalue) == ('CHAR', '}'):
-            return property_values
+            #
+            # Closing out a block
+            #
+            for (selector, property_value) in product(selectors, property_values):
+
+                property, value, (line, col), importance = property_value
+                sort_key = value.importance(), selector.specificity(), (line, col)
+
+                ruleset.append(Declaration(selector, property, value, sort_key))
+                
+            return ruleset
         
         elif tname in ('HASH', ) or (tname, tvalue) in [('CHAR', '.'), ('CHAR', '*'), ('CHAR', '[')]:
             #
             # one of a bunch of valid ways to start a nested rule
             #
-            print parse_rule(tokens, [], None, True)
+            raise ParseException('Not ready yet to recursively call parse_rule()', line, col)
         
         elif tname not in ('S', 'COMMENT'):
             raise ParseException('Malformed style rule', line, col)
@@ -526,13 +537,7 @@ def parse_rule(tokens, selectors, is_merc, is_nested):
 
             selectors.append(Selector(*elements))
             selectors[-1].convertZoomTests(is_merc)
-            ruleset = []
-            
-            for (selector, property_value) in product(selectors, parse_block(tokens)):
 
-                property, value, (line, col), importance = property_value
-                sort_key = value.importance(), selector.specificity(), (line, col)
-
-                ruleset.append(Declaration(selector, property, value, sort_key))
+            ruleset = parse_block(tokens, selectors)
             
             return ruleset
