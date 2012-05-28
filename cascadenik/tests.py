@@ -77,6 +77,18 @@ class ParseTests(unittest.TestCase):
     def testBadProperty3(self):
         self.assertRaises(ParseException, stylesheet_declarations, 'Layer { "not an ident": none; }')
 
+    def testBadNesting1(self):
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer { .weird { line-width: 1; } }')
+
+    def testBadNesting2(self):
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer { #weird { line-width: 1; } }')
+
+    def testBadNesting3(self):
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer { [foo=bar] { line-width: 1; } }')
+
+    def testBadNesting4(self):
+        self.assertRaises(ParseException, stylesheet_declarations, 'Layer { &More { line-width: 1; } }')
+
     def testRulesets1(self):
         self.assertEqual(1, len(stylesheet_declarations('/* empty stylesheet */')))
 
