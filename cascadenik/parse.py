@@ -10,12 +10,18 @@ from .style import Selector, SelectorElement, ConcatenatedElement, SelectorAttri
 from .style import Declaration, Property, Value
 
 class ParseException(Exception):
+    """ Exception raised when a parsing error is encountered.
     
+        Includes the line and column from the origin style text.
+    """
     def __init__(self, msg, line, col):
         Exception.__init__(self, '%(msg)s (line %(line)d, column %(col)d)' % locals())
 
 class BlockTerminatedValue (Exception):
-
+    """ Exception generated when a value ends at a block instead of a semicolon.
+    
+        Caught and handled in parse_block(), not really an error.
+    """
     def __init__(self, tokens, important, line, col):
         self.tokens = tokens
         self.important = important
@@ -402,7 +408,10 @@ def parse_block(tokens, selectors, is_merc):
             _tname, _tvalue, _line, _col = tokens.next()
             
             if (_tname, _tvalue) == ('CHAR', ':'):
-            
+                #
+                # Retrieve and process a value after a property name.
+                # http://www.w3.org/TR/CSS2/syndata.html#declaration
+                #
                 if tvalue not in properties:
                     raise ParseException('Unsupported property name, %s' % tvalue, line, col)
 
@@ -458,8 +467,16 @@ def parse_block(tokens, selectors, is_merc):
 def parse_rule(tokens, neighbors, parents, is_merc):
     """ Parse a rule set, return a list of declarations.
         
+        Selectors in the neighbors list are simply grouped, and are generated
+        from comma-delimited lists of selectors in the stylesheet. Selectors
+        in the parents list should be combined with those found by this
+        functions, and are generated from nested, Less-style rulesets.
+        
         A rule set is a combination of selectors and declarations:
         http://www.w3.org/TR/CSS2/syndata.html#rule-sets
+        
+        Nesting is described in the Less CSS spec:
+        http://lesscss.org/#-nested-rules
     
         To handle groups of selectors, use recursion:
         http://www.w3.org/TR/CSS2/selector.html#grouping
@@ -601,8 +618,11 @@ def parse_rule(tokens, neighbors, parents, is_merc):
             
             selectors = []
 
-            # There might not be any parents,
-            # but there will definitely be neighbors.
+            #
+            # Combine lists of parents and neighbors into a single list of
+            # selectors, for passing off to parse_block(). There might not
+            # be any parents, but there will definitely be neighbors.
+            #
             for parent in (parents or [DummySelector()]):
                 for neighbor in neighbors:
                     if len(neighbor.elements) == 0:
@@ -613,11 +633,12 @@ def parse_rule(tokens, neighbors, parents, is_merc):
                     
                     for element in elements:
                         if element.__class__ is ConcatenatedElement:
-                            [selector.elements[-1].addName(name) for name in element.names]
-                            [selector.elements[-1].addTest(test) for test in element.tests]
+                            for name in element.names: selector.elements[-1].addName(name)
+                            for test in element.tests: selector.elements[-1].addTest(test)
                         else:
                             selector.addElement(deepcopy(element))
                     
+                    # selector should be fully valid at this point.
                     validate_selector_elements(selector.elements, line, col)
                     selector.convertZoomTests(is_merc)
                     selectors.append(selector)
