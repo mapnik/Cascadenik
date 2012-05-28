@@ -390,7 +390,12 @@ def parse_block(tokens, selectors, is_merc):
                 property_values.append((property, value, (line, col), importance))
                 
             else:
-                raise ParseException('Malformed property name', line, col)
+                #
+                # We may have just found the start of a nested block.
+                # http://lesscss.org/#-nested-rules
+                #
+                tokens_ = chain([(tname, tvalue, line, col), (_tname, _tvalue, _line, _col)], tokens)
+                ruleset += parse_rule(tokens_, [], selectors, is_merc)
         
         elif (tname, tvalue) == ('CHAR', '}'):
             #
@@ -410,9 +415,8 @@ def parse_block(tokens, selectors, is_merc):
             # Start of a nested block with a "&" combinator
             # http://lesscss.org/#-nested-rules
             #
-            print 4, selectors
-            ruleset += parse_rule(chain([(tname, tvalue, line, col)], tokens), [], selectors, is_merc)
-            print 'From parse_rule():', ruleset
+            tokens_ = chain([(tname, tvalue, line, col)], tokens)
+            ruleset += parse_rule(tokens_, [], selectors, is_merc)
         
         elif tname in ('HASH', ) or (tname, tvalue) in [('CHAR', '.'), ('CHAR', '*'), ('CHAR', '['), ('CHAR', '&')]:
             #
@@ -473,7 +477,6 @@ def parse_rule(tokens, neighbors, parents, is_merc):
             # Start of a nested block with a "&" combinator
             # http://lesscss.org/#-nested-rules
             #
-            print 5, neighbors, parents, elements
             ElementClass = ConcatenatedElement
         
         elif tname == 'IDENT':
@@ -585,3 +588,6 @@ def parse_rule(tokens, neighbors, parents, is_merc):
                     selectors.append(selector)
             
             return parse_block(tokens, selectors, is_merc)
+        
+        elif tname not in ('S', 'COMMENT'):
+            raise ParseException('Unexpected token in selector: "%s"' % tvalue, line, col)

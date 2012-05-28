@@ -11,11 +11,11 @@ s = """
         &[this=that]
         { line-width: 2; }
         
-        /*
-        name1,
-        name2
-        { line-width: 2; }
-        */
+        &[this=that]
+        { line-color: #909; }
+        
+        name1
+        { line-color: #ff6; }
     }
 """
 
