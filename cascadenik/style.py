@@ -375,6 +375,9 @@ class Selector:
     
         self.elements = elements[:]
 
+    def addElement(self, element):
+        self.elements = tuple(list(self.elements) + [element])
+    
     def convertZoomTests(self, is_merc):
         """ Modify the tests on this selector to use mapnik-friendly
             scale-denominator instead of shorthand zoom.

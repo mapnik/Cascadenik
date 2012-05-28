@@ -411,8 +411,8 @@ def parse_block(tokens, selectors, is_merc):
             # http://lesscss.org/#-nested-rules
             #
             print 4, selectors
-            print parse_rule(chain([(tname, tvalue, line, col)], tokens), [], selectors, is_merc)
-            raise Exception('wah')
+            ruleset += parse_rule(chain([(tname, tvalue, line, col)], tokens), [], selectors, is_merc)
+            print 'From parse_rule():', ruleset
         
         elif tname in ('HASH', ) or (tname, tvalue) in [('CHAR', '.'), ('CHAR', '*'), ('CHAR', '['), ('CHAR', '&')]:
             #
@@ -439,8 +439,6 @@ def parse_rule(tokens, neighbors, parents, is_merc):
     #
 
     def validate_selector_elements(elements, line, col):
-        return # for now
-    
         if len(elements) > 2:
             raise ParseException('Only two-element selectors are supported for Mapnik styles', line, col)
     
@@ -547,8 +545,6 @@ def parse_rule(tokens, neighbors, parents, is_merc):
             neighbors.append(Selector(*elements))
             neighbors[-1].convertZoomTests(is_merc)
             
-            print 'To parse_rule() again:', neighbors, parents, ElementClass
-            
             return parse_rule(tokens, neighbors, parents, is_merc)
         
         elif (tname, tvalue) == ('CHAR', '{'):
@@ -580,10 +576,9 @@ def parse_rule(tokens, neighbors, parents, is_merc):
                             [selector.elements[-1].addName(name) for name in element.names]
                             [selector.elements[-1].addTest(test) for test in element.tests]
                         else:
-                            selector.elements.append(deepcopy(element))
+                            selector.addElement(deepcopy(element))
                     
+                    validate_selector_elements(selector.elements, line, col)
                     selectors.append(selector)
-            
-            print 'To parse_block():', selectors
             
             return parse_block(tokens, selectors, is_merc)
