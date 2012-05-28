@@ -530,6 +530,10 @@ def parse_rule(tokens, neighbors, parents, is_merc):
             # Left-bracket is the start of an attribute selector:
             # http://www.w3.org/TR/CSS2/selector.html#attribute-selectors
             #
+            if not element:
+                element = ElementClass()
+                elements.append(element)
+        
             test = parse_attribute(tokens, is_merc)
             element.addTest(test)
         
@@ -540,10 +544,7 @@ def parse_rule(tokens, neighbors, parents, is_merc):
             #
             # Recurse here.
             #
-            validate_selector_elements(elements, line, col)
-
             neighbors.append(Selector(*elements))
-            neighbors[-1].convertZoomTests(is_merc)
             
             return parse_rule(tokens, neighbors, parents, is_merc)
         
@@ -554,20 +555,21 @@ def parse_rule(tokens, neighbors, parents, is_merc):
             #
             # Return a full block here.
             #
-            validate_selector_elements(elements, line, col)
-
-            neighbors.append(Selector(*elements))
-            neighbors[-1].convertZoomTests(is_merc)
+            class DummySelector:
+                def __init__(self, *elements):
+                    self.elements = elements[:]
+            
+            neighbors.append(DummySelector(*elements))
             
             selectors = []
 
             # There might not be any parents,
             # but there will definitely be neighbors.
-            class EmptySelector:
-                elements = tuple()
-            
-            for parent in (parents or [EmptySelector()]):
+            for parent in (parents or [DummySelector()]):
                 for neighbor in neighbors:
+                    if len(neighbor.elements) == 0:
+                        raise ParseException('At least one element must be present in selectors for Mapnik styles', line, col)
+                    
                     elements = chain(parent.elements + neighbor.elements)
                     selector = Selector(deepcopy(elements.next()))
                     
@@ -579,6 +581,7 @@ def parse_rule(tokens, neighbors, parents, is_merc):
                             selector.addElement(deepcopy(element))
                     
                     validate_selector_elements(selector.elements, line, col)
+                    selector.convertZoomTests(is_merc)
                     selectors.append(selector)
             
             return parse_block(tokens, selectors, is_merc)

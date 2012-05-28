@@ -367,12 +367,6 @@ class Selector:
     """ Represents a complete selector with elements and attribute checks.
     """
     def __init__(self, *elements):
-        assert len(elements) in (1, 2)
-        assert elements[0].names[0] in ('Map', 'Layer') or elements[0].names[0][0] in ('.', '#', '*')
-        assert len(elements) == 1 or not elements[1].countTests()
-        assert len(elements) == 1 or not elements[1].countIDs()
-        assert len(elements) == 1 or not elements[1].countClasses()
-    
         self.elements = elements[:]
 
     def addElement(self, element):

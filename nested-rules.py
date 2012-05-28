@@ -8,7 +8,7 @@ s = """
         line-width: 1;
         
         &.more,
-        &.again
+        &[this=that]
         { line-width: 2; }
         
         /*
