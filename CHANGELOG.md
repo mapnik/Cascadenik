@@ -1,6 +1,11 @@
 Cascadenik Changelog
 ====================
 
+Version 2.3.0, May 28, 2012
+
+ * Added support for nested rules, based on Less CSS spec.
+ # Added support for lines without semicolons at block ends, per CSS spec.
+
 Version 2.2.0, May 23, 2012
 
  * Added new `scale` argument to load_map(), compile() and `--2x` option to cascadenik-compile.py.

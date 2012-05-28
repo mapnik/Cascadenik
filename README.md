@@ -1,5 +1,46 @@
+Cascadenik
+==========
+
+Cascadenik implements cascading stylesheets for Mapnik.
+
+It’s an abstraction layer and preprocessor that converts special, CSS-like
+syntax into Mapnik-compatible style definitions. It’s easier to write complex
+style rules using the alternative syntax, because it allows for separation of
+symbolizers and provides a mechanism for inheritance.
+
+Cascadenik supports many of Mapnik’s features in a simple declarative form:
+
+    /* Start with a white background */
+    Map
+    {
+        map-bgcolor: #000;
+    }
+    
+    /* Draw roads as orange lines */
+    #roads
+    {
+        /* Usually, 3px wide */
+        line-width: 3;
+        line-color: #f90;
+        
+        /* Make the important ones wider */
+        &[kind=major] { line-width: 4 }
+        &[kind=highway] { line-width: 5 }
+        
+        /* Add the road names in black */
+        name
+        {
+            text-placement: line;
+            text-face-name: "DejaVu Sans Book";
+            text-fill: #000;
+            text-size: 12;
+        }
+    }
+
+See more examples at https://github.com/mapnik/Cascadenik/wiki/Examples.
+
 Usage
-=====
+-----
 
 See `INSTALL.md` for installation instructions.
 
