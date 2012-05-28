@@ -508,6 +508,12 @@ def parse_rule(tokens, neighbors, parents, is_merc):
             #
             ElementClass = ConcatenatedElement
         
+        elif tname == 'S':
+            #
+            # Definitely no longer in a "&" combinator.
+            #
+            ElementClass = SelectorElement
+        
         elif tname == 'IDENT':
             #
             # Identifier always starts a new element.
