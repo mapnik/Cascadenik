@@ -613,6 +613,182 @@ class FilterCombinationTests(unittest.TestCase):
         self.assertEqual(len(filters), 16)
         self.assertEqual(str(sorted(filters)), '[[horse!=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure!=park], [horse!=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure=park], [horse!=yes][landuse=agriculture][leisure!=park], [horse!=yes][landuse=agriculture][leisure=park], [horse!=yes][landuse=civilian][leisure!=park], [horse!=yes][landuse=civilian][leisure=park], [horse!=yes][landuse=military][leisure!=park], [horse!=yes][landuse=military][leisure=park], [horse=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure!=park], [horse=yes][landuse!=agriculture][landuse!=civilian][landuse!=military][leisure=park], [horse=yes][landuse=agriculture][leisure!=park], [horse=yes][landuse=agriculture][leisure=park], [horse=yes][landuse=civilian][leisure!=park], [horse=yes][landuse=civilian][leisure=park], [horse=yes][landuse=military][leisure!=park], [horse=yes][landuse=military][leisure=park]]')
 
+class NestedRuleTests(unittest.TestCase):
+
+    def testCompile1(self):
+        s = """
+            Layer
+            {
+                &.red { polygon-fill: #f00 }
+                &.blue { polygon-fill: #00f }
+            }
+        """
+        declarations = stylesheet_declarations(s)
+        
+        self.assertEqual(len(declarations), 3)
+        
+        self.assertEqual(len(declarations[1].selector.elements), 1)
+        self.assertEqual(len(declarations[2].selector.elements), 1)
+        
+        self.assertEqual(declarations[1].selector.elements[0].names[0], 'Layer')
+        self.assertEqual(declarations[1].selector.elements[0].names[1], '.red')
+        self.assertEqual((declarations[1].property.name, str(declarations[1].value.value)), ('polygon-fill', '#ff0000'))
+        
+        self.assertEqual(declarations[2].selector.elements[0].names[0], 'Layer')
+        self.assertEqual(declarations[2].selector.elements[0].names[1], '.blue')
+        self.assertEqual((declarations[2].property.name, str(declarations[2].value.value)), ('polygon-fill', '#0000ff'))
+
+    def testCompile2(self):
+        s = """
+            .north, .south
+            {
+                &.east, &.west
+                {
+                    polygon-fill: #f90
+                }
+            }
+        """
+        declarations = stylesheet_declarations(s)
+        
+        self.assertEqual(len(declarations), 5)
+        
+        self.assertEqual(len(declarations[1].selector.elements), 1)
+        self.assertEqual(len(declarations[2].selector.elements), 1)
+        self.assertEqual(len(declarations[3].selector.elements), 1)
+        self.assertEqual(len(declarations[4].selector.elements), 1)
+        
+        self.assertEqual(declarations[1].selector.elements[0].names[0], '.north')
+        self.assertEqual(declarations[1].selector.elements[0].names[1], '.east')
+        self.assertEqual((declarations[1].property.name, str(declarations[1].value.value)), ('polygon-fill', '#ff9900'))
+        
+        self.assertEqual(declarations[2].selector.elements[0].names[0], '.north')
+        self.assertEqual(declarations[2].selector.elements[0].names[1], '.west')
+        self.assertEqual((declarations[2].property.name, str(declarations[2].value.value)), ('polygon-fill', '#ff9900'))
+        
+        self.assertEqual(declarations[3].selector.elements[0].names[0], '.south')
+        self.assertEqual(declarations[3].selector.elements[0].names[1], '.east')
+        self.assertEqual((declarations[3].property.name, str(declarations[3].value.value)), ('polygon-fill', '#ff9900'))
+        
+        self.assertEqual(declarations[4].selector.elements[0].names[0], '.south')
+        self.assertEqual(declarations[4].selector.elements[0].names[1], '.west')
+        self.assertEqual((declarations[4].property.name, str(declarations[4].value.value)), ('polygon-fill', '#ff9900'))
+
+    def testCompile3(self):
+        s = """
+            .roads
+            {
+                line-color: #f90;
+            
+                &[kind=highway] { line-width: 3 }
+                &[kind=major] { line-width: 2 }
+                &[kind=minor] { line-width: 1 }
+            }
+        """
+        declarations = stylesheet_declarations(s)
+        
+        self.assertEqual(len(declarations), 5)
+        
+        self.assertEqual(len(declarations[1].selector.elements), 1)
+        self.assertEqual(len(declarations[2].selector.elements), 1)
+        self.assertEqual(len(declarations[3].selector.elements), 1)
+        self.assertEqual(len(declarations[4].selector.elements), 1)
+        
+        self.assertEqual(declarations[1].selector.elements[0].names[0], '.roads')
+        self.assertEqual((declarations[1].property.name, str(declarations[1].value.value)), ('line-color', '#ff9900'))
+        
+        self.assertEqual(declarations[2].selector.elements[0].names[0], '.roads')
+        self.assertEqual(str(declarations[2].selector.elements[0].tests[0]), '[kind=highway]')
+        self.assertEqual((declarations[2].property.name, declarations[2].value.value), ('line-width', 3))
+        
+        self.assertEqual(declarations[3].selector.elements[0].names[0], '.roads')
+        self.assertEqual(str(declarations[3].selector.elements[0].tests[0]), '[kind=major]')
+        self.assertEqual((declarations[3].property.name, declarations[3].value.value), ('line-width', 2))
+        
+        self.assertEqual(declarations[4].selector.elements[0].names[0], '.roads')
+        self.assertEqual(str(declarations[4].selector.elements[0].tests[0]), '[kind=minor]')
+        self.assertEqual((declarations[4].property.name, declarations[4].value.value), ('line-width', 1))
+
+    def testCompile4(self):
+        s = """
+            .roads
+            {
+                text-fill: #f90;
+            
+                &[kind=highway] name { text-size: 24 }
+                &[kind=major] name { text-size: 18 }
+                &[kind=minor] name { text-size: 12 }
+            }
+        """
+        declarations = stylesheet_declarations(s)
+        
+        self.assertEqual(len(declarations), 5)
+        
+        self.assertEqual(len(declarations[1].selector.elements), 1)
+        self.assertEqual(len(declarations[2].selector.elements), 2)
+        self.assertEqual(len(declarations[3].selector.elements), 2)
+        self.assertEqual(len(declarations[4].selector.elements), 2)
+        
+        self.assertEqual(declarations[1].selector.elements[0].names[0], '.roads')
+        self.assertEqual((declarations[1].property.name, str(declarations[1].value.value)), ('text-fill', '#ff9900'))
+        
+        self.assertEqual(declarations[2].selector.elements[0].names[0], '.roads')
+        self.assertEqual(str(declarations[2].selector.elements[0].tests[0]), '[kind=highway]')
+        self.assertEqual(declarations[2].selector.elements[1].names[0], 'name')
+        self.assertEqual((declarations[2].property.name, declarations[2].value.value), ('text-size', 24))
+        
+        self.assertEqual(declarations[3].selector.elements[0].names[0], '.roads')
+        self.assertEqual(str(declarations[3].selector.elements[0].tests[0]), '[kind=major]')
+        self.assertEqual(declarations[3].selector.elements[1].names[0], 'name')
+        self.assertEqual((declarations[3].property.name, declarations[3].value.value), ('text-size', 18))
+        
+        self.assertEqual(declarations[4].selector.elements[0].names[0], '.roads')
+        self.assertEqual(str(declarations[4].selector.elements[0].tests[0]), '[kind=minor]')
+        self.assertEqual(declarations[4].selector.elements[1].names[0], 'name')
+        self.assertEqual((declarations[4].property.name, declarations[4].value.value), ('text-size', 12))
+
+    def testCompile5(self):
+        s = """
+            #roads
+            {
+                &[level=1]
+                {
+                    &[level=2]
+                    {
+                        &[level=3]
+                        {
+                            &.deep[level=4]
+                            {
+                                name
+                                {
+                                    text-size: 12;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+        declarations = stylesheet_declarations(s)
+        
+        self.assertEqual(len(declarations), 2)
+        
+        self.assertEqual(len(declarations[1].selector.elements), 2)
+        self.assertEqual(len(declarations[1].selector.elements[0].names), 2)
+        self.assertEqual(len(declarations[1].selector.elements[0].tests), 4)
+        self.assertEqual(len(declarations[1].selector.elements[1].names), 1)
+        self.assertEqual(len(declarations[1].selector.elements[1].tests), 0)
+        
+        self.assertEqual(declarations[1].selector.elements[0].names[0], '#roads')
+        self.assertEqual(declarations[1].selector.elements[0].names[1], '.deep')
+        self.assertEqual(str(declarations[1].selector.elements[0].tests[0]), '[level=1]')
+        self.assertEqual(str(declarations[1].selector.elements[0].tests[1]), '[level=2]')
+        self.assertEqual(str(declarations[1].selector.elements[0].tests[2]), '[level=3]')
+        self.assertEqual(str(declarations[1].selector.elements[0].tests[3]), '[level=4]')
+        
+        self.assertEqual(declarations[1].selector.elements[1].names[0], 'name')
+        
+        self.assertEqual((declarations[1].property.name, declarations[1].value.value), ('text-size', 12))
+
 class SimpleRangeTests(unittest.TestCase):
 
     def testRanges1(self):
