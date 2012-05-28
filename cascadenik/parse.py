@@ -14,6 +14,14 @@ class ParseException(Exception):
     def __init__(self, msg, line, col):
         Exception.__init__(self, '%(msg)s (line %(line)d, column %(col)d)' % locals())
 
+class BlockTerminatedValue (Exception):
+
+    def __init__(self, tokens, important, line, col):
+        self.tokens = tokens
+        self.important = important
+        self.line = line
+        self.col = col
+
 def stylesheet_declarations(string, is_merc=False, scale=1):
     """ Parse a string representing a stylesheet into a list of declarations.
     
@@ -355,6 +363,11 @@ def parse_block(tokens, selectors, is_merc):
                                 # end of a high-importance value
                                 #
                                 return value, True
+                            elif (tname, tvalue) == ('CHAR', '}'):
+                                #
+                                # end of a block means end of a value
+                                #
+                                raise BlockTerminatedValue(value, True, line, col)
                             elif tname not in ('S', 'COMMENT'):
                                 raise ParseException('Unexpected values after !important declaration', line, col)
                         break
@@ -366,6 +379,11 @@ def parse_block(tokens, selectors, is_merc):
                 # end of a low-importance value
                 #
                 return value, False
+            elif (tname, tvalue) == ('CHAR', '}'):
+                #
+                # end of a block means end of a value
+                #
+                raise BlockTerminatedValue(value, False, line, col)
             elif tname not in ('S', 'COMMENT'):
                 value.append((tname, tvalue))
         raise ParseException('Malformed property value', line, col)
@@ -388,9 +406,14 @@ def parse_block(tokens, selectors, is_merc):
                 if tvalue not in properties:
                     raise ParseException('Unsupported property name, %s' % tvalue, line, col)
 
-                property = Property(tvalue)
-                vtokens, importance = parse_value(tokens)
-                value = postprocess_value(property, vtokens, importance, line, col)
+                try:
+                    property = Property(tvalue)
+                    vtokens, importance = parse_value(tokens)
+                except BlockTerminatedValue, e:
+                    vtokens, importance = e.tokens, e.important
+                    tokens = chain([('CHAR', '}', e.line, e.col)], tokens)
+                finally:
+                    value = postprocess_value(property, vtokens, importance, line, col)
                 
                 property_values.append((property, value, (line, col), importance))
                 
@@ -454,6 +477,9 @@ def parse_rule(tokens, neighbors, parents, is_merc):
     
         if elements[0].names[0] not in ('Map', 'Layer') and elements[0].names[0][0] not in ('.', '#', '*'):
             raise ParseException('All non-ID, non-class first elements must be "Layer" Mapnik styles', line, col)
+        
+        if set([name[:1] for name in elements[0].names[1:]]) - set('#.'):
+            raise ParseException('All names after the first must be IDs or classes', line, col)
         
         if len(elements) == 2 and elements[1].countTests():
             raise ParseException('Only the first element in a selector may have attributes in Mapnik styles', line, col)
