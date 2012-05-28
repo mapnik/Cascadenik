@@ -1,11 +1,12 @@
 import re
 import operator
+from copy import deepcopy
 from itertools import chain, product
 from binascii import unhexlify as unhex
 from cssutils.tokenize2 import Tokenizer as cssTokenizer
 
 from .style import properties, numbers, boolean, uri, color, color_transparent
-from .style import Selector, SelectorElement, SelectorAttributeTest
+from .style import Selector, SelectorElement, ConcatenatedElement, SelectorAttributeTest
 from .style import Declaration, Property, Value
 
 class ParseException(Exception):
@@ -424,7 +425,7 @@ def parse_block(tokens, selectors, is_merc):
 
     raise ParseException('Malformed block', line, col)
 
-def parse_rule(tokens, selectors, parents, is_merc):
+def parse_rule(tokens, neighbors, parents, is_merc):
     """ Parse a rule set, return a list of declarations.
         
         A rule set is a combination of selectors and declarations:
@@ -438,6 +439,8 @@ def parse_rule(tokens, selectors, parents, is_merc):
     #
 
     def validate_selector_elements(elements, line, col):
+        return # for now
+    
         if len(elements) > 2:
             raise ParseException('Only two-element selectors are supported for Mapnik styles', line, col)
     
@@ -460,6 +463,7 @@ def parse_rule(tokens, selectors, parents, is_merc):
     # The work.
     #
     
+    ElementClass = SelectorElement
     element = None
     elements = []
     
@@ -471,13 +475,14 @@ def parse_rule(tokens, selectors, parents, is_merc):
             # Start of a nested block with a "&" combinator
             # http://lesscss.org/#-nested-rules
             #
-            print 5, selectors, parents, elements
+            print 5, neighbors, parents, elements
+            ElementClass = ConcatenatedElement
         
         elif tname == 'IDENT':
             #
             # Identifier always starts a new element.
             #
-            element = SelectorElement()
+            element = ElementClass()
             elements.append(element)
             element.addName(tvalue)
             
@@ -487,7 +492,7 @@ def parse_rule(tokens, selectors, parents, is_merc):
             # http://www.w3.org/TR/CSS2/selector.html#id-selectors
             #
             if not element:
-                element = SelectorElement()
+                element = ElementClass()
                 elements.append(element)
         
             element.addName(tvalue)
@@ -502,7 +507,7 @@ def parse_rule(tokens, selectors, parents, is_merc):
                     # http://www.w3.org/TR/CSS2/selector.html#class-html
                     #
                     if not element:
-                        element = SelectorElement()
+                        element = ElementClass()
                         elements.append(element)
                 
                     element.addName('.'+tvalue)
@@ -517,7 +522,7 @@ def parse_rule(tokens, selectors, parents, is_merc):
             # http://www.w3.org/TR/CSS2/selector.html#universal-selector
             #
             if not element:
-                element = SelectorElement()
+                element = ElementClass()
                 elements.append(element)
         
             element.addName(tvalue)
@@ -537,9 +542,14 @@ def parse_rule(tokens, selectors, parents, is_merc):
             #
             # Recurse here.
             #
-            selectors.append(Selector(*elements))
-            selectors[-1].convertZoomTests(is_merc)
-            return parse_rule(tokens, selectors, parents, is_merc)
+            validate_selector_elements(elements, line, col)
+
+            neighbors.append(Selector(*elements))
+            neighbors[-1].convertZoomTests(is_merc)
+            
+            print 'To parse_rule() again:', neighbors, parents, ElementClass
+            
+            return parse_rule(tokens, neighbors, parents, is_merc)
         
         elif (tname, tvalue) == ('CHAR', '{'):
             #
@@ -550,16 +560,30 @@ def parse_rule(tokens, selectors, parents, is_merc):
             #
             validate_selector_elements(elements, line, col)
 
-            selectors.append(Selector(*elements))
-            selectors[-1].convertZoomTests(is_merc)
+            neighbors.append(Selector(*elements))
+            neighbors[-1].convertZoomTests(is_merc)
             
-            print 1, parents
-            print 2, selectors
+            selectors = []
 
-            for parent in parents:
-                for selector in selectors:
-                    selector.elements += parent.elements
+            # There might not be any parents,
+            # but there will definitely be neighbors.
+            class EmptySelector:
+                elements = tuple()
             
-            print 3, selectors
+            for parent in (parents or [EmptySelector()]):
+                for neighbor in neighbors:
+                    elements = chain(parent.elements + neighbor.elements)
+                    selector = Selector(deepcopy(elements.next()))
+                    
+                    for element in elements:
+                        if element.__class__ is ConcatenatedElement:
+                            [selector.elements[-1].addName(name) for name in element.names]
+                            [selector.elements[-1].addTest(test) for test in element.tests]
+                        else:
+                            selector.elements.append(deepcopy(element))
+                    
+                    selectors.append(selector)
+            
+            print 'To parse_block():', selectors
             
             return parse_block(tokens, selectors, is_merc)

@@ -553,6 +553,12 @@ class SelectorElement:
     def __repr__(self):
         return u''.join(self.names) + u''.join(repr(t) for t in self.tests)
 
+class ConcatenatedElement (SelectorElement):
+    """
+    """
+    def __repr__(self):
+        return '&' + SelectorElement.__repr__(self)
+
 class SelectorAttributeTest:
     """ Attribute test for a Selector, i.e. the part that looks like "[foo=bar]"
     """
