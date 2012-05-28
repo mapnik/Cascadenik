@@ -324,6 +324,11 @@ def postprocess_value(property, tokens, important, line, col):
 def parse_block(tokens, selectors, is_merc):
     """ Parse a token stream into an array of declaration tuples.
     
+        In addition to tokens, requires a list of selectors that will
+        apply to the declarations parsed in this block and a boolean flag
+        for mercator projection, both needed by possible recursive calls
+        back to parse_rule().
+    
         Return an array of (property, value, (line, col), importance).
     
         Enter this function after a left-brace is found:
@@ -410,19 +415,17 @@ def parse_block(tokens, selectors, is_merc):
                 
             return ruleset
         
-        elif (tname, tvalue) == ('CHAR', '&'):
+        elif tname in ('HASH', ) or (tname, tvalue) in [('CHAR', '.'), ('CHAR', '*'), ('CHAR', '['), ('CHAR', '&')]:
             #
-            # Start of a nested block with a "&" combinator
+            # One of a bunch of valid ways to start a nested rule.
+            #
+            # Most will end up rejected by Cascadenik as parsing errors,
+            # except for identifiers for text rules and the start of
+            # nested blocks with a "&" combinator:
             # http://lesscss.org/#-nested-rules
             #
             tokens_ = chain([(tname, tvalue, line, col)], tokens)
             ruleset += parse_rule(tokens_, [], selectors, is_merc)
-        
-        elif tname in ('HASH', ) or (tname, tvalue) in [('CHAR', '.'), ('CHAR', '*'), ('CHAR', '['), ('CHAR', '&')]:
-            #
-            # one of a bunch of valid ways to start a nested rule
-            #
-            raise ParseException('Not ready yet to recursively call parse_rule()', line, col)
         
         elif tname not in ('S', 'COMMENT'):
             raise ParseException('Malformed style rule', line, col)

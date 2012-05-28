@@ -11,11 +11,25 @@ s = """
         &[this=that]
         { line-width: 2; }
         
-        &[this=that]
+        &.one, &.two
+        {
+            &[three=3], &[four=4]
+            { polygon-fill: #000; }
+        }
+        
+        /*
+        .purple
         { line-color: #909; }
         
-        name1
-        { line-color: #ff6; }
+        #green
+        { line-color: #090; }
+        
+        [color=blue]
+        { line-color: #00f; }
+        */
+        
+        yellow
+        { line-color: #ff0; }
     }
 """
 
