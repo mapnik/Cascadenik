@@ -1,10 +1,14 @@
 Cascadenik Changelog
 ====================
 
+Version 2.4.0, May 28, 2012
+
+ * Added support for variables, based on Less CSS spec.
+
 Version 2.3.0, May 28, 2012
 
  * Added support for nested rules, based on Less CSS spec.
- # Added support for lines without semicolons at block ends, per CSS spec.
+ * Added support for lines without semicolons at block ends, per CSS spec.
 
 Version 2.2.0, May 23, 2012
 

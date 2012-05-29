@@ -5,7 +5,7 @@ http://mike.teczno.com/notes/cascadenik.html
 http://code.google.com/p/mapnik-utils/wiki/Cascadenik
 
 """
-__version__ = '2.3.0'
+__version__ = '2.4.0'
 
 from os import mkdir, chmod
 from os.path import isdir, realpath, expanduser, dirname, exists
