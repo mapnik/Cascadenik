@@ -46,7 +46,7 @@ def stylesheet_declarations(string, is_merc=False, scale=1):
     
     while True:
         try:
-            for declaration in parse_rule(tokens, [], [], is_merc):
+            for declaration in parse_rule(tokens, {}, [], [], is_merc):
                 if scale != 1:
                     declaration.scaleBy(scale)
             
@@ -335,13 +335,13 @@ def postprocess_value(property, tokens, important, line, col):
 
     return Value(value, important)
 
-def parse_block(tokens, selectors, is_merc):
+def parse_block(tokens, variables, selectors, is_merc):
     """ Parse a token stream into an array of declaration tuples.
     
-        In addition to tokens, requires a list of selectors that will
-        apply to the declarations parsed in this block and a boolean flag
-        for mercator projection, both needed by possible recursive calls
-        back to parse_rule().
+        In addition to tokens, requires a dictionary of declared variables,
+        a list of selectors that will apply to the declarations parsed in
+        this block, and a boolean flag for mercator projection, both needed
+        by possible recursive calls back to parse_rule().
     
         Return an array of (property, value, (line, col), importance).
     
@@ -374,6 +374,8 @@ def parse_block(tokens, selectors, is_merc):
                                 # end of a block means end of a value
                                 #
                                 raise BlockTerminatedValue(value, True, line, col)
+                            elif (tname, tvalue) == ('S', '\n'):
+                                raise ParseException('Unexpected end of line', line, col)
                             elif tname not in ('S', 'COMMENT'):
                                 raise ParseException('Unexpected values after !important declaration', line, col)
                         break
@@ -397,7 +399,12 @@ def parse_block(tokens, selectors, is_merc):
                 #
                 print tname, tvalue
                 value.append(('HASH', '#f00'))
+            elif (tname, tvalue) == ('S', '\n'):
+                raise ParseException('Unexpected end of line', line, col)
             elif tname not in ('S', 'COMMENT'):
+                #
+                # Legitimate-looking value token.
+                #
                 value.append((tname, tvalue))
         raise ParseException('Malformed property value', line, col)
     
@@ -439,7 +446,7 @@ def parse_block(tokens, selectors, is_merc):
                 # http://lesscss.org/#-nested-rules
                 #
                 tokens_ = chain([(tname, tvalue, line, col), (_tname, _tvalue, _line, _col)], tokens)
-                ruleset += parse_rule(tokens_, [], selectors, is_merc)
+                ruleset += parse_rule(tokens_, variables, [], selectors, is_merc)
         
         elif (tname, tvalue) == ('CHAR', '}'):
             #
@@ -464,20 +471,21 @@ def parse_block(tokens, selectors, is_merc):
             # http://lesscss.org/#-nested-rules
             #
             tokens_ = chain([(tname, tvalue, line, col)], tokens)
-            ruleset += parse_rule(tokens_, [], selectors, is_merc)
+            ruleset += parse_rule(tokens_, variables, [], selectors, is_merc)
         
         elif tname not in ('S', 'COMMENT'):
             raise ParseException('Malformed style rule', line, col)
 
     raise ParseException('Malformed block', line, col)
 
-def parse_rule(tokens, neighbors, parents, is_merc):
+def parse_rule(tokens, variables, neighbors, parents, is_merc):
     """ Parse a rule set, return a list of declarations.
         
-        Selectors in the neighbors list are simply grouped, and are generated
-        from comma-delimited lists of selectors in the stylesheet. Selectors
-        in the parents list should be combined with those found by this
-        functions, and are generated from nested, Less-style rulesets.
+        Requires a dictionary of declared variables. Selectors in the neighbors
+        list are simply grouped, and are generated from comma-delimited lists
+        of selectors in the stylesheet. Selectors in the parents list should
+        be combined with those found by this functions, and are generated
+        from nested, Less-style rulesets.
         
         A rule set is a combination of selectors and declarations:
         http://www.w3.org/TR/CSS2/syndata.html#rule-sets
@@ -629,7 +637,7 @@ def parse_rule(tokens, neighbors, parents, is_merc):
             #
             neighbors.append(Selector(*elements))
             
-            return parse_rule(tokens, neighbors, parents, is_merc)
+            return parse_rule(tokens, variables, neighbors, parents, is_merc)
         
         elif (tname, tvalue) == ('CHAR', '{'):
             #
@@ -671,7 +679,7 @@ def parse_rule(tokens, neighbors, parents, is_merc):
                     selector.convertZoomTests(is_merc)
                     selectors.append(selector)
             
-            return parse_block(tokens, selectors, is_merc)
+            return parse_block(tokens, variables, selectors, is_merc)
         
         elif tname not in ('S', 'COMMENT'):
             raise ParseException('Unexpected token in selector: "%s"' % tvalue, line, col)
