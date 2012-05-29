@@ -10,8 +10,8 @@ try:
 except ImportError:
     from distutils.core import setup
     HAS_SETUPTOOLS = False
-    
-VERSION = open('VERSION.txt', 'r').read().strip()
+
+from cascadenik import __version__ as VERSION
 
 options = dict(name='cascadenik',
         version = VERSION,

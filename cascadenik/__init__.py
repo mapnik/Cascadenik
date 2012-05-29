@@ -5,6 +5,8 @@ http://mike.teczno.com/notes/cascadenik.html
 http://code.google.com/p/mapnik-utils/wiki/Cascadenik
 
 """
+__version__ = '2.3.0'
+
 from os import mkdir, chmod
 from os.path import isdir, realpath, expanduser, dirname, exists
 from urlparse import urlparse
@@ -30,8 +32,7 @@ from . import compile as _compile
 # compile function -> "compile"
 from .compile import compile, Directories
 
-# define Cascadenik version
-VERSION = '1.0.0'
+# define Cascadenik default cache directory
 CACHE_DIR = '~/.cascadenik'
 
 __all__ = ['load_map', 'compile', '_compile', 'style', 'stylesheet_declarations']

@@ -1,4 +1,4 @@
-VERSION:=$(shell cat VERSION.txt)
+VERSION:=$(shell python -c 'from cascadenik import __version__ as v; print v')
 TARBALL=cascadenik-$(VERSION).tar.gz
 
 all: dist/$(TARBALL)
