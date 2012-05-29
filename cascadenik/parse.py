@@ -41,12 +41,13 @@ def stylesheet_declarations(string, is_merc=False, scale=1):
                               (False, (0, 0, 0), (0, 0)))
     
     declarations = [display_map]
-    
+
     tokens = cssTokenizer().tokenize(string)
+    variables = {}
     
     while True:
         try:
-            for declaration in parse_rule(tokens, {}, [], [], is_merc):
+            for declaration in parse_rule(tokens, variables, [], [], is_merc):
                 if scale != 1:
                     declaration.scaleBy(scale)
             
@@ -352,7 +353,7 @@ def parse_block(tokens, variables, selectors, is_merc):
     # Local helper functions
     #
 
-    def parse_value(tokens):
+    def parse_value(tokens, variables):
         """ Look for value tokens after a property name, possibly !important.
         """
         value = []
@@ -397,8 +398,7 @@ def parse_block(tokens, variables, selectors, is_merc):
                 # Possible variable use:
                 # http://lesscss.org/#-variables
                 #
-                print tname, tvalue
-                value.append(('HASH', '#f00'))
+                tokens = chain(iter(variables[tvalue]), tokens)
             elif (tname, tvalue) == ('S', '\n'):
                 raise ParseException('Unexpected end of line', line, col)
             elif tname not in ('S', 'COMMENT'):
@@ -431,13 +431,12 @@ def parse_block(tokens, variables, selectors, is_merc):
 
                 try:
                     property = Property(tvalue)
-                    vtokens, importance = parse_value(tokens)
+                    vtokens, importance = parse_value(tokens, variables)
                 except BlockTerminatedValue, e:
                     vtokens, importance = e.tokens, e.important
                     tokens = chain([('CHAR', '}', e.line, e.col)], tokens)
-                finally:
-                    value = postprocess_value(property, vtokens, importance, line, col)
-                
+
+                value = postprocess_value(property, vtokens, importance, line, col)
                 property_values.append((property, value, (line, col), importance))
                 
             else:
@@ -523,18 +522,26 @@ def parse_rule(tokens, variables, neighbors, parents, is_merc):
             raise ParseException('Only the first element in a selector may have a class in Mapnik styles', line, col)
     
     def parse_variable_definition(tokens):
-        """
+        """ Look for variable value tokens after an @keyword, return an array.
         """
         while True:
             tname, tvalue, line, col = tokens.next()
             
-            if (tname, tvalue) in (('CHAR', ';'), ('S', '\n')):
-                print '----'
-                return
+            if (tname, tvalue) == ('CHAR', ':'):
+                vtokens = []
             
-            else:
-                print tname, tvalue
-    
+                while True:
+                    tname, tvalue, line, col = tokens.next()
+            
+                    if (tname, tvalue) in (('CHAR', ';'), ('S', '\n')):
+                        return vtokens
+                    
+                    elif tname not in ('S', 'COMMENT'):
+                        vtokens.append((tname, tvalue, line, col))
+
+            elif tname not in ('S', 'COMMENT'):
+                raise ParseException('Unexpected token in variable definition: "%s"' % tvalue, line, col)
+            
     #
     # The work.
     #
@@ -548,11 +555,10 @@ def parse_rule(tokens, variables, neighbors, parents, is_merc):
         
         if tname == 'ATKEYWORD':
             #
-            # Possible variable definition:
+            # Likely variable definition:
             # http://lesscss.org/#-variables
             #
-            tokens = chain([(tname, tvalue, line, col)], tokens)
-            parse_variable_definition(tokens)
+            variables[tvalue] = parse_variable_definition(tokens)
         
         elif (tname, tvalue) == ('CHAR', '&'):
             #

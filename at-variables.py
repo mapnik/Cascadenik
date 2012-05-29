@@ -2,9 +2,9 @@ from cascadenik.parse import stylesheet_declarations
 
 s = '''
 @orange: #f90;
-@blue: #00c;
+@blue : #00c;
 
-.orange { polygon-fill: @poly }
+.orange { polygon-fill: @orange }
 .blue { polygon-fill: @blue }
 '''
 
