@@ -1,9 +1,10 @@
-""" cascadnik - cascading sheets of style for mapnik
+""" Cascading sheets of style for mapnik
 
-http://mike.teczno.com/notes/cascadenik.html
+The introductory blog post:
+  http://mike.teczno.com/notes/cascadenik.html
 
-http://code.google.com/p/mapnik-utils/wiki/Cascadenik
-
+The code:
+  https://github.com/mapnik/Cascadenik
 """
 __version__ = '2.4.0'
 
