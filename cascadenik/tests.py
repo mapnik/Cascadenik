@@ -789,6 +789,46 @@ class NestedRuleTests(unittest.TestCase):
         
         self.assertEqual((declarations[1].property.name, declarations[1].value.value), ('text-size', 12))
 
+class AtVariableTests(unittest.TestCase):
+
+    def testCompile1(self):
+        s = """
+            @orange: #f90;
+            @blue : #00c;
+            
+            .orange { polygon-fill: @orange }
+            .blue { polygon-fill: @blue }
+        """
+        
+        declarations = stylesheet_declarations(s)
+        
+        self.assertEqual(len(declarations), 3)
+        
+        self.assertEqual(declarations[1].selector.elements[0].names[0], '.orange')
+        self.assertEqual(str(declarations[1].value.value), '#ff9900')
+        
+        self.assertEqual(declarations[2].selector.elements[0].names[0], '.blue')
+        self.assertEqual(str(declarations[2].value.value), '#0000cc')
+
+    def testCompile2(self):
+        s = """
+            @blue: #00c;
+            .dk-blue { polygon-fill: @blue }
+        
+            @blue: #06f;
+            .lt-blue { polygon-fill: @blue }
+        """
+        
+        declarations = stylesheet_declarations(s)
+        
+        self.assertEqual(len(declarations), 3)
+        
+        self.assertEqual(declarations[1].selector.elements[0].names[0], '.dk-blue')
+        self.assertEqual(str(declarations[1].value.value), '#0000cc')
+        
+        self.assertEqual(declarations[2].selector.elements[0].names[0], '.lt-blue')
+        self.assertEqual(str(declarations[2].value.value), '#0066ff')
+
 class SimpleRangeTests(unittest.TestCase):
 
     def testRanges1(self):
