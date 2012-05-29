@@ -20,7 +20,7 @@ options = dict(name='cascadenik',
         author_email='mike@teczno.com',
         platforms='OS Independent',
         license='todo',
-        requires=['Mapnik','cssutils','PIL'],
+        requires=['Mapnik', 'cssutils'],
         keywords='Mapnik,xml,css,mapping',
         url='https://github.com/mapnik/Cascadenik',
         classifiers=[
