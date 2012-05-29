@@ -10,10 +10,14 @@ symbolizers and provides a mechanism for inheritance.
 
 Cascadenik supports many of Mapnik’s features in a simple declarative form:
 
+    /* Define a few colors */
+    @black: #000;
+    @orange: #f90;
+    
     /* Start with a white background */
     Map
     {
-        map-bgcolor: #000;
+        map-bgcolor: #fff;
     }
     
     /* Draw roads as orange lines */
@@ -21,7 +25,7 @@ Cascadenik supports many of Mapnik’s features in a simple declarative form:
     {
         /* Usually, 3px wide */
         line-width: 3;
-        line-color: #f90;
+        line-color: @orange;
         
         /* Make the important ones wider */
         &[kind=major] { line-width: 4 }
@@ -32,7 +36,7 @@ Cascadenik supports many of Mapnik’s features in a simple declarative form:
         {
             text-placement: line;
             text-face-name: "DejaVu Sans Book";
-            text-fill: #000;
+            text-fill: @black;
             text-size: 12;
         }
     }
