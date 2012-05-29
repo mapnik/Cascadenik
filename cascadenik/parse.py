@@ -390,6 +390,13 @@ def parse_block(tokens, selectors, is_merc):
                 # end of a block means end of a value
                 #
                 raise BlockTerminatedValue(value, False, line, col)
+            elif tname == 'ATKEYWORD':
+                #
+                # Possible variable use:
+                # http://lesscss.org/#-variables
+                #
+                print tname, tvalue
+                value.append(('HASH', '#f00'))
             elif tname not in ('S', 'COMMENT'):
                 value.append((tname, tvalue))
         raise ParseException('Malformed property value', line, col)
@@ -507,6 +514,19 @@ def parse_rule(tokens, neighbors, parents, is_merc):
         if len(elements) == 2 and elements[1].countClasses():
             raise ParseException('Only the first element in a selector may have a class in Mapnik styles', line, col)
     
+    def parse_variable_definition(tokens):
+        """
+        """
+        while True:
+            tname, tvalue, line, col = tokens.next()
+            
+            if (tname, tvalue) in (('CHAR', ';'), ('S', '\n')):
+                print '----'
+                return
+            
+            else:
+                print tname, tvalue
+    
     #
     # The work.
     #
@@ -518,7 +538,15 @@ def parse_rule(tokens, neighbors, parents, is_merc):
     while True:
         tname, tvalue, line, col = tokens.next()
         
-        if (tname, tvalue) == ('CHAR', '&'):
+        if tname == 'ATKEYWORD':
+            #
+            # Possible variable definition:
+            # http://lesscss.org/#-variables
+            #
+            tokens = chain([(tname, tvalue, line, col)], tokens)
+            parse_variable_definition(tokens)
+        
+        elif (tname, tvalue) == ('CHAR', '&'):
             #
             # Start of a nested block with a "&" combinator
             # http://lesscss.org/#-nested-rules
