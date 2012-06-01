@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.4.1, June 1, 2012
+
+ * Fixed a bad reference in cascadenik-compile.py.
+
 Version 2.4.0, May 28, 2012
 
  * Added support for variables, based on Less CSS spec.

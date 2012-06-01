@@ -51,7 +51,7 @@ def main(src_file, dest_file, **kwargs):
     shutil.move(tmp_file, dest_file)
     return 0
 
-parser = optparse.OptionParser(usage="""%prog [options] <mml> <xml>""", version='%prog ' + cascadenik.VERSION)
+parser = optparse.OptionParser(usage="""%prog [options] <mml> <xml>""", version='%prog ' + cascadenik.__version__)
 
 parser.set_defaults(cache_dir=None, pretty=True, verbose=False, scale=1, datasources_cfg=None)
 
