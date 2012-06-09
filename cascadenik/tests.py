@@ -2707,4 +2707,25 @@ class RelativePathTests(unittest.TestCase):
         assert os.path.exists(shp_path)
         
 if __name__ == '__main__':
-    unittest.main()
+    #unittest.main()
+    
+    s = """
+        #low[zoom<5],
+        #high[zoom>=5]
+        {
+            polygon-fill: #fff;
+        
+            &[zoom=0] { polygon-fill: #000; }
+            &[zoom=3] { polygon-fill: #333; }
+            &[zoom=6] { polygon-fill: #666; }
+            &[zoom=9] { polygon-fill: #999; }
+        }
+    """
+    
+    declarations = stylesheet_declarations(s, is_merc=True)
+    
+    for dec in declarations:
+        print dec
+    
+    for rule in get_polygon_rules(declarations):
+        print rule

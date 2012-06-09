@@ -379,6 +379,7 @@ class Selector:
         # somewhat-fudged values for mapniks' scale denominator at a range
         # of zoom levels when using the Google/VEarth mercator projection.
         zooms = {
+             0: (500000000, 1000000000),
              1: (200000000, 500000000),
              2: (100000000, 200000000),
              3: (50000000, 100000000),
@@ -409,6 +410,7 @@ class Selector:
                     # TODO - should we warn instead that values may not be appropriate?
                     raise NotImplementedError('Map srs is not web mercator, so zoom level shorthand cannot be propertly converted to Min/Max scaledenominators')
 
+                print 'self:', self.elements
                 test.property = 'scale-denominator'
 
                 if test.op == '=':
@@ -424,6 +426,8 @@ class Selector:
                     test.op, test.value = '<', max(zooms[test.value])
                 elif test.op == '>':
                     test.op, test.value = '<', min(zooms[test.value])
+
+        print [test for test in self.elements[0].tests if test.property == 'scale-denominator']
 
 
     def specificity(self):
