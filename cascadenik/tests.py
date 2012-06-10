@@ -789,6 +789,49 @@ class NestedRuleTests(unittest.TestCase):
         
         self.assertEqual((declarations[1].property.name, declarations[1].value.value), ('text-size', 12))
 
+    def testCompile6(self):
+        s = """
+            #low[zoom<5],
+            #high[zoom>=5]
+            {
+                polygon-fill: #fff;
+            
+                &[zoom=0] { polygon-fill: #000; }
+                &[zoom=3] { polygon-fill: #333; }
+                &[zoom=6] { polygon-fill: #666; }
+                &[zoom=9] { polygon-fill: #999; }
+            }
+        """
+        
+        declarations = stylesheet_declarations(s, is_merc=True)
+        
+        self.assertEqual(len(declarations), 11)
+        
+        for index in (1, 3, 5, 7, 9):
+            self.assertEqual(str(declarations[index].selector.elements[0])[:33], '#low[scale-denominator>=25000000]')
+        
+        for index in (2, 4, 6, 8, 10):
+            self.assertEqual(str(declarations[index].selector.elements[0])[:33], '#high[scale-denominator<25000000]')
+        
+        for index in (1, 2):
+            self.assertEqual(str(declarations[index].value.value), '#ffffff')
+        
+        for index in (3, 4):
+            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=500000000][scale-denominator<1000000000]')
+            self.assertEqual(str(declarations[index].value.value), '#000000')
+        
+        for index in (5, 6):
+            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=50000000][scale-denominator<100000000]')
+            self.assertEqual(str(declarations[index].value.value), '#333333')
+        
+        for index in (7, 8):
+            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=6500000][scale-denominator<12500000]')
+            self.assertEqual(str(declarations[index].value.value), '#666666')
+        
+        for index in (9, 10):
+            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=750000][scale-denominator<1500000]')
+            self.assertEqual(str(declarations[index].value.value), '#999999')
+
 class AtVariableTests(unittest.TestCase):
 
     def testCompile1(self):
@@ -2707,25 +2750,5 @@ class RelativePathTests(unittest.TestCase):
         assert os.path.exists(shp_path)
         
 if __name__ == '__main__':
-    #unittest.main()
+    unittest.main()
     
-    s = """
-        #low[zoom<5],
-        #high[zoom>=5]
-        {
-            polygon-fill: #fff;
-        
-            &[zoom=0] { polygon-fill: #000; }
-            &[zoom=3] { polygon-fill: #333; }
-            &[zoom=6] { polygon-fill: #666; }
-            &[zoom=9] { polygon-fill: #999; }
-        }
-    """
-    
-    declarations = stylesheet_declarations(s, is_merc=True)
-    
-    for dec in declarations:
-        print dec
-    
-    for rule in get_polygon_rules(declarations):
-        print rule
