@@ -410,7 +410,6 @@ class Selector:
                     # TODO - should we warn instead that values may not be appropriate?
                     raise NotImplementedError('Map srs is not web mercator, so zoom level shorthand cannot be propertly converted to Min/Max scaledenominators')
 
-                print 'self:', self.elements
                 test.property = 'scale-denominator'
 
                 if test.op == '=':
@@ -426,8 +425,6 @@ class Selector:
                     test.op, test.value = '<', max(zooms[test.value])
                 elif test.op == '>':
                     test.op, test.value = '<', min(zooms[test.value])
-
-        print [test for test in self.elements[0].tests if test.property == 'scale-denominator']
 
 
     def specificity(self):

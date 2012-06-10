@@ -675,8 +675,8 @@ def parse_rule(tokens, variables, neighbors, parents, is_merc):
                     
                     for element in elements:
                         if element.__class__ is ConcatenatedElement:
-                            for name in element.names: selector.elements[-1].addName(name)
-                            for test in element.tests: selector.elements[-1].addTest(test)
+                            for name in element.names: selector.elements[-1].addName(deepcopy(name))
+                            for test in element.tests: selector.elements[-1].addTest(deepcopy(test))
                         else:
                             selector.addElement(deepcopy(element))
                     
