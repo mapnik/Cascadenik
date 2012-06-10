@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.4.2, June 9, 2012
+
+ * Fixed a rogue pass-by-value instead of deepcopy() in parse.parse_rule().
+
 Version 2.4.1, June 1, 2012
 
  * Fixed a bad reference in cascadenik-compile.py.
