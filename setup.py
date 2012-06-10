@@ -44,7 +44,7 @@ except IOError:
     pass
 
 if HAS_SETUPTOOLS:
-    options.update({'install_requires':['cssutils>0.9.0','PIL']})
+    options.update({'install_requires':['cssutils>0.9.0']})
 
 setup(**options)
 
