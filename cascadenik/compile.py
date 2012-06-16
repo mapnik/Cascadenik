@@ -74,8 +74,6 @@ if not Image:
 
 DEFAULT_ENCODING = 'utf-8'
 
-SHAPE_PARTS = (('.shp', True), ('.shx', True), ('.dbf', True), ('.prj', False), ('.index', False))
-
 try:
     import xml.etree.ElementTree as ElementTree
     from xml.etree.ElementTree import Element
@@ -1333,13 +1331,15 @@ def unzip_shapefile_into(zip_path, dir, host=None):
     """
     hash = md5(zip_path).hexdigest()[:8]
     zip_file = zipfile.ZipFile(un_posix(zip_path))
+    zip_ctime = os.stat(un_posix(zip_path)).st_ctime
     
     infos = zip_file.infolist()
     extensions = [posixpath.splitext(info.filename)[1] for info in infos]
     
     host_prefix = host and ('%(host)s-' % locals()) or ''
+    shape_parts = ('.shp', True), ('.shx', True), ('.dbf', True), ('.prj', False), ('.index', False)
     
-    for (expected, required) in SHAPE_PARTS:
+    for (expected, required) in shape_parts:
         if required and expected not in extensions:
             raise Exception('Zip file %(zip_path)s missing extension "%(expected)s"' % locals())
 
@@ -1351,9 +1351,10 @@ def unzip_shapefile_into(zip_path, dir, host=None):
                 file_data = zip_file.read(info.filename)
                 file_name = '%(dir)s/%(host_prefix)s%(hash)s-%(head)s%(ext)s' % locals()
                 
-                file_ = open(un_posix(file_name), 'wb')
-                file_.write(file_data)
-                file_.close()
+                if not systempath.exists(un_posix(file_name)) or os.stat(un_posix(file_name)).st_ctime < zip_ctime:
+                    file_ = open(un_posix(file_name), 'wb')
+                    file_.write(file_data)
+                    file_.close()
                 
                 if ext == '.shp':
                     local = file_name[:-4]
