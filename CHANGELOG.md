@@ -1,6 +1,11 @@
 Cascadenik Changelog
 ====================
 
+Version 2.4.3, June 16, 2012
+
+ * Removed non-working PIL requirement from setup.py.
+ * Slightly modified shapefile unzipping to be smarter about existing files.
+
 Version 2.4.2, June 9, 2012
 
  * Fixed a rogue pass-by-value instead of deepcopy() in parse.parse_rule().
