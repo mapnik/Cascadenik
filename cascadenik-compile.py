@@ -5,6 +5,7 @@ import sys
 import shutil
 import optparse
 import tempfile
+import logging
 from os.path import realpath, dirname
 
 import cascadenik
@@ -29,7 +30,7 @@ def main(src_file, dest_file, **kwargs):
     mmap = mapnik.Map(1, 1)
     # allow [zoom] filters to work
     mmap.srs = '+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null'
-    load_kwargs = dict([(k, v) for (k, v) in kwargs.items() if k in ('cache_dir', 'scale', 'verbose', 'datasources_cfg')])
+    load_kwargs = dict([(k, v) for (k, v) in kwargs.items() if k in ('cache_dir', 'scale', 'datasources_cfg')])
     cascadenik.load_map(mmap, src_file, dirname(realpath(dest_file)), **load_kwargs)
     
     (handle, tmp_file) = tempfile.mkstemp(suffix='.xml', prefix='cascadenik-mapnik-')
@@ -80,6 +81,9 @@ parser.add_option('-v' , '--verbose', dest='verbose',
 
 if __name__ == '__main__':
     (options, args) = parser.parse_args()
+    
+    log_level = options.verbose and logging.DEBUG or logging.WARNING
+    logging.basicConfig(level=log_level)
     
     if not len(args) == 2:
         parser.error('Please specify .mml and .xml files')

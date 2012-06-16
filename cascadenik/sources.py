@@ -1,6 +1,7 @@
 import ConfigParser
 import StringIO
 import urlparse
+import logging
 import urllib
 
 from . import mapnik
@@ -16,13 +17,12 @@ class DataSources(object):
         
         # avoid circular import
         import compile
-        self.msg = compile.msg     
         
         # if a local_cfg is provided, we want to get the defaults first, before reading any other
         # configuration.
         if local_cfg:
             self.local_cfg_url = urlparse.urljoin(base, local_cfg)
-            self.msg("Using local datasource config: %s" % self.local_cfg_url)
+            logging.debug("Using local datasource config: %s" % self.local_cfg_url)
             self.set_local_cfg_data(urllib.urlopen(self.local_cfg_url).read().decode(compile.DEFAULT_ENCODING))
             
     def set_local_cfg_data(self, data):
@@ -33,7 +33,7 @@ class DataSources(object):
 
     def finalize(self):
         if self.local_cfg_data:
-            self.msg("Loading local config data: %s" % self.local_cfg_url)
+            logging.debug("Loading local config data: %s" % self.local_cfg_url)
             self.add_config(self.local_cfg_data, self.local_cfg_url)
         self.finalized = True
 

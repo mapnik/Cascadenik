@@ -9,6 +9,7 @@ import base64
 import posixpath
 import os.path as systempath
 import zipfile
+import logging
 import shutil
 
 from hashlib import md5
@@ -69,8 +70,7 @@ except ImportError:
         Image = False
 
 if not Image:
-    warn = 'Warning: PIL (Python Imaging Library) is required for proper handling of image symbolizers when using JPEG format images or not running Mapnik >=0.7.0\n'
-    sys.stderr.write(warn)
+    logging.warning('PIL (Python Imaging Library) is required for proper handling of image symbolizers when using JPEG format images or not running Mapnik >=0.7.0')
 
 DEFAULT_ENCODING = 'utf-8'
 
@@ -87,12 +87,6 @@ except ImportError:
 
 opsort = {lt: 1, le: 2, eq: 3, ge: 4, gt: 5}
 opstr = {lt: '<', le: '<=', eq: '==', ge: '>=', gt: '>'}
-
-VERBOSE = False
-
-def msg(msg):
-    if VERBOSE:
-        sys.stderr.write('Cascadenik debug: %s\n' % msg)
 
 counter = 0
 
@@ -1066,7 +1060,7 @@ def locally_cache_remote_file(href, dir):
 
     headers = {}
     if posixpath.exists(local_path):
-        msg('Found local file: %s' % local_path )
+        logging.debug('Found local file: %s' % local_path)
         t = localtime(os.stat(local_path).st_mtime)
         headers['If-Modified-Since'] = strftime('%a, %d %b %Y %H:%M:%S %Z', t)
     
@@ -1084,7 +1078,7 @@ def locally_cache_remote_file(href, dir):
     if resp.status in range(200, 210):
         # hurrah, it worked
         f = open(un_posix(local_path), 'wb')
-        msg('Reading from remote: %s' % remote_path)
+        logging.debug('Reading from remote: %s' % remote_path)
         f.write(resp.read())
         f.close()
 
@@ -1096,7 +1090,7 @@ def locally_cache_remote_file(href, dir):
     
     elif resp.status == 304:
         # hurrah, it's cached
-        msg('Reading directly from local cache')
+        logging.debug('Reading directly from local cache')
         pass
 
     else:
@@ -1133,7 +1127,7 @@ def post_process_symbolizer_image_file(file_href, dirs):
     else:
         path = dirs.output_path(path)
 
-    msg('reading symbol: %s' % path)
+    logging.debug('Reading symbol: %s' % path)
 
     image_name, ext = posixpath.splitext(path)
     
@@ -1148,7 +1142,7 @@ def post_process_symbolizer_image_file(file_href, dirs):
     if not posixpath.exists(dest_file):
         img.save(dest_file,'PNG')
 
-    msg('Destination file: %s' % dest_file)
+    logging.debug('Destination file: %s' % dest_file)
 
     return dest_file, output_ext[1:], img.size[0], img.size[1]
 
@@ -1384,7 +1378,7 @@ def localize_shapefile(shp_href, dirs):
     scheme, host, path, p, q, f = urlparse(shp_href)
     
     if scheme in ('http','https'):
-        msg('%s | %s' % (shp_href, dirs.cache))
+        logging.debug('%s | %s' % (shp_href, dirs.cache))
         scheme, path = '', locally_cache_remote_file(shp_href, dirs.cache)
     else:
         host = None
@@ -1434,7 +1428,7 @@ def localize_file_datasource(file_href, dirs):
     else:
         return dirs.output_path(path)
     
-def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None, scale=1):
+def compile(src, dirs, verbose=None, srs=None, datasources_cfg=None, scale=1):
     """ Compile a Cascadenik MML file, returning a cascadenik.output.Map object.
     
         Parameters:
@@ -1450,7 +1444,10 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None, scale=1):
         Keyword Parameters:
         
           verbose:
-            If True, debugging information will be printed to stderr.
+            *Deprecated*, use standard logging module instead:
+            http://docs.python.org/library/logging.html#logging.basicConfig
+            
+            If True, debugging information will be logged at the DEBUG level.
         
           srs:
             Target spatial reference system for the compiled stylesheet.
@@ -1465,13 +1462,12 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None, scale=1):
           scale:
             Scale value for output map, 2 doubles the size for high-res displays.
     """
-    global VERBOSE
-
-    if verbose:
-        VERBOSE = True
-        sys.stderr.write('\n')
+    if verbose is not None:
+        # TODO: remove this when verbose argument is deprecated
+        level = verbose and logging.DEBUG or logging.WARNING
+        logging.basicConfig(level=level, stream=sys.stderr)
     
-    msg('Targeting mapnik version: %s | %s' % (MAPNIK_VERSION, MAPNIK_VERSION_STR))
+    logging.debug('Targeting mapnik version: %s | %s' % (MAPNIK_VERSION, MAPNIK_VERSION_STR))
         
     if posixpath.exists(src):
         doc = ElementTree.parse(src)
@@ -1534,7 +1530,7 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None, scale=1):
 
             if datasource_params.get('type') == 'shape':
                 # handle a local shapefile or fetch a remote, zipped shapefile
-                msg('Handling shapefile datasource...')
+                logging.debug('Handling shapefile datasource...')
                 file_param = localize_shapefile(file_param, dirs)
 
                 # TODO - support datasource reprojection to make map srs
@@ -1542,10 +1538,10 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None, scale=1):
 
             else: # ogr,raster, gdal, sqlite
                 # attempt to generically handle other file based datasources
-                msg('Handling generic datasource...')
+                logging.debug('Handling generic datasource...')
                 file_param = localize_file_datasource(file_param, dirs)
 
-            msg("Localized path = %s" % un_posix(file_param))
+            logging.debug("Localized path = %s" % un_posix(file_param))
             datasource_params['file'] = un_posix(file_param)
 
             # TODO - consider custom support for other mapnik datasources:
