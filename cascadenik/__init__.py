@@ -22,7 +22,8 @@ except ImportError:
 MAPNIK_VERSION = hasattr(mapnik, 'mapnik_version') and mapnik.mapnik_version() or 701
 
 # make a nice version-looking string out of it, like "0.7.1".
-MAPNIK_VERSION_STR = '.'.join(map(str, map(int, (('%06d' % MAPNIK_VERSION)[o:][:2] for o in (-6, -4, -2)))))
+MAPNIK_VERSION_STR = ('%07d' % MAPNIK_VERSION)
+MAPNIK_VERSION_STR = '.'.join(map(str, (int(MAPNIK_VERSION_STR[:2]), int(MAPNIK_VERSION_STR[2:-2]), int(MAPNIK_VERSION_STR[-2:]))))
 
 from . import style
 from .parse import stylesheet_declarations
