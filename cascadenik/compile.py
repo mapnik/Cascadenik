@@ -856,6 +856,9 @@ def get_raster_rules(declarations):
     """ Given a Map element, a Layer element, and a list of declarations,
         create a new Style element with a RasterSymbolizer, add it to Map
         and refer to it in Layer.
+        
+        The RasterSymbolizer will always created, even if there are
+        no applicable declarations.
     """
     property_map = {'raster-opacity': 'opacity',
                     'raster-mode': 'mode',
@@ -876,6 +879,10 @@ def get_raster_rules(declarations):
 
         rules.append(make_rule(filter, symbolizer))
 
+    if not rules:
+        # No raster-* rules were created, but we're here so we must need a symbolizer.
+        rules.append(make_rule(Filter(), output.RasterSymbolizer()))
+    
     return rules
 
 def get_line_rules(declarations):
@@ -1549,29 +1556,31 @@ def compile(src, dirs, verbose=False, srs=None, datasources_cfg=None, scale=1):
         # a list of styles
         styles = []
         
-        styles.append(output.Style('polygon style %d' % ids.next(),
-                                   get_polygon_rules(layer_declarations)))
-
-        styles.append(output.Style('polygon pattern style %d' % ids.next(),
-                                   get_polygon_pattern_rules(layer_declarations, dirs)))
-
-        styles.append(output.Style('raster style %d' % ids.next(),
-                                   get_raster_rules(layer_declarations)))
-
-        styles.append(output.Style('line style %d' % ids.next(),
-                                   get_line_rules(layer_declarations)))
-
-        styles.append(output.Style('line pattern style %d' % ids.next(),
-                                   get_line_pattern_rules(layer_declarations, dirs)))
-
-        for (shield_name, shield_rules) in get_shield_rule_groups(layer_declarations, dirs).items():
-            styles.append(output.Style('shield style %d (%s)' % (ids.next(), shield_name), shield_rules))
-
-        for (text_name, text_rules) in get_text_rule_groups(layer_declarations).items():
-            styles.append(output.Style('text style %d (%s)' % (ids.next(), text_name), text_rules))
-
-        styles.append(output.Style('point style %d' % ids.next(),
-                                   get_point_rules(layer_declarations, dirs)))
+        if datasource_params.get('type', None) == 'gdal':
+            styles.append(output.Style('raster style %d' % ids.next(),
+                                       get_raster_rules(layer_declarations)))
+    
+        else:
+            styles.append(output.Style('polygon style %d' % ids.next(),
+                                       get_polygon_rules(layer_declarations)))
+    
+            styles.append(output.Style('polygon pattern style %d' % ids.next(),
+                                       get_polygon_pattern_rules(layer_declarations, dirs)))
+    
+            styles.append(output.Style('line style %d' % ids.next(),
+                                       get_line_rules(layer_declarations)))
+    
+            styles.append(output.Style('line pattern style %d' % ids.next(),
+                                       get_line_pattern_rules(layer_declarations, dirs)))
+    
+            for (shield_name, shield_rules) in get_shield_rule_groups(layer_declarations, dirs).items():
+                styles.append(output.Style('shield style %d (%s)' % (ids.next(), shield_name), shield_rules))
+    
+            for (text_name, text_rules) in get_text_rule_groups(layer_declarations).items():
+                styles.append(output.Style('text style %d (%s)' % (ids.next(), text_name), text_rules))
+    
+            styles.append(output.Style('point style %d' % ids.next(),
+                                       get_point_rules(layer_declarations, dirs)))
                                    
         styles = [s for s in styles if s.rules]
         
