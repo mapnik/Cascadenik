@@ -321,7 +321,7 @@ class TextSymbolizer:
         sym.label_spacing = self.label_spacing or sym.label_spacing
         sym.label_position_tolerance = self.label_position_tolerance or sym.label_position_tolerance
         
-        if MAPNIK_VERSION >= 20100:
+        if MAPNIK_VERSION >= 200100:
             # seriously?
             sym.maximum_angle_char_delta = self.max_char_angle_delta or sym.maximum_angle_char_delta
         else:
