@@ -2319,7 +2319,10 @@ layer_srs=%(other_srs)s
         self.assertEqual(mapnik.Color("#ff0"), sym.halo_fill)
         self.assertEqual(2, sym.halo_radius)
         
-        if MAPNIK_VERSION >= 20000:
+        if MAPNIK_VERSION >= 200100:
+            # TextSymbolizer lost its "name" attribute in Mapnik 2.1.
+            pass
+        elif MAPNIK_VERSION >= 200001:
             self.assertEqual('[NAME]', str(sym.name))
         else:
             self.assertEqual('NAME', sym.name)
@@ -2328,7 +2331,13 @@ layer_srs=%(other_srs)s
         self.assertEqual(100, sym.wrap_width)
         self.assertEqual(50, sym.label_spacing)
         self.assertEqual(25, sym.label_position_tolerance)
-        self.assertEqual(10, sym.max_char_angle_delta)
+        
+        if MAPNIK_VERSION >= 200100:
+            # Seriously?
+            self.assertEqual(10, sym.maximum_angle_char_delta)
+        else:
+            self.assertEqual(10, sym.max_char_angle_delta)
+        
         self.assertEqual(10, sym.line_spacing)
         self.assertEqual(5, sym.minimum_distance)
         self.assertEqual(mapnik.label_placement.LINE_PLACEMENT, sym.label_placement)
