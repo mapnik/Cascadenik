@@ -320,7 +320,13 @@ class TextSymbolizer:
         sym.wrap_width = self.wrap_width or sym.wrap_width
         sym.label_spacing = self.label_spacing or sym.label_spacing
         sym.label_position_tolerance = self.label_position_tolerance or sym.label_position_tolerance
-        sym.max_char_angle_delta = self.max_char_angle_delta or sym.max_char_angle_delta
+        
+        if MAPNIK_VERSION >= 20100:
+            # seriously?
+            sym.maximum_angle_char_delta = self.max_char_angle_delta or sym.maximum_angle_char_delta
+        else:
+            sym.max_char_angle_delta = self.max_char_angle_delta or sym.max_char_angle_delta
+        
         sym.halo_fill = mapnik.Color(str(self.halo_color)) if self.halo_color else sym.halo_fill
         sym.halo_radius = self.halo_radius or sym.halo_radius
         sym.character_spacing = self.character_spacing or sym.character_spacing
