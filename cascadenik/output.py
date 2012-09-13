@@ -248,7 +248,7 @@ class TextSymbolizer:
         justify_alignment=None, force_odd_labels=None):
 
         assert isinstance(name, basestring)
-        assert face_name is None or isinstance(face_name, basestring)
+        assert face_name is None or face_name.__class__ is style.strings
         assert fontset is None or isinstance(fontset, basestring)
         assert type(size) is int
         assert color.__class__ is style.color
@@ -271,7 +271,7 @@ class TextSymbolizer:
         assert face_name or fontset, "Must specify either face_name or fontset"
 
         self.name = safe_str(name)
-        self.face_name = safe_str(face_name) or ''
+        self.face_name = face_name
         self.fontset = safe_str(fontset)
         self.size = size
         self.color = color
@@ -299,22 +299,25 @@ class TextSymbolizer:
         self.anchor_dy = anchor_dy
 
     def __repr__(self):
-        return 'Text(%s, %s)' % (self.face_name, self.size)
+        return 'Text(%s, %s)' % (self.face_name[0], self.size)
 
     def to_mapnik(self):
+        if len(self.face_name.values) > 1:
+            raise Exception("Can't do these yet")
+    
         if MAPNIK_VERSION >= 20000:
             convert_enums = {'uppercase': mapnik.text_transform.UPPERCASE,
                              'lowercase': mapnik.text_transform.LOWERCASE}
 
             sym = mapnik.TextSymbolizer(mapnik.Expression('[%s]' % self.name),
-                                        self.face_name, self.size,
+                                        self.face_name.values[0], self.size,
                                         mapnik.Color(str(self.color)))
         else:
             # note: these match css in Mapnik2
             convert_enums = {'uppercase': mapnik.text_convert.TOUPPER,
                              'lowercase': mapnik.text_convert.TOLOWER}
 
-            sym = mapnik.TextSymbolizer(self.name, self.face_name, self.size,
+            sym = mapnik.TextSymbolizer(self.name, self.face_name.values[0], self.size,
                                         mapnik.Color(str(self.color)))
 
         sym.wrap_width = self.wrap_width or sym.wrap_width
@@ -379,7 +382,7 @@ class ShieldSymbolizer:
         assert (face_name or fontset) and file
         
         assert isinstance(name, basestring)
-        assert face_name is None or isinstance(face_name, basestring)
+        assert face_name is None or face_name.__class__ is style.strings
         assert fontset is None or isinstance(fontset, basestring)
         assert size is None or type(size) is int
         assert width is None or type(width) is int
@@ -395,7 +398,7 @@ class ShieldSymbolizer:
         assert text_dy is None or type(text_dy) is int
 
         self.name = safe_str(name)
-        self.face_name = safe_str(face_name) or ''
+        self.face_name = face_name
         self.fontset = safe_str(fontset)
         self.size = size or 10
         self.file = safe_str(file)
@@ -415,15 +418,17 @@ class ShieldSymbolizer:
         return 'Shield(%s, %s, %s, %s)' % (self.name, self.face_name, self.size, self.file)
 
     def to_mapnik(self):
-        
+        if len(self.face_name.values) > 1:
+            raise Exception("Can't do these yet")
+    
         if MAPNIK_VERSION >= 20000:
             sym = mapnik.ShieldSymbolizer(
-                    mapnik.Expression('[%s]' % self.name), self.face_name, self.size or 10, 
+                    mapnik.Expression('[%s]' % self.name), self.face_name.values[0], self.size or 10, 
                     mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
                     mapnik.PathExpression(self.file))
         else:
             sym = mapnik.ShieldSymbolizer(
-                    self.name, self.face_name, self.size or 10, 
+                    self.name, self.face_name.values[0], self.size or 10, 
                     mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
                     self.file, self.type, self.width, self.height)
 
