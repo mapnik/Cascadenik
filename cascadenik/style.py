@@ -57,6 +57,19 @@ class numbers:
     def __eq__(self, other):
         return self.values == other.values
 
+class strings:
+    def __init__(self, *values):
+        self.values = values
+
+    def __repr__(self):
+        return ','.join(map(str, self.values))
+
+    def __str__(self):
+        return repr(self)
+
+    def __eq__(self, other):
+        return self.values == other.values
+
 # recognized properties
 
 properties = {
@@ -169,11 +182,9 @@ properties = {
     'text-justify-align': ('left','middle','right',),
     'text-transform': ('uppercase','lowercase',),
     'text-force-odd-labels':boolean,
-    # Font name
-    'text-face-name': str,
 
-    # Fontset name
-    'text-fontset': str,
+    # Font name
+    'text-face-name': strings,
 
     # Font size
     'text-size': int,
@@ -304,11 +315,8 @@ properties = {
     'shield-name': None, # (use selector for this)
 
     # 
-    'shield-face-name': str,
+    'shield-face-name': strings,
 
-    # Fontset name
-    'shield-fontset': str,
-    
     # 
     'shield-size': int,
 

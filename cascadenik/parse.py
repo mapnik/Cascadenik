@@ -5,7 +5,7 @@ from itertools import chain, product
 from binascii import unhexlify as unhex
 from cssutils.tokenize2 import Tokenizer as cssTokenizer
 
-from .style import properties, numbers, boolean, uri, color, color_transparent
+from .style import properties, numbers, strings, boolean, uri, color, color_transparent
 from .style import Selector, SelectorElement, ConcatenatedElement, SelectorAttributeTest
 from .style import Declaration, Property, Value
 
@@ -312,9 +312,8 @@ def postprocess_value(property, tokens, important, line, col):
     elif properties[property.name] is numbers:
         values = []
         
-        # strip the list down to what we think goes number, comma, number, etc.
-        relevant_tokens = [token for token in tokens
-                           if token[0] == 'NUMBER' or token == ('CHAR', ',')]
+        # strip spaces from the list
+        relevant_tokens = [token for token in tokens if token[0] != 'S']
         
         for (i, token) in enumerate(relevant_tokens):
             if (i % 2) == 0 and token[0] == 'NUMBER':
@@ -333,6 +332,25 @@ def postprocess_value(property, tokens, important, line, col):
                 raise ParseException('Value for property "%(property)s" should be a comma-delimited list of numbers' % locals(), line, col)
 
         value = numbers(*values)
+
+    elif properties[property.name] is strings:
+        values = []
+    
+        # strip spaces from the list
+        relevant_tokens = [token for token in tokens if token[0] != 'S']
+        
+        for (i, token) in enumerate(relevant_tokens):
+            if (i % 2) == 0 and token[0] == 'STRING':
+                values.append(str(token[1][1:-1]))
+            
+            elif (i % 2) == 1 and token == ('CHAR', ','):
+                # fine, it's a comma
+                continue
+            
+            else:
+                raise ParseException('Value for property "%(property)s" should be a comma-delimited list of strings' % locals(), line, col)
+    
+        value = strings(*values)
 
     return Value(value, important)
 
