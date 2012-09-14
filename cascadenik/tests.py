@@ -1677,16 +1677,13 @@ class StyleRuleTests(unittest.TestCase):
         s = """
             Layer label1
             {
-                text-face-name: 'Helvetica';
-                text-fontset: 'bananas';
-
+                text-face-name: 'Bananas';
                 text-size: 12;
                 text-fill: #f00;
             }
             Layer label2
             {
-                text-fontset: "monkeys";
-
+                text-face-name: "Monkeys";
                 text-size: 12;
                 text-fill: #f00;
             }
@@ -1696,11 +1693,8 @@ class StyleRuleTests(unittest.TestCase):
 
         text_rule_groups = get_text_rule_groups(declarations)
         
-        self.assertEqual(strings('Helvetica'), text_rule_groups['label1'][0].symbolizers[0].face_name)
-        self.assertEqual('bananas', text_rule_groups['label1'][0].symbolizers[0].fontset)
-
-        self.assertEqual('', text_rule_groups['label2'][0].symbolizers[0].face_name)
-        self.assertEqual('monkeys', text_rule_groups['label2'][0].symbolizers[0].fontset)
+        self.assertEqual(strings('Bananas'), text_rule_groups['label1'][0].symbolizers[0].face_name)
+        self.assertEqual(strings('Monkeys'), text_rule_groups['label2'][0].symbolizers[0].face_name)
 
     def testStyleRules13(self):
         s = """
@@ -1752,7 +1746,7 @@ class StyleRuleTests(unittest.TestCase):
 
             Layer both
             {
-                shield-fontset: 'SuperFonts';
+                shield-face-name: 'Interstate';
                 shield-size: 12;
                 
                 shield-file: url('http://cascadenik-sampledata.s3.amazonaws.com/purple-point.png');
@@ -1776,8 +1770,7 @@ class StyleRuleTests(unittest.TestCase):
         #self.assertEqual(16, shield_rule_groups['just_image'][0].symbolizers[0].height)
         #self.assertEqual(5, shield_rule_groups['just_image'][0].symbolizers[0].minimum_distance)
         
-        self.assertEqual('', shield_rule_groups['both'][0].symbolizers[0].face_name)
-        self.assertEqual('SuperFonts', shield_rule_groups['both'][0].symbolizers[0].fontset)
+        self.assertEqual(strings('Interstate'), shield_rule_groups['both'][0].symbolizers[0].face_name)
         self.assertEqual(12, shield_rule_groups['both'][0].symbolizers[0].size)
         self.assertEqual(color(0xFF, 0x00, 0x00), shield_rule_groups['both'][0].symbolizers[0].color)
         self.assertEqual(16, shield_rule_groups['both'][0].symbolizers[0].width)
@@ -2271,7 +2264,6 @@ layer_srs=%(other_srs)s
                 text-dy: 15;
                 text-face-name: 'Helvetica';
                 text-fill: #f00;
-                text-fontset: 'nanas';
                 text-force-odd-labels: true;
                 text-halo-fill: #ff0;
                 text-halo-radius: 2;
@@ -2309,10 +2301,8 @@ layer_srs=%(other_srs)s
         self.assertEqual(True, sym.allow_overlap)
         self.assertEqual(True, sym.avoid_edges)
         self.assertEqual(10, sym.character_spacing)
-        self.assertEqual(strings('Helvetica'), sym.face_name)
+        self.assertEqual('Helvetica', sym.face_name)
         self.assertEqual(mapnik.Color("#f00"), sym.fill)
-        # todo - not exposed in python
-        #self.assertEqual('nanas', sym.fontset)
         
         self.assertEqual(True, sym.force_odd_labels)
         self.assertEqual(mapnik.justify_alignment.LEFT, sym.justify_alignment)
@@ -2408,53 +2398,11 @@ layer_srs=%(other_srs)s
         fontsets = dict()
         sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik(fontsets)
         
+        self.assert_(('Helvetica', 'DejaVu Sans Book') in fontsets)
+        
         self.assertEqual(tuple(['Helvetica', 'DejaVu Sans Book']), tuple(sym.fontset.names))
-        
-        return
-        
-        if MAPNIK_VERSION >= 20000:
-            self.assertEqual((10, 15), sym.displacement)
-        else:
-            self.assertEqual([10, 15], sym.get_displacement())
-        
-        # todo - anchor (does not do anything yet in mapnik, but likely will)
-        # and is not set in xml, but accepted in python
-        #self.assertEqual([0,5], sym.get_anchor())
-        self.assertEqual(True, sym.allow_overlap)
-        self.assertEqual(True, sym.avoid_edges)
-        self.assertEqual(10, sym.character_spacing)
-        self.assertEqual(strings('Helvetica'), sym.face_name)
         self.assertEqual(mapnik.Color("#f00"), sym.fill)
-        # todo - not exposed in python
-        #self.assertEqual('nanas', sym.fontset)
-        
-        self.assertEqual(True, sym.force_odd_labels)
-        self.assertEqual(mapnik.justify_alignment.LEFT, sym.justify_alignment)
-        self.assertEqual(mapnik.Color("#ff0"), sym.halo_fill)
-        self.assertEqual(2, sym.halo_radius)
-        
-        if MAPNIK_VERSION >= 200100:
-            # TextSymbolizer lost its "name" attribute in Mapnik 2.1.
-            pass
-        elif MAPNIK_VERSION >= 200001:
-            self.assertEqual('[NAME]', str(sym.name))
-        else:
-            self.assertEqual('NAME', sym.name)
-        
         self.assertEqual(12, sym.text_size)
-        self.assertEqual(100, sym.wrap_width)
-        self.assertEqual(50, sym.label_spacing)
-        self.assertEqual(25, sym.label_position_tolerance)
-        
-        if MAPNIK_VERSION >= 200100:
-            # Seriously?
-            self.assertEqual(10, sym.maximum_angle_char_delta)
-        else:
-            self.assertEqual(10, sym.max_char_angle_delta)
-        
-        self.assertEqual(10, sym.line_spacing)
-        self.assertEqual(5, sym.minimum_distance)
-        self.assertEqual(mapnik.label_placement.LINE_PLACEMENT, sym.label_placement)
 
 class RelativePathTests(unittest.TestCase):
 
