@@ -555,7 +555,7 @@ class SelectorParseTests(unittest.TestCase):
         text_rule_groups = get_text_rule_groups(declarations)
         
         self.assertEqual(str, type(text_rule_groups.keys()[0]))
-        self.assertEqual(str, type(text_rule_groups['CODE'][0].symbolizers[0].face_name))
+        self.assert_(isinstance(text_rule_groups['CODE'][0].symbolizers[0].face_name, strings))
         self.assertEqual(str, type(text_rule_groups['CODE'][0].symbolizers[0].label_placement))
 
 class FilterCombinationTests(unittest.TestCase):
@@ -2405,7 +2405,10 @@ layer_srs=%(other_srs)s
         """
         declarations = stylesheet_declarations(s, is_merc=True)
         text_rule_groups = get_text_rule_groups(declarations)
-        sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik()
+        fontsets = dict()
+        sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik(fontsets)
+        
+        self.assertEqual(tuple(['Helvetica', 'DejaVu Sans Book']), tuple(sym.fontset.names))
         
         return
         
