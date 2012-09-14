@@ -45,7 +45,7 @@ class Map:
     
                     sty = mapnik.Style()
                     
-                    if MAPNIK_VERSION >= 20000:
+                    if MAPNIK_VERSION >= 200000:
                         sty.filter_mode = mapnik.filter_mode.FIRST
                     
                     for rule in style.rules:
@@ -359,7 +359,7 @@ class TextSymbolizer:
                                             self.face_name.values[0], self.size,
                                             mapnik.Color(str(self.color)))
 
-        elif MAPNIK_VERSION >= 20000:
+        elif MAPNIK_VERSION >= 200000:
             convert_enums = {'uppercase': mapnik.text_transform.UPPERCASE,
                              'lowercase': mapnik.text_transform.LOWERCASE}
 
@@ -396,7 +396,7 @@ class TextSymbolizer:
         if self.label_placement:
             sym.label_placement = mapnik.label_placement.names.get(self.label_placement,mapnik.label_placement.POINT_PLACEMENT)
 
-        if self.text_transform and MAPNIK_VERSION >= 20000:
+        if self.text_transform and MAPNIK_VERSION >= 200000:
             sym.text_convert = convert_enums.get(self.text_transform, mapnik.text_transform.NONE)
         elif self.text_transform:
             # note-renamed in Mapnik2 to 'text_transform'
@@ -421,7 +421,7 @@ class TextSymbolizer:
              # not viable via python
             sys.stderr.write('\nCascadenik debug: Warning, FontSets will be ignored as they are not yet supported in Mapnik via Python...\n')
         
-        if MAPNIK_VERSION >= 20000:
+        if MAPNIK_VERSION >= 200000:
             sym.displacement = (self.dx or 0.0, self.dy or 0.0)
         else:
             sym.displacement(self.dx or 0.0, self.dy or 0.0)
@@ -496,7 +496,7 @@ class ShieldSymbolizer:
                         mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
                         mapnik.PathExpression(self.file))
 
-        elif MAPNIK_VERSION >= 20000:
+        elif MAPNIK_VERSION >= 200000:
             sym = mapnik.ShieldSymbolizer(
                     mapnik.Expression('[%s]' % self.name), self.face_name.values[0], self.size or 10, 
                     mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
@@ -516,7 +516,7 @@ class ShieldSymbolizer:
         if self.fontset:
             sym.fontset = self.fontset.value
         
-        if MAPNIK_VERSION >= 20000:
+        if MAPNIK_VERSION >= 200000:
             sym.displacement = (self.text_dx or 0, self.text_dy or 0)
         else:
             sym.displacement(self.text_dx or 0, self.text_dy or 0)
@@ -541,7 +541,7 @@ class BasePointSymbolizer(object):
     def to_mapnik(self):
         sym_class = getattr(mapnik, self.__class__.__name__)
         
-        if MAPNIK_VERSION >= 20000:
+        if MAPNIK_VERSION >= 200000:
             sym = sym_class(mapnik.PathExpression(self.file))
         else:
             sym = sym_class(self.file, self.type, self.width, self.height)
