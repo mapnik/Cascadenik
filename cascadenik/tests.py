@@ -2395,7 +2395,8 @@ layer_srs=%(other_srs)s
         """
         declarations = stylesheet_declarations(s, is_merc=True)
         text_rule_groups = get_text_rule_groups(declarations)
-        fontsets = dict()
+        
+        fontset_name = text_rule_groups['NAME'][0].symbolizers[0]
         sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik(fontsets)
         
         self.assert_(('Helvetica', 'DejaVu Sans Book') in fontsets)
@@ -2403,6 +2404,73 @@ layer_srs=%(other_srs)s
         self.assertEqual(tuple(['Helvetica', 'DejaVu Sans Book']), tuple(sym.fontset.names))
         self.assertEqual(mapnik.Color("#f00"), sym.fill)
         self.assertEqual(12, sym.text_size)
+
+    def testCompile10(self):
+        """
+        """
+        s = """<?xml version="1.0"?>
+            <Map>
+                <Stylesheet>
+                    Map { map-bgcolor: #fff; }
+                    
+                    Layer name
+                    {
+                        text-face-name: 'Comic Sans', 'Papyrus';
+                        text-size: 14;
+                        text-fill: #f90;
+                    }
+                </Stylesheet>
+                <Datasource name="template">
+                     <Parameter name="type">shape</Parameter>
+                     <Parameter name="encoding">latin1</Parameter>
+                </Datasource>
+                <Layer>
+                    <Datasource base="template">
+                        <Parameter name="type">shape</Parameter>
+                        <Parameter name="file">data/test.shp</Parameter>
+                    </Datasource>
+                </Layer>
+            </Map>
+        """
+        map = compile(s, self.dirs)
+        
+        mmap = mapnik.Map(640, 480)
+        map.to_mapnik(mmap)
+        
+        (handle, path) = tempfile.mkstemp(suffix='.xml', prefix='cascadenik-mapnik-')
+        os.close(handle)
+        
+        mapnik.save_map(mmap, path)
+        doc = xml.etree.ElementTree.parse(path)
+        map_el = doc.getroot()
+        
+        print open(path, 'r').read()
+        os.unlink(path)
+        
+        return
+
+        self.assertEqual(3, len(map_el.findall('Style')))
+        self.assertEqual(1, len(map_el.findall('Layer')))
+        self.assertEqual(3, len(map_el.find('Layer').findall('StyleName')))
+        
+        for stylename_el in map_el.find('Layer').findall('StyleName'):
+            self.assertTrue(stylename_el.text in [style_el.get('name') for style_el in map_el.findall('Style')])
+
+        for style_el in map_el.findall('Style'):
+            if style_el.get('name').startswith('polygon style '):
+                self.assertEqual(1, len(style_el.find('Rule').findall('PolygonSymbolizer')))
+
+            if style_el.get('name').startswith('line style '):
+                self.assertEqual(2, len(style_el.find('Rule').findall('LineSymbolizer')))
+
+            if style_el.get('name').startswith('text style '):
+                self.assertEqual(1, len(style_el.find('Rule').findall('TextSymbolizer')))
+
+        self.assertEqual(len(map_el.find("Layer").findall('Datasource')), 1)
+        params = dict(((p.get('name'), p.text) for p in map_el.find('Layer').find('Datasource').findall('Parameter')))
+        self.assertEqual(params['type'], 'shape')
+        self.assertEqual(params['file'][-13:], 'data/test.shp')
+        self.assertEqual(params['encoding'], 'latin1')
 
 class RelativePathTests(unittest.TestCase):
 

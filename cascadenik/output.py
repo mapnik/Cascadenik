@@ -1,4 +1,5 @@
 import sys
+from re import sub
 from itertools import count
 from os import getcwd, chdir
 
@@ -6,6 +7,9 @@ from . import style, mapnik, MAPNIK_VERSION
 
 def safe_str(s):
     return None if not s else unicode(s).encode('utf-8')
+
+def fontset_name(face_names):
+    return '-'.join([sub(r'\W', '_', name) for name in face_names])
 
 class Map:
     def __init__(self, srs=None, layers=None, background=None):
@@ -54,11 +58,20 @@ class Map:
                             if not hasattr(symbolizer, 'to_mapnik'):
                                 continue
     
-                            if symbolizer.__class__ in (TextSymbolizer, ShieldSymbolizer):
+                            if hasattr(symbolizer, 'get_fontset_name'):
+                                fontset_name = symbolizer.get_fontset_name()
+                            
+                                if fontset_name and fontset_name not in fontsets:
+                                    fontset = FontSet(symbolizer.face_name.values).to_mapnik()
+                                    mmap.append_fontset(fontset_name, fontset)
+                                    print 'append_fontset', fontset_name, mmap.find_fontset(fontset_name)
+                                    fontsets[fontset_name] = mmap.find_fontset(fontset_name)
+
                                 sym = symbolizer.to_mapnik(fontsets)
+                            
                             else:
                                 sym = symbolizer.to_mapnik()
-
+                            
                             rul.symbols.append(sym)
                         sty.rules.append(rul)
                     mmap.append_style(style.name, sty)
@@ -246,13 +259,13 @@ class LineSymbolizer:
 
 class FontSet:
     def __init__(self, face_names):
-        self.names = tuple(face_names)
+        self.faces = tuple(face_names)
     
     def to_mapnik(self):
         fontset = mapnik.FontSet()
         
-        for name in self.names:
-            fontset.add_face_name(name)
+        for face in self.faces:
+            fontset.add_face_name(face)
         
         return fontset
 
@@ -319,31 +332,33 @@ class TextSymbolizer:
     def __repr__(self):
         return 'Text(%s, %s)' % (self.face_name[0], self.size)
 
-    def to_mapnik(self, fontsets=None):
-        if len(self.face_name.values) > 1 and MAPNIK_VERSION < 200000:
+    def get_fontset_name(self):
+        if len(self.face_name.values) > 1 and MAPNIK_VERSION < 200100:
             raise ParseException("Mapnik only supports multiple font face names as of version 2.1")
+
+        if len(self.face_name.values) == 1:
+            return None
+        
+        return fontset_name(self.face_name.values)
     
+    def to_mapnik(self, fontsets=None):
         if MAPNIK_VERSION >= 200100:
             convert_enums = {'uppercase': mapnik.text_transform.UPPERCASE,
                              'lowercase': mapnik.text_transform.LOWERCASE}
 
-            if len(self.face_name.values) > 1:
-                if fontsets is None:
-                    raise Exception('Missing a FontSet instance when we need one')
-            
+            if self.get_fontset_name() is not None:
                 sym = mapnik.TextSymbolizer(mapnik.Expression('[%s]' % self.name),
                                             '', self.size,
                                             mapnik.Color(str(self.color)))
 
-                fontset_key = tuple(self.face_name.values)
-                if fontset_key not in fontsets:
-                    fontsets[fontset_key] = FontSet(self.face_name.values).to_mapnik()
-                sym.fontset = fontsets[fontset_key]
+                print 'fontset =', fontsets[self.get_fontset_name()]
+                sym.fontset = fontsets[self.get_fontset_name()]
 
             else:
                 sym = mapnik.TextSymbolizer(mapnik.Expression('[%s]' % self.name),
                                             self.face_name.values[0], self.size,
                                             mapnik.Color(str(self.color)))
+
         elif MAPNIK_VERSION >= 20000:
             convert_enums = {'uppercase': mapnik.text_transform.UPPERCASE,
                              'lowercase': mapnik.text_transform.LOWERCASE}
@@ -456,30 +471,31 @@ class ShieldSymbolizer:
     def __repr__(self):
         return 'Shield(%s, %s, %s, %s)' % (self.name, self.face_name, self.size, self.file)
 
-    def to_mapnik(self, fontsets=None):
-        if len(self.face_name.values) > 1 and MAPNIK_VERSION < 200000:
+    def get_fontset_name(self):
+        if len(self.face_name.values) > 1 and MAPNIK_VERSION < 200100:
             raise ParseException("Mapnik only supports multiple font face names as of version 2.1")
+
+        if len(self.face_name.values) == 1:
+            return None
+        
+        return fontset_name(self.face_name.values)
     
+    def to_mapnik(self, fontsets=None):
         if MAPNIK_VERSION >= 200100:
-            if len(self.face_name.values) > 1:
-                if fontsets is None:
-                    raise Exception('Missing a FontSet instance when we need one')
-            
+            if self.get_fontset_name() is not None:
                 sym = mapnik.ShieldSymbolizer(
                         mapnik.Expression('[%s]' % self.name), '', self.size or 10, 
                         mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
                         mapnik.PathExpression(self.file))
 
-                fontset_key = tuple(self.face_name.values)
-                if fontset_key not in fontsets:
-                    fontsets[fontset_key] = FontSet(self.face_name.values).to_mapnik()
-                sym.fontset = fontsets[fontset_key]
+                sym.fontset = fontsets[self.get_fontset_name()]
 
             else:
                 sym = mapnik.ShieldSymbolizer(
                         mapnik.Expression('[%s]' % self.name), self.face_name.values[0], self.size or 10, 
                         mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
                         mapnik.PathExpression(self.file))
+
         elif MAPNIK_VERSION >= 20000:
             sym = mapnik.ShieldSymbolizer(
                     mapnik.Expression('[%s]' % self.name), self.face_name.values[0], self.size or 10, 
