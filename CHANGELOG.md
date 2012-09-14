@@ -1,6 +1,13 @@
 Cascadenik Changelog
 ====================
 
+Version 2.5.0, September 14, 2012
+
+ * Added preliminary support for Mapnik FontSet.
+   Multiple fonts can now be used in stylesheets with `text-face-name`
+   and `shield-face-name` *but* XML serialization support is missing.
+   See also https://github.com/mapnik/mapnik/issues/1483.
+
 Version 2.4.3, June 16, 2012
 
  * Removed non-working PIL requirement from setup.py.
