@@ -1,4 +1,5 @@
 import sys
+from itertools import count
 from os import getcwd, chdir
 
 from . import style, mapnik, MAPNIK_VERSION
@@ -32,7 +33,8 @@ class Map:
             if self.background:
                 mmap.background = mapnik.Color(str(self.background))
             
-            ids = (i for i in xrange(1, 999999))
+            ids = count(1)
+            fontsets = dict()
             
             for layer in self.layers:
                 for style in layer.styles:
@@ -52,7 +54,11 @@ class Map:
                             if not hasattr(symbolizer, 'to_mapnik'):
                                 continue
     
-                            sym = symbolizer.to_mapnik()
+                            if symbolizer.__class__ in (TextSymbolizer, ShieldSymbolizer):
+                                sym = symbolizer.to_mapnik(fontsets)
+                            else:
+                                sym = symbolizer.to_mapnik()
+
                             rul.symbols.append(sym)
                         sty.rules.append(rul)
                     mmap.append_style(style.name, sty)
@@ -323,17 +329,15 @@ class TextSymbolizer:
 
             if len(self.face_name.values) > 1:
                 if fontsets is None:
-                    raise Exception('bah')
+                    raise Exception('Missing a FontSet instance when we need one')
             
                 sym = mapnik.TextSymbolizer(mapnik.Expression('[%s]' % self.name),
                                             '', self.size,
                                             mapnik.Color(str(self.color)))
 
                 fontset_key = tuple(self.face_name.values)
-                
                 if fontset_key not in fontsets:
                     fontsets[fontset_key] = FontSet(self.face_name.values).to_mapnik()
-                
                 sym.fontset = fontsets[fontset_key]
 
             else:
@@ -452,11 +456,31 @@ class ShieldSymbolizer:
     def __repr__(self):
         return 'Shield(%s, %s, %s, %s)' % (self.name, self.face_name, self.size, self.file)
 
-    def to_mapnik(self):
+    def to_mapnik(self, fontsets=None):
         if len(self.face_name.values) > 1 and MAPNIK_VERSION < 200000:
             raise ParseException("Mapnik only supports multiple font face names as of version 2.1")
     
-        if MAPNIK_VERSION >= 20000:
+        if MAPNIK_VERSION >= 200100:
+            if len(self.face_name.values) > 1:
+                if fontsets is None:
+                    raise Exception('Missing a FontSet instance when we need one')
+            
+                sym = mapnik.ShieldSymbolizer(
+                        mapnik.Expression('[%s]' % self.name), '', self.size or 10, 
+                        mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
+                        mapnik.PathExpression(self.file))
+
+                fontset_key = tuple(self.face_name.values)
+                if fontset_key not in fontsets:
+                    fontsets[fontset_key] = FontSet(self.face_name.values).to_mapnik()
+                sym.fontset = fontsets[fontset_key]
+
+            else:
+                sym = mapnik.ShieldSymbolizer(
+                        mapnik.Expression('[%s]' % self.name), self.face_name.values[0], self.size or 10, 
+                        mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
+                        mapnik.PathExpression(self.file))
+        elif MAPNIK_VERSION >= 20000:
             sym = mapnik.ShieldSymbolizer(
                     mapnik.Expression('[%s]' % self.name), self.face_name.values[0], self.size or 10, 
                     mapnik.Color(str(self.color)) if self.color else mapnik.Color('black'), 
