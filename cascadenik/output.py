@@ -11,6 +11,11 @@ def safe_str(s):
 def fontset_name(face_names):
     return '-'.join([sub(r'\W', '_', name) for name in face_names])
 
+class OutputException(Exception):
+    """ Exception raised when an output error is encountered.
+    """
+    pass
+
 class Map:
     def __init__(self, srs=None, layers=None, background=None):
         assert srs is None or isinstance(srs, basestring)
@@ -334,7 +339,7 @@ class TextSymbolizer:
 
     def get_fontset_name(self):
         if len(self.face_name.values) > 1 and MAPNIK_VERSION < 200100:
-            raise ParseException("Mapnik only supports multiple font face names as of version 2.1")
+            raise OutputException("Mapnik only supports multiple font face names as of version 2.1")
 
         if len(self.face_name.values) == 1:
             return None
@@ -473,7 +478,7 @@ class ShieldSymbolizer:
 
     def get_fontset_name(self):
         if len(self.face_name.values) > 1 and MAPNIK_VERSION < 200100:
-            raise ParseException("Mapnik only supports multiple font face names as of version 2.1")
+            raise OutputException("Mapnik only supports multiple font face names as of version 2.1")
 
         if len(self.face_name.values) == 1:
             return None

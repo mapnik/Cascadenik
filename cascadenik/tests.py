@@ -2431,8 +2431,13 @@ layer_srs=%(other_srs)s
             </Map>
         """
         map = compile(s, self.dirs)
-        
         mmap = mapnik.Map(640, 480)
+        
+        if MAPNIK_VERSION < 200100:
+            # Mapnik only supports multiple font face names as of version 2.1
+            self.assertRaises(output.OutputException, map.to_mapnik, mmap)
+            return
+        
         map.to_mapnik(mmap)
         
         (handle, path) = tempfile.mkstemp(suffix='.xml', prefix='cascadenik-mapnik-')
