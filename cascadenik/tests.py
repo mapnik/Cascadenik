@@ -2391,10 +2391,15 @@ layer_srs=%(other_srs)s
                 text-size: 12;
             }
         """
+        if MAPNIK_VERSION < 200100:
+            # Mapnik only supports multiple font face names as of version 2.1
+            return
+        
         declarations = stylesheet_declarations(s, is_merc=True)
         text_rule_groups = get_text_rule_groups(declarations)
         
-        fontset_name = text_rule_groups['NAME'][0].symbolizers[0]
+        symbolizer = text_rule_groups['NAME'][0].symbolizers[0]
+        fontsets = {symbolizer.get_fontset_name(): output.FontSet(symbolizer.face_name.values).to_mapnik()}
         sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik(fontsets)
         
         self.assert_(('Helvetica', 'DejaVu Sans Book') in fontsets)

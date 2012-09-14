@@ -335,7 +335,7 @@ class TextSymbolizer:
         self.anchor_dy = anchor_dy
 
     def __repr__(self):
-        return 'Text(%s, %s)' % (self.face_name[0], self.size)
+        return 'Text(%s, %s)' % (' '.join(self.face_name.values), self.size)
 
     def get_fontset_name(self):
         if len(self.face_name.values) > 1 and MAPNIK_VERSION < 200100:
@@ -474,7 +474,7 @@ class ShieldSymbolizer:
         self.text_dy = text_dy
 
     def __repr__(self):
-        return 'Shield(%s, %s, %s, %s)' % (self.name, self.face_name, self.size, self.file)
+        return 'Shield(%s, %s, %s, %s)' % (self.name, ' '.join(self.face_name.values), self.size, self.file)
 
     def get_fontset_name(self):
         if len(self.face_name.values) > 1 and MAPNIK_VERSION < 200100:
