@@ -2402,11 +2402,11 @@ layer_srs=%(other_srs)s
         fontsets = {symbolizer.get_fontset_name(): output.FontSet(symbolizer.face_name.values).to_mapnik()}
         sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik(fontsets)
         
-        self.assert_(('Helvetica', 'DejaVu Sans Book') in fontsets)
-        
-        self.assertEqual(tuple(['Helvetica', 'DejaVu Sans Book']), tuple(sym.fontset.names))
         self.assertEqual(mapnik.Color("#f00"), sym.fill)
         self.assertEqual(12, sym.text_size)
+
+        # TODO: test for output of FontSet in text symbolizer when Mapnik
+        # adds support. See also https://github.com/mapnik/mapnik/issues/1483
 
     def testCompile10(self):
         """
@@ -2452,11 +2452,13 @@ layer_srs=%(other_srs)s
         doc = xml.etree.ElementTree.parse(path)
         map_el = doc.getroot()
         
+        # TODO: test for output of FontSet in text symbolizer when Mapnik
+        # adds support. See also https://github.com/mapnik/mapnik/issues/1483
+        return
+
         print open(path, 'r').read()
         os.unlink(path)
         
-        return
-
         self.assertEqual(3, len(map_el.findall('Style')))
         self.assertEqual(1, len(map_el.findall('Layer')))
         self.assertEqual(3, len(map_el.find('Layer').findall('StyleName')))

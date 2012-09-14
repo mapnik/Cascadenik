@@ -69,7 +69,6 @@ class Map:
                                 if fontset_name and fontset_name not in fontsets:
                                     fontset = FontSet(symbolizer.face_name.values).to_mapnik()
                                     mmap.append_fontset(fontset_name, fontset)
-                                    print 'append_fontset', fontset_name, mmap.find_fontset(fontset_name)
                                     fontsets[fontset_name] = mmap.find_fontset(fontset_name)
 
                                 sym = symbolizer.to_mapnik(fontsets)
@@ -356,7 +355,6 @@ class TextSymbolizer:
                                             '', self.size,
                                             mapnik.Color(str(self.color)))
 
-                print 'fontset =', fontsets[self.get_fontset_name()]
                 sym.fontset = fontsets[self.get_fontset_name()]
 
             else:
