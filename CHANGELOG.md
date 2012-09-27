@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.5.1, September 26, 2012
+
+ * Completed support for Mapnik FontSet to match correct XML serialization in Mapnik 2.1.1-pre.
+
 Version 2.5.0, September 14, 2012
 
  * Added preliminary support for Mapnik FontSet.
