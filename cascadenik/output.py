@@ -266,7 +266,10 @@ class FontSet:
         self.faces = tuple(face_names)
     
     def to_mapnik(self):
-        fontset = mapnik.FontSet()
+        if MAPNIK_VERSION >= 200101:
+            fontset = mapnik.FontSet(fontset_name(self.faces))
+        else:
+            fontset = mapnik.FontSet()
         
         for face in self.faces:
             fontset.add_face_name(face)
