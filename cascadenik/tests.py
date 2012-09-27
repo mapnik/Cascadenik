@@ -2452,30 +2452,17 @@ layer_srs=%(other_srs)s
         doc = xml.etree.ElementTree.parse(path)
         map_el = doc.getroot()
         
-        # TODO: test for output of FontSet in text symbolizer when Mapnik
-        # adds support. See also https://github.com/mapnik/mapnik/issues/1483
-        return
+        fontset_el = map_el.find('FontSet')
 
-        print open(path, 'r').read()
-        os.unlink(path)
+        self.assertEqual('Comic Sans', fontset_el.findall('Font')[0].get('face-name'))
+        self.assertEqual('Papyrus', fontset_el.findall('Font')[1].get('face-name'))
         
-        self.assertEqual(3, len(map_el.findall('Style')))
-        self.assertEqual(1, len(map_el.findall('Layer')))
-        self.assertEqual(3, len(map_el.find('Layer').findall('StyleName')))
+        if MAPNIK_VERSION >= 200101:
+            # Ensure that the fontset-name made it out,
+            # see also https://github.com/mapnik/mapnik/issues/1483
+            textsym_el = map_el.find('Style').find('Rule').find('TextSymbolizer')
+            self.assertEqual(fontset_el.get('name'), textsym_el.get('fontset-name'))
         
-        for stylename_el in map_el.find('Layer').findall('StyleName'):
-            self.assertTrue(stylename_el.text in [style_el.get('name') for style_el in map_el.findall('Style')])
-
-        for style_el in map_el.findall('Style'):
-            if style_el.get('name').startswith('polygon style '):
-                self.assertEqual(1, len(style_el.find('Rule').findall('PolygonSymbolizer')))
-
-            if style_el.get('name').startswith('line style '):
-                self.assertEqual(2, len(style_el.find('Rule').findall('LineSymbolizer')))
-
-            if style_el.get('name').startswith('text style '):
-                self.assertEqual(1, len(style_el.find('Rule').findall('TextSymbolizer')))
-
         self.assertEqual(len(map_el.find("Layer").findall('Datasource')), 1)
         params = dict(((p.get('name'), p.text) for p in map_el.find('Layer').find('Datasource').findall('Parameter')))
         self.assertEqual(params['type'], 'shape')
