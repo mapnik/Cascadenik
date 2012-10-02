@@ -341,7 +341,8 @@ class TextSymbolizer:
 
     def get_fontset_name(self):
         if len(self.face_name.values) > 1 and MAPNIK_VERSION < 200100:
-            raise OutputException("Mapnik only supports multiple font face names as of version 2.1")
+            # Mapnik only supports multiple font face names as of version 2.1
+            return None
 
         if len(self.face_name.values) == 1:
             return None
