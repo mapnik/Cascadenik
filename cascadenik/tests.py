@@ -2456,7 +2456,13 @@ layer_srs=%(other_srs)s
         if MAPNIK_VERSION < 200100:
             # Mapnik only supports multiple font face names as of version 2.1
             textsym_el = map_el.find('Style').find('Rule').find('TextSymbolizer')
-            self.assertEqual('Comic Sans', textsym_el.get('face_name'))
+
+            if MAPNIK_VERSION >= 200000:
+                # It changed as of 2.0.
+                self.assertEqual('Comic Sans', textsym_el.get('face-name'))
+            else:
+                self.assertEqual('Comic Sans', textsym_el.get('face_name'))
+
             return
         
         fontset_el = map_el.find('FontSet')
