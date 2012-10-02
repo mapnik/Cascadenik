@@ -2438,11 +2438,6 @@ layer_srs=%(other_srs)s
         map = compile(s, self.dirs)
         mmap = mapnik.Map(640, 480)
         
-        if MAPNIK_VERSION < 200100:
-            # Mapnik only supports multiple font face names as of version 2.1
-            self.assertRaises(output.OutputException, map.to_mapnik, mmap)
-            return
-        
         map.to_mapnik(mmap)
         
         (handle, path) = tempfile.mkstemp(suffix='.xml', prefix='cascadenik-mapnik-')
@@ -2451,6 +2446,18 @@ layer_srs=%(other_srs)s
         mapnik.save_map(mmap, path)
         doc = xml.etree.ElementTree.parse(path)
         map_el = doc.getroot()
+        
+        self.assertEqual(len(map_el.find("Layer").findall('Datasource')), 1)
+        params = dict(((p.get('name'), p.text) for p in map_el.find('Layer').find('Datasource').findall('Parameter')))
+        self.assertEqual(params['type'], 'shape')
+        self.assertEqual(params['file'][-13:], 'data/test.shp')
+        self.assertEqual(params['encoding'], 'latin1')
+        
+        if MAPNIK_VERSION < 200100:
+            # Mapnik only supports multiple font face names as of version 2.1
+            textsym_el = map_el.find('Style').find('Rule').find('TextSymbolizer')
+            self.assertEqual('Comic Sans', textsym_el.get('face_name'))
+            return
         
         fontset_el = map_el.find('FontSet')
 
@@ -2462,12 +2469,6 @@ layer_srs=%(other_srs)s
             # see also https://github.com/mapnik/mapnik/issues/1483
             textsym_el = map_el.find('Style').find('Rule').find('TextSymbolizer')
             self.assertEqual(fontset_el.get('name'), textsym_el.get('fontset-name'))
-        
-        self.assertEqual(len(map_el.find("Layer").findall('Datasource')), 1)
-        params = dict(((p.get('name'), p.text) for p in map_el.find('Layer').find('Datasource').findall('Parameter')))
-        self.assertEqual(params['type'], 'shape')
-        self.assertEqual(params['file'][-13:], 'data/test.shp')
-        self.assertEqual(params['encoding'], 'latin1')
 
 class RelativePathTests(unittest.TestCase):
 
