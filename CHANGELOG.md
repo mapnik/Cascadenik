@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.5.2, October 2, 2012
+
+ * Changed expectations for multiple font names so that pre-2.1 versions of Mapnik no longer throw OutputException.
+
 Version 2.5.1, September 26, 2012
 
  * Completed support for Mapnik FontSet to match correct XML serialization in Mapnik 2.1.1-pre.
