@@ -2289,23 +2289,23 @@ layer_srs=%(other_srs)s
         sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik()
         
         if MAPNIK_VERSION >= 200000:
-            self.assertEqual((10, 15), sym.displacement)
+            self.assertEqual((10, 15), sym.properties.displacement if (MAPNIK_VERSION >= 200100) else sym.displacement)
         else:
             self.assertEqual([10, 15], sym.get_displacement())
         
         # todo - anchor (does not do anything yet in mapnik, but likely will)
         # and is not set in xml, but accepted in python
         #self.assertEqual([0,5], sym.get_anchor())
-        self.assertEqual(True, sym.allow_overlap)
-        self.assertEqual(True, sym.avoid_edges)
-        self.assertEqual(10, sym.character_spacing)
-        self.assertEqual('Helvetica', sym.face_name)
-        self.assertEqual(mapnik.Color("#f00"), sym.fill)
+        self.assertEqual(True, sym.properties.allow_overlap if (MAPNIK_VERSION >= 200100) else sym.allow_overlap)
+        self.assertEqual(True, sym.properties.avoid_edges if (MAPNIK_VERSION >= 200100) else sym.avoid_edges)
+        self.assertEqual(10, sym.format.character_spacing if (MAPNIK_VERSION >= 200100) else sym.character_spacing)
+        self.assertEqual('Helvetica', sym.format.face_name if (MAPNIK_VERSION >= 200100) else sym.face_name)
+        self.assertEqual(mapnik.Color("#f00"), sym.format.fill if (MAPNIK_VERSION >= 200100) else sym.fill)
         
-        self.assertEqual(True, sym.force_odd_labels)
-        self.assertEqual(mapnik.justify_alignment.LEFT, sym.justify_alignment)
-        self.assertEqual(mapnik.Color("#ff0"), sym.halo_fill)
-        self.assertEqual(2, sym.halo_radius)
+        self.assertEqual(True, sym.properties.force_odd_labels if (MAPNIK_VERSION >= 200100) else sym.force_odd_labels)
+        self.assertEqual(mapnik.justify_alignment.LEFT, sym.properties.justify_alignment if (MAPNIK_VERSION >= 200100) else sym.justify_alignment)
+        self.assertEqual(mapnik.Color("#ff0"), sym.format.halo_fill if (MAPNIK_VERSION >= 200100) else sym.halo_fill)
+        self.assertEqual(2, sym.format.halo_radius if (MAPNIK_VERSION >= 200100) else sym.halo_radius)
         
         if MAPNIK_VERSION >= 200100:
             # TextSymbolizer lost its "name" attribute in Mapnik 2.1.
@@ -2315,20 +2315,20 @@ layer_srs=%(other_srs)s
         else:
             self.assertEqual('NAME', sym.name)
         
-        self.assertEqual(12, sym.text_size)
-        self.assertEqual(100, sym.wrap_width)
-        self.assertEqual(50, sym.label_spacing)
-        self.assertEqual(25, sym.label_position_tolerance)
+        self.assertEqual(12, sym.format.text_size if (MAPNIK_VERSION >= 200100) else sym.text_size)
+        self.assertEqual(100, sym.properties.wrap_width if (MAPNIK_VERSION >= 200100) else sym.wrap_width)
+        self.assertEqual(50, sym.properties.label_spacing if (MAPNIK_VERSION >= 200100) else sym.label_spacing)
+        self.assertEqual(25, sym.properties.label_position_tolerance if (MAPNIK_VERSION >= 200100) else sym.label_position_tolerance)
         
         if MAPNIK_VERSION >= 200100:
             # Seriously?
-            self.assertEqual(10, sym.maximum_angle_char_delta)
+            self.assertEqual(10, sym.properties.maximum_angle_char_delta if (MAPNIK_VERSION >= 200100) else sym.maximum_angle_char_delta)
         else:
             self.assertEqual(10, sym.max_char_angle_delta)
         
-        self.assertEqual(10, sym.line_spacing)
-        self.assertEqual(5, sym.minimum_distance)
-        self.assertEqual(mapnik.label_placement.LINE_PLACEMENT, sym.label_placement)
+        self.assertEqual(10, sym.format.line_spacing if (MAPNIK_VERSION >= 200100) else sym.line_spacing)
+        self.assertEqual(5, sym.properties.minimum_distance if (MAPNIK_VERSION >= 200100) else sym.minimum_distance)
+        self.assertEqual(mapnik.label_placement.LINE_PLACEMENT, sym.properties.label_placement if (MAPNIK_VERSION >= 200100) else sym.label_placement)
     
     def testCompile7(self):
         s = """
@@ -2402,8 +2402,8 @@ layer_srs=%(other_srs)s
         fontsets = {symbolizer.get_fontset_name(): output.FontSet(symbolizer.face_name.values).to_mapnik()}
         sym = text_rule_groups['NAME'][0].symbolizers[0].to_mapnik(fontsets)
         
-        self.assertEqual(mapnik.Color("#f00"), sym.fill)
-        self.assertEqual(12, sym.text_size)
+        self.assertEqual(mapnik.Color("#f00"), sym.format.fill if (MAPNIK_VERSION >= 200100) else sym.fill)
+        self.assertEqual(12, sym.format.text_size if (MAPNIK_VERSION >= 200100) else sym.text_size)
 
         # TODO: test for output of FontSet in text symbolizer when Mapnik
         # adds support. See also https://github.com/mapnik/mapnik/issues/1483

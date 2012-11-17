@@ -359,7 +359,7 @@ class TextSymbolizer:
                                             '', self.size,
                                             mapnik.Color(str(self.color)))
 
-                sym.fontset = fontsets[self.get_fontset_name()]
+                sym.format.fontset = fontsets[self.get_fontset_name()]
 
             else:
                 sym = mapnik.TextSymbolizer(mapnik.Expression('[%s]' % self.name),
@@ -381,54 +381,92 @@ class TextSymbolizer:
             sym = mapnik.TextSymbolizer(self.name, self.face_name.values[0], self.size,
                                         mapnik.Color(str(self.color)))
 
-        sym.wrap_width = self.wrap_width or sym.wrap_width
-        sym.label_spacing = self.label_spacing or sym.label_spacing
-        sym.label_position_tolerance = self.label_position_tolerance or sym.label_position_tolerance
-        
         if MAPNIK_VERSION >= 200100:
-            # seriously?
-            sym.maximum_angle_char_delta = self.max_char_angle_delta or sym.maximum_angle_char_delta
+            sym.properties.wrap_width = self.wrap_width or sym.properties.wrap_width
+            sym.properties.label_spacing = self.label_spacing or sym.properties.label_spacing
+            sym.properties.label_position_tolerance = self.label_position_tolerance or sym.properties.label_position_tolerance
+            sym.properties.maximum_angle_char_delta = self.max_char_angle_delta or sym.properties.maximum_angle_char_delta
+
+            sym.format.halo_fill = mapnik.Color(str(self.halo_color)) if self.halo_color else sym.format.halo_fill
+            sym.format.halo_radius = self.halo_radius or sym.format.halo_radius
+            sym.format.character_spacing = self.character_spacing or sym.format.character_spacing
+            sym.format.line_spacing = self.line_spacing or sym.format.line_spacing
+
+            sym.properties.avoid_edges = self.avoid_edges.value if self.avoid_edges else sym.properties.avoid_edges
+            sym.properties.force_odd_labels = self.force_odd_labels.value if self.force_odd_labels else sym.properties.force_odd_labels
+            sym.properties.minimum_distance = self.minimum_distance or sym.properties.minimum_distance
+            sym.properties.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.properties.allow_overlap
+
+            if self.label_placement:
+                sym.properties.label_placement \
+                    = mapnik.label_placement.names.get(self.label_placement, mapnik.label_placement.POINT_PLACEMENT)
+    
+            if self.vertical_alignment:
+                # match the logic in load_map.cpp for conditionally applying vertical_alignment default
+                if self.dx > 0.0:
+                    default_vertical_alignment = mapnik.vertical_alignment.BOTTOM
+                elif self.dy < 0.0:
+                    default_vertical_alignment = mapnik.vertical_alignment.TOP
+                else:
+                    default_vertical_alignment = mapnik.vertical_alignment.MIDDLE
+                
+                sym.properties.vertical_alignment \
+                    = mapnik.vertical_alignment.names.get(self.vertical_alignment, default_vertical_alignment)
+    
+            if self.justify_alignment:
+                sym.properties.justify_alignment \
+                    = mapnik.justify_alignment.names.get(self.justify_alignment, mapnik.justify_alignment.MIDDLE)
+    
         else:
+            sym.wrap_width = self.wrap_width or sym.wrap_width
+            sym.label_spacing = self.label_spacing or sym.label_spacing
+            sym.label_position_tolerance = self.label_position_tolerance or sym.label_position_tolerance
             sym.max_char_angle_delta = self.max_char_angle_delta or sym.max_char_angle_delta
+
+            sym.halo_fill = mapnik.Color(str(self.halo_color)) if self.halo_color else sym.halo_fill
+            sym.halo_radius = self.halo_radius or sym.halo_radius
+            sym.character_spacing = self.character_spacing or sym.character_spacing
+            sym.line_spacing = self.line_spacing or sym.line_spacing
+
+            sym.avoid_edges = self.avoid_edges.value if self.avoid_edges else sym.avoid_edges
+            sym.force_odd_labels = self.force_odd_labels.value if self.force_odd_labels else sym.force_odd_labels
+            sym.minimum_distance = self.minimum_distance or sym.minimum_distance
+            sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
         
-        sym.halo_fill = mapnik.Color(str(self.halo_color)) if self.halo_color else sym.halo_fill
-        sym.halo_radius = self.halo_radius or sym.halo_radius
-        sym.character_spacing = self.character_spacing or sym.character_spacing
-        sym.line_spacing = self.line_spacing or sym.line_spacing
-        sym.avoid_edges = self.avoid_edges.value if self.avoid_edges else sym.avoid_edges
-        sym.force_odd_labels = self.force_odd_labels.value if self.force_odd_labels else sym.force_odd_labels
-        sym.minimum_distance = self.minimum_distance or sym.minimum_distance
-        sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
-
-        if self.label_placement:
-            sym.label_placement = mapnik.label_placement.names.get(self.label_placement,mapnik.label_placement.POINT_PLACEMENT)
-
+            if self.label_placement:
+                sym.label_placement \
+                    = mapnik.label_placement.names.get(self.label_placement, mapnik.label_placement.POINT_PLACEMENT)
+    
+            if self.vertical_alignment:
+                # match the logic in load_map.cpp for conditionally applying vertical_alignment default
+                if self.dx > 0.0:
+                    default_vertical_alignment = mapnik.vertical_alignment.BOTTOM
+                elif self.dy < 0.0:
+                    default_vertical_alignment = mapnik.vertical_alignment.TOP
+                else:
+                    default_vertical_alignment = mapnik.vertical_alignment.MIDDLE
+                
+                sym.vertical_alignment \
+                    = mapnik.vertical_alignment.names.get(self.vertical_alignment, default_vertical_alignment)
+    
+            if self.justify_alignment:
+                sym.justify_alignment \
+                    = mapnik.justify_alignment.names.get(self.justify_alignment, mapnik.justify_alignment.MIDDLE)
+    
         if self.text_transform and MAPNIK_VERSION >= 200000:
             sym.text_convert = convert_enums.get(self.text_transform, mapnik.text_transform.NONE)
         elif self.text_transform:
             # note-renamed in Mapnik2 to 'text_transform'
             sym.text_convert = convert_enums.get(self.text_transform, mapnik.text_convert.NONE)
 
-        if self.vertical_alignment:
-            # match the logic in load_map.cpp for conditionally applying vertical_alignment default
-            default_vertical_alignment = mapnik.vertical_alignment.MIDDLE
-            if self.dx > 0.0:
-                default_vertical_alignment = mapnik.vertical_alignment.BOTTOM
-            elif self.dy < 0.0:
-                default_vertical_alignment = mapnik.vertical_alignment.TOP
-            
-            sym.vertical_alignment = mapnik.vertical_alignment.names.get(self.vertical_alignment,
-                default_vertical_alignment)
-        if self.justify_alignment:
-            sym.justify_alignment = mapnik.justify_alignment.names.get(self.justify_alignment,
-              mapnik.justify_alignment.MIDDLE)
-
         if self.fontset:
         #    sym.fontset = str(self.fontset)
              # not viable via python
             sys.stderr.write('\nCascadenik debug: Warning, FontSets will be ignored as they are not yet supported in Mapnik via Python...\n')
         
-        if MAPNIK_VERSION >= 200000:
+        if MAPNIK_VERSION >= 200100:
+            sym.properties.displacement = (self.dx or 0.0, self.dy or 0.0)
+        elif MAPNIK_VERSION >= 200000:
             sym.displacement = (self.dx or 0.0, self.dy or 0.0)
         else:
             sym.displacement(self.dx or 0.0, self.dy or 0.0)
