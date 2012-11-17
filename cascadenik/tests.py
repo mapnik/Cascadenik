@@ -1876,11 +1876,21 @@ class CompileXMLTests(unittest.TestCase):
     def setUp(self):
         # a directory for all the temp files to be created below
         self.tmpdir = tempfile.mkdtemp(prefix='cascadenik-tests-')
+        self.data = tempfile.mkdtemp(prefix='cascadenik-data-')
         self.dirs = Directories(self.tmpdir, self.tmpdir, os.getcwd())
-
+        
+        for name in ('test.dbf', 'test.prj', 'test.qpj', 'test.shp', 'test.shx'):
+            href = 'http://cascadenik-sampledata.s3.amazonaws.com/data/' + name
+            path = os.path.join(self.data, name)
+            
+            file = open(path, 'w')
+            file.write(urllib.urlopen(href).read())
+            file.close()
+        
     def tearDown(self):
         # destroy the above-created directory
         shutil.rmtree(self.tmpdir)
+        shutil.rmtree(self.data)
 
     def testCompile1(self):
         """
@@ -2050,11 +2060,12 @@ layer_srs=%(other_srs)s
                 <Layer>
                     <Datasource base="template">
                         <Parameter name="type">shape</Parameter>
-                        <Parameter name="file">data/test.shp</Parameter>
+                        <Parameter name="file">%(data)s/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
-        """
+        """ % self.__dict__
+
         map = compile(s, self.dirs)
         
         mmap = mapnik.Map(640, 480)
@@ -2090,7 +2101,7 @@ layer_srs=%(other_srs)s
         self.assertEqual(len(map_el.find("Layer").findall('Datasource')), 1)
         params = dict(((p.get('name'), p.text) for p in map_el.find('Layer').find('Datasource').findall('Parameter')))
         self.assertEqual(params['type'], 'shape')
-        self.assertEqual(params['file'][-13:], 'data/test.shp')
+        self.assertTrue(params['file'].endswith('%s/test.shp' % self.data))
         self.assertEqual(params['encoding'], 'latin1')
 
     def testCompile3(self):
@@ -2098,7 +2109,7 @@ layer_srs=%(other_srs)s
         """
         map = output.Map(layers=[
             output.Layer('this',
-            output.Datasource(type="shape",file="data/test.shp"), [
+            output.Datasource(type="shape",file="%s/test.shp" % self.data), [
                 output.Style('a style', [
                     output.Rule(
                         output.MinScaleDenominator(1),
@@ -2110,7 +2121,7 @@ layer_srs=%(other_srs)s
                     ])
                 ]),
             output.Layer('that',
-            output.Datasource(type="shape",file="data/test.shp"), [
+            output.Datasource(type="shape",file="%s/test.shp" % self.data), [
                 output.Style('another style', [
                     output.Rule(
                         output.MinScaleDenominator(101),
@@ -2218,11 +2229,12 @@ layer_srs=%(other_srs)s
                 <Layer>
                     <Datasource base="template">
                         <Parameter name="type">shape</Parameter>
-                        <Parameter name="file">data/test.shp</Parameter>
+                        <Parameter name="file">%(data)s/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
-        """
+        """ % self.__dict__
+
         mmap = mapnik.Map(640, 480)
         ms = compile(s, self.dirs)
         ms.to_mapnik(mmap, self.dirs)
@@ -2237,11 +2249,12 @@ layer_srs=%(other_srs)s
                 <Layer>
                     <Datasource>
                         <Parameter name="type">shape</Parameter>
-                        <Parameter name="file">data/test.shp</Parameter>
+                        <Parameter name="file">%(data)s/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
-        """.encode('utf-8')
+        """.encode('utf-8') % self.__dict__
+
         mmap = mapnik.Map(640, 480)
         ms = compile(s, self.dirs)
         ms.to_mapnik(mmap, self.dirs)
@@ -2430,11 +2443,12 @@ layer_srs=%(other_srs)s
                 <Layer>
                     <Datasource base="template">
                         <Parameter name="type">shape</Parameter>
-                        <Parameter name="file">data/test.shp</Parameter>
+                        <Parameter name="file">%(data)s/test.shp</Parameter>
                     </Datasource>
                 </Layer>
             </Map>
-        """
+        """ % self.__dict__
+
         map = compile(s, self.dirs)
         mmap = mapnik.Map(640, 480)
         
@@ -2450,7 +2464,7 @@ layer_srs=%(other_srs)s
         self.assertEqual(len(map_el.find("Layer").findall('Datasource')), 1)
         params = dict(((p.get('name'), p.text) for p in map_el.find('Layer').find('Datasource').findall('Parameter')))
         self.assertEqual(params['type'], 'shape')
-        self.assertEqual(params['file'][-13:], 'data/test.shp')
+        self.assertTrue(params['file'].endswith('%s/test.shp' % self.data))
         self.assertEqual(params['encoding'], 'latin1')
         
         if MAPNIK_VERSION < 200100:
