@@ -2476,6 +2476,20 @@ layer_srs=%(other_srs)s
             textsym_el = map_el.find('Style').find('Rule').find('TextSymbolizer')
             self.assertEqual(fontset_el.get('name'), textsym_el.get('fontset-name'))
 
+    def testCompile11(self):
+        """
+        """
+        s = """<?xml version="1.0"?>
+            <Map>
+                <Stylesheet>
+                    Map { map-bgcolor: #fff; }
+                </Stylesheet>
+            </Map>
+        """
+        map = compile(s, self.dirs, user_styles=['http://cascadenik-sampledata.s3.amazonaws.com/black-bgcolor.css'])
+        
+        self.assertEqual(str(map.background), '#000000')
+
 class RelativePathTests(unittest.TestCase):
 
     def setUp(self):
