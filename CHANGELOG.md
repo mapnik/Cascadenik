@@ -1,6 +1,18 @@
 Cascadenik Changelog
 ====================
 
+Version 2.6.2, November 17, 2012
+
+ * Fixed several broken unit tests by removing local dependency on data/test.shp.
+
+Version 2.6.1, November 17, 2012
+
+ * Fixed numerous Mapnik 2.1.0 deprecation warnings by version-checking in cascadenik.tests and cascadenik.output.
+
+Version 2.6.0, November 17, 2012
+
+ * Added `--style` option to cascadenik-compile.py for user-supplied local stylesheets.
+
 Version 2.5.2, October 2, 2012
 
  * Changed expectations for multiple font names so that pre-2.1 versions of Mapnik no longer throw OutputException.
