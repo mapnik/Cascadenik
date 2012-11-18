@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.6.3, November 17, 2012
+
+ * Adjusted breakpoints in style.convertZoomTests() to follow mid-points of real scales.
+
 Version 2.6.2, November 17, 2012
 
  * Fixed several broken unit tests by removing local dependency on data/test.shp.

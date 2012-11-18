@@ -806,28 +806,28 @@ class NestedRuleTests(unittest.TestCase):
         self.assertEqual(len(declarations), 11)
         
         for index in (1, 3, 5, 7, 9):
-            self.assertEqual(str(declarations[index].selector.elements[0])[:33], '#low[scale-denominator>=25000000]')
+            self.assertEqual(str(declarations[index].selector.elements[0])[:33], '#low[scale-denominator>=26147868]')
         
         for index in (2, 4, 6, 8, 10):
-            self.assertEqual(str(declarations[index].selector.elements[0])[:33], '#high[scale-denominator<25000000]')
+            self.assertEqual(str(declarations[index].selector.elements[0])[:33], '#high[scale-denominator<26147868]')
         
         for index in (1, 2):
             self.assertEqual(str(declarations[index].value.value), '#ffffff')
         
         for index in (3, 4):
-            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=500000000][scale-denominator<1000000000]')
+            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=418365887][scale-denominator<836731773]')
             self.assertEqual(str(declarations[index].value.value), '#000000')
         
         for index in (5, 6):
-            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=50000000][scale-denominator<100000000]')
+            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=52295736][scale-denominator<104591472]')
             self.assertEqual(str(declarations[index].value.value), '#333333')
         
         for index in (7, 8):
-            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=6500000][scale-denominator<12500000]')
+            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=6536967][scale-denominator<13073934]')
             self.assertEqual(str(declarations[index].value.value), '#666666')
         
         for index in (9, 10):
-            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=750000][scale-denominator<1500000]')
+            self.assertEqual(str(declarations[index].selector.elements[0])[33:], '[scale-denominator>=817121][scale-denominator<1634242]')
             self.assertEqual(str(declarations[index].value.value), '#999999')
 
 class AtVariableTests(unittest.TestCase):
@@ -1060,19 +1060,19 @@ class StyleRuleTests(unittest.TestCase):
         declarations = stylesheet_declarations(s, is_merc=True)
         rules = get_polygon_rules(declarations)
         
-        self.assertEqual(399999, rules[0].maxscale.value)
+        self.assertEqual(408560, rules[0].maxscale.value)
         self.assertEqual(color(0xCC, 0xCC, 0xCC), rules[0].symbolizers[0].color)
         self.assertEqual("[use] = 'cemetery'", rules[0].filter.text)
         
-        self.assertEqual(399999, rules[1].maxscale.value)
+        self.assertEqual(408560, rules[1].maxscale.value)
         self.assertEqual(color(0x66, 0xFF, 0x66), rules[1].symbolizers[0].color)
         self.assertEqual("[use] = 'park'", rules[1].filter.text)
     
-        self.assertEqual(400000, rules[2].minscale.value)
+        self.assertEqual(408561, rules[2].minscale.value)
         self.assertEqual(color(0x99, 0x99, 0x99), rules[2].symbolizers[0].color)
         self.assertEqual("[use] = 'cemetery'", rules[2].filter.text)
         
-        self.assertEqual(400000, rules[3].minscale.value)
+        self.assertEqual(408561, rules[3].minscale.value)
         self.assertEqual(color(0x00, 0xFF, 0x00), rules[3].symbolizers[0].color)
         self.assertEqual("[use] = 'park'", rules[3].filter.text)
 
@@ -1087,19 +1087,19 @@ class StyleRuleTests(unittest.TestCase):
         declarations = stylesheet_declarations(s, is_merc=True)
         rules = get_polygon_rules(declarations)
         
-        self.assertEqual(399999, rules[0].maxscale.value)
+        self.assertEqual(408560, rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0x00), rules[0].symbolizers[0].color)
         self.assertEqual('[foo] < 1', rules[0].filter.text)
         
-        self.assertEqual(399999, rules[1].maxscale.value)
+        self.assertEqual(408560, rules[1].maxscale.value)
         self.assertEqual(color(0xFF, 0x00, 0x00), rules[1].symbolizers[0].color)
         self.assertEqual('[foo] > 1', rules[1].filter.text)
     
-        self.assertEqual(400000, rules[2].minscale.value)
+        self.assertEqual(408561, rules[2].minscale.value)
         self.assertEqual(color(0x00, 0x00, 0x00), rules[2].symbolizers[0].color)
         self.assertEqual('[foo] < 1', rules[2].filter.text)
         
-        self.assertEqual(400000, rules[3].minscale.value)
+        self.assertEqual(408561, rules[3].minscale.value)
         self.assertEqual(color(0x00, 0x00, 0xFF), rules[3].symbolizers[0].color)
         self.assertEqual('[foo] > 1', rules[3].filter.text)
 
@@ -1121,50 +1121,50 @@ class StyleRuleTests(unittest.TestCase):
 
         poly_rules = get_polygon_rules(declarations)
         
-        self.assertEqual(399999, poly_rules[0].maxscale.value)
+        self.assertEqual(408560, poly_rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0x00), poly_rules[0].symbolizers[0].color)
         self.assertEqual('[foo] < 1', poly_rules[0].filter.text)
         
-        self.assertEqual(399999, poly_rules[1].maxscale.value)
+        self.assertEqual(408560, poly_rules[1].maxscale.value)
         self.assertEqual(color(0xFF, 0x00, 0x00), poly_rules[1].symbolizers[0].color)
         self.assertEqual('[foo] > 1', poly_rules[1].filter.text)
     
-        self.assertEqual(400000, poly_rules[2].minscale.value)
+        self.assertEqual(408561, poly_rules[2].minscale.value)
         self.assertEqual(color(0x00, 0x00, 0x00), poly_rules[2].symbolizers[0].color)
         self.assertEqual('[foo] < 1', poly_rules[2].filter.text)
         
-        self.assertEqual(400000, poly_rules[3].minscale.value)
+        self.assertEqual(408561, poly_rules[3].minscale.value)
         self.assertEqual(color(0x00, 0x00, 0xFF), poly_rules[3].symbolizers[0].color)
         self.assertEqual('[foo] > 1', poly_rules[3].filter.text)
         
         line_rules = get_line_rules(declarations)
 
-        self.assertEqual(399999, line_rules[0].maxscale.value)
+        self.assertEqual(408560, line_rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0xFF), line_rules[0].symbolizers[0].color)
         self.assertEqual(2.0, line_rules[0].symbolizers[0].width)
         self.assertEqual('[foo] < 1', line_rules[0].filter.text)
         
-        self.assertEqual(399999, line_rules[1].maxscale.value)
+        self.assertEqual(408560, line_rules[1].maxscale.value)
         self.assertEqual(color(0xFF, 0x00, 0xFF), line_rules[1].symbolizers[0].color)
         self.assertEqual(2.0, line_rules[1].symbolizers[0].width)
         self.assertEqual('[foo] = 1', line_rules[1].filter.text)
     
-        self.assertEqual(399999, line_rules[2].maxscale.value)
+        self.assertEqual(408560, line_rules[2].maxscale.value)
         self.assertEqual(color(0xFF, 0xFF, 0x00), line_rules[2].symbolizers[0].color)
         self.assertEqual(2.0, line_rules[2].symbolizers[0].width)
         self.assertEqual('[foo] > 1', line_rules[2].filter.text)
     
-        self.assertEqual(400000, line_rules[3].minscale.value)
+        self.assertEqual(408561, line_rules[3].minscale.value)
         self.assertEqual(color(0x00, 0xFF, 0xFF), line_rules[3].symbolizers[0].color)
         self.assertEqual(1.0, line_rules[3].symbolizers[0].width)
         self.assertEqual('[foo] < 1', line_rules[3].filter.text)
         
-        self.assertEqual(400000, line_rules[4].minscale.value)
+        self.assertEqual(408561, line_rules[4].minscale.value)
         self.assertEqual(color(0xFF, 0x00, 0xFF), line_rules[4].symbolizers[0].color)
         self.assertEqual(1.0, line_rules[4].symbolizers[0].width)
         self.assertEqual('[foo] = 1', line_rules[4].filter.text)
         
-        self.assertEqual(400000, line_rules[5].minscale.value)
+        self.assertEqual(408561, line_rules[5].minscale.value)
         self.assertEqual(color(0xFF, 0xFF, 0x00), line_rules[5].symbolizers[0].color)
         self.assertEqual(1.0, line_rules[5].symbolizers[0].width)
         self.assertEqual('[foo] > 1', line_rules[5].filter.text)
@@ -1186,54 +1186,54 @@ class StyleRuleTests(unittest.TestCase):
         
         line_rules = get_line_rules(declarations)
 
-        self.assertEqual(399999, line_rules[0].maxscale.value)
+        self.assertEqual(408560, line_rules[0].maxscale.value)
         self.assertEqual(color(0x00, 0xFF, 0xFF), line_rules[0].symbolizers[0].color)
         self.assertEqual(2.0, line_rules[0].symbolizers[0].width)
         self.assertEqual('[foo] < 1', line_rules[0].filter.text)
         
-        self.assertEqual(399999, line_rules[1].maxscale.value)
+        self.assertEqual(408560, line_rules[1].maxscale.value)
         self.assertEqual(color(0xFF, 0x00, 0xFF), line_rules[1].symbolizers[0].color)
         self.assertEqual(2.0, line_rules[1].symbolizers[0].width)
         self.assertEqual('[foo] = 1', line_rules[1].filter.text)
     
-        self.assertEqual(399999, line_rules[2].maxscale.value)
+        self.assertEqual(408560, line_rules[2].maxscale.value)
         self.assertEqual(color(0xFF, 0xFF, 0x00), line_rules[2].symbolizers[0].color)
         self.assertEqual(2.0, line_rules[2].symbolizers[0].width)
         self.assertEqual('[foo] > 1', line_rules[2].filter.text)
     
-        self.assertEqual(400000, line_rules[3].minscale.value)
+        self.assertEqual(408561, line_rules[3].minscale.value)
         self.assertEqual(color(0x00, 0xFF, 0xFF), line_rules[3].symbolizers[0].color)
         self.assertEqual(1.0, line_rules[3].symbolizers[0].width)
         self.assertEqual('[foo] < 1', line_rules[3].filter.text)
         
-        self.assertEqual(400000, line_rules[4].minscale.value)
+        self.assertEqual(408561, line_rules[4].minscale.value)
         self.assertEqual(color(0xFF, 0x00, 0xFF), line_rules[4].symbolizers[0].color)
         self.assertEqual(1.0, line_rules[4].symbolizers[0].width)
         self.assertEqual('[foo] = 1', line_rules[4].filter.text)
         
-        self.assertEqual(400000, line_rules[5].minscale.value)
+        self.assertEqual(408561, line_rules[5].minscale.value)
         self.assertEqual(color(0xFF, 0xFF, 0x00), line_rules[5].symbolizers[0].color)
         self.assertEqual(1.0, line_rules[5].symbolizers[0].width)
         self.assertEqual('[foo] > 1', line_rules[5].filter.text)
         
         text_rule_groups = get_text_rule_groups(declarations)
         
-        self.assertEqual(399999, text_rule_groups['label'][0].maxscale.value)
+        self.assertEqual(408560, text_rule_groups['label'][0].maxscale.value)
         self.assertEqual(strings('Arial'), text_rule_groups['label'][0].symbolizers[0].face_name)
         self.assertEqual(12, text_rule_groups['label'][0].symbolizers[0].size)
         self.assertEqual('[foo] < 1', text_rule_groups['label'][0].filter.text)
         
-        self.assertEqual(399999, text_rule_groups['label'][1].maxscale.value)
+        self.assertEqual(408560, text_rule_groups['label'][1].maxscale.value)
         self.assertEqual(strings('Helvetica'), text_rule_groups['label'][1].symbolizers[0].face_name)
         self.assertEqual(12, text_rule_groups['label'][1].symbolizers[0].size)
         self.assertEqual('[foo] >= 1', text_rule_groups['label'][1].filter.text)
     
-        self.assertEqual(400000, text_rule_groups['label'][2].minscale.value)
+        self.assertEqual(408561, text_rule_groups['label'][2].minscale.value)
         self.assertEqual(strings('Arial'), text_rule_groups['label'][2].symbolizers[0].face_name)
         self.assertEqual(10, text_rule_groups['label'][2].symbolizers[0].size)
         self.assertEqual('[foo] < 1', text_rule_groups['label'][2].filter.text)
         
-        self.assertEqual(400000, text_rule_groups['label'][3].minscale.value)
+        self.assertEqual(408561, text_rule_groups['label'][3].minscale.value)
         self.assertEqual(strings('Helvetica'), text_rule_groups['label'][3].symbolizers[0].face_name)
         self.assertEqual(10, text_rule_groups['label'][3].symbolizers[0].size)
         self.assertEqual('[foo] >= 1', text_rule_groups['label'][3].filter.text)
@@ -1254,22 +1254,22 @@ class StyleRuleTests(unittest.TestCase):
         
         text_rule_groups = get_text_rule_groups(declarations)
         
-        self.assertEqual(399999, text_rule_groups['label'][0].maxscale.value)
+        self.assertEqual(408560, text_rule_groups['label'][0].maxscale.value)
         self.assertEqual(strings('Arial'), text_rule_groups['label'][0].symbolizers[0].face_name)
         self.assertEqual(12, text_rule_groups['label'][0].symbolizers[0].size)
         self.assertEqual('[foo] < 1', text_rule_groups['label'][0].filter.text)
         
-        self.assertEqual(399999, text_rule_groups['label'][1].maxscale.value)
+        self.assertEqual(408560, text_rule_groups['label'][1].maxscale.value)
         self.assertEqual(strings('Helvetica'), text_rule_groups['label'][1].symbolizers[0].face_name)
         self.assertEqual(12, text_rule_groups['label'][1].symbolizers[0].size)
         self.assertEqual('[foo] >= 1', text_rule_groups['label'][1].filter.text)
     
-        self.assertEqual(400000, text_rule_groups['label'][2].minscale.value)
+        self.assertEqual(408561, text_rule_groups['label'][2].minscale.value)
         self.assertEqual(strings('Arial'), text_rule_groups['label'][2].symbolizers[0].face_name)
         self.assertEqual(10, text_rule_groups['label'][2].symbolizers[0].size)
         self.assertEqual('[foo] < 1', text_rule_groups['label'][2].filter.text)
         
-        self.assertEqual(400000, text_rule_groups['label'][3].minscale.value)
+        self.assertEqual(408561, text_rule_groups['label'][3].minscale.value)
         self.assertEqual(strings('Helvetica'), text_rule_groups['label'][3].symbolizers[0].face_name)
         self.assertEqual(10, text_rule_groups['label'][3].symbolizers[0].size)
         self.assertEqual('[foo] >= 1', text_rule_groups['label'][3].filter.text)
@@ -2383,16 +2383,16 @@ layer_srs=%(other_srs)s
         line_rule = line_rules[0]
         
         self.assertEqual(1, len(line_rules))
-        self.assertEqual(50000, line_rule.minscale.value)
-        self.assertEqual(99999, line_rule.maxscale.value)
+        self.assertEqual(51070, line_rule.minscale.value)
+        self.assertEqual(102139, line_rule.maxscale.value)
         self.assertEqual(2, line_rule.symbolizers[0].width)
 
         text_rules = get_text_rule_groups(declarations).get('name', [])
         text_rule = text_rules[0]
         
         self.assertEqual(1, len(text_rules))
-        self.assertEqual(50000, text_rule.minscale.value)
-        self.assertEqual(99999, text_rule.maxscale.value)
+        self.assertEqual(51070, text_rule.minscale.value)
+        self.assertEqual(102139, text_rule.maxscale.value)
         self.assertEqual(24, text_rule.symbolizers[0].size)
 
     def testCompile9(self):
