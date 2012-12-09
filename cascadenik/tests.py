@@ -2471,9 +2471,14 @@ layer_srs=%(other_srs)s
         self.assertTrue(params['file'].endswith('%s/test.shp' % self.data))
         self.assertEqual(params['encoding'], 'latin1')
         
+        textsym_el = map_el.find('Style').find('Rule').find('TextSymbolizer')
+
+        if MAPNIK_VERSION >= 200100:
+            self.assertEqual('false', textsym_el.get('clip'))
+        
         if MAPNIK_VERSION < 200100:
-            # Mapnik only supports multiple font face names as of version 2.1
-            textsym_el = map_el.find('Style').find('Rule').find('TextSymbolizer')
+            # Mapnik only supports multiple font face names as of version 2.1,
+            # so check for single face name here and skip remaining tests.
 
             if MAPNIK_VERSION >= 200000:
                 # It changed as of 2.0.
@@ -2491,7 +2496,6 @@ layer_srs=%(other_srs)s
         if MAPNIK_VERSION >= 200101:
             # Ensure that the fontset-name made it out,
             # see also https://github.com/mapnik/mapnik/issues/1483
-            textsym_el = map_el.find('Style').find('Rule').find('TextSymbolizer')
             self.assertEqual(fontset_el.get('name'), textsym_el.get('fontset-name'))
 
     def testCompile11(self):

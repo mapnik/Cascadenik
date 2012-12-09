@@ -1,6 +1,10 @@
 Cascadenik Changelog
 ====================
 
+Version 2.6.4, December 8, 2012
+
+ * Added default clip=false to generated TextSymbolizer and ShieldSymbolizer for Mapnik 2.1+.
+
 Version 2.6.3, November 17, 2012
 
  * Adjusted breakpoints in style.convertZoomTests() to follow mid-points of real scales.
