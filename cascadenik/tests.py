@@ -2321,6 +2321,10 @@ layer_srs=%(other_srs)s
         self.assertEqual(2, sym.format.halo_radius if (MAPNIK_VERSION >= 200100) else sym.halo_radius)
         
         if MAPNIK_VERSION >= 200100:
+            # TextSymbolizer got a "clip" attribute and we want it to be false.
+            self.assertFalse(sym.clip)
+        
+        if MAPNIK_VERSION >= 200100:
             # TextSymbolizer lost its "name" attribute in Mapnik 2.1.
             pass
         elif MAPNIK_VERSION >= 200001:
@@ -2870,4 +2874,3 @@ class RelativePathTests(unittest.TestCase):
         
 if __name__ == '__main__':
     unittest.main()
-    

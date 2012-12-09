@@ -471,6 +471,9 @@ class TextSymbolizer:
         else:
             sym.displacement(self.dx or 0.0, self.dy or 0.0)
         
+        if MAPNIK_VERSION >= 200100:
+            sym.clip = False
+
         return sym
 
 class ShieldSymbolizer:
@@ -566,6 +569,9 @@ class ShieldSymbolizer:
         else:
             sym.displacement(self.text_dx or 0, self.text_dy or 0)
         
+        if MAPNIK_VERSION >= 200100:
+            sym.clip = False
+
         return sym
 
 class BasePointSymbolizer(object):
