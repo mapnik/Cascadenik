@@ -369,7 +369,9 @@ class Declaration:
     
     def scaleBy(self, scale):
         self.selector = self.selector.scaledBy(scale)
-        self.value = self.value.scaledBy(scale)
+        
+        if not self.property.name.endswith('-opacity'):
+            self.value = self.value.scaledBy(scale)
 
 class Selector:
     """ Represents a complete selector with elements and attribute checks.
