@@ -1,6 +1,11 @@
 Cascadenik Changelog
 ====================
 
+Version 2.6.5, March 1, 2013
+
+ * Scale properties of type numbers for retina `--2x` option
+ * Don't scale opacity properties for retina `--2x` option
+
 Version 2.6.4, December 8, 2012
 
  * Added default clip=false to generated TextSymbolizer and ShieldSymbolizer for Mapnik 2.1+.
