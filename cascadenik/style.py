@@ -808,8 +808,8 @@ class Value:
         if type(scaled.value) in (int, float):
             scaled.value *= scale
         elif isinstance(scaled.value, numbers):
-            scaled.value.values = (v * scale for v in scaled.value.values)
-        
+            scaled.value.values = tuple(v * scale for v in scaled.value.values)
+
         return scaled
     
     def __repr__(self):
