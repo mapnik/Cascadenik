@@ -6,7 +6,7 @@ The introductory blog post:
 The code:
   https://github.com/mapnik/Cascadenik
 """
-__version__ = '2.6.5'
+__version__ = '2.6.6'
 
 from os import mkdir, chmod
 from os.path import isdir, realpath, expanduser, dirname, exists
