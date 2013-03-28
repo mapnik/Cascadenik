@@ -1,6 +1,11 @@
 Cascadenik Changelog
 ====================
 
+Version 2.6.6, March 28, 2013
+
+ * Fix dash array scaling for retina `--2x` option when numbers are same value.
+ * Add cssutils to requirements.txt so PIP will auto install the dependency.
+
 Version 2.6.5, March 1, 2013
 
  * Scale properties of type numbers for retina `--2x` option
