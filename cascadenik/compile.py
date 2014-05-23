@@ -974,7 +974,6 @@ def get_text_rule_groups(declarations):
                     'text-face-name': 'face_name',
                     'text-fill': 'fill',
                     'text-fontset': 'fontset',
-                    'text-force-odd-labels': 'force_odd_labels',
                     'text-halo-fill': 'halo_fill',
                     'text-halo-radius': 'halo_radius',
                     'text-justify-align': 'justify_alignment',
@@ -1044,7 +1043,6 @@ def get_text_rule_groups(declarations):
             horizontal_alignment = values.has_key('text-horizontal-align') and values['text-horizontal-align'].value or None
             vertical_alignment = values.has_key('text-vertical-align') and values['text-vertical-align'].value or None
             justify_alignment = values.has_key('text-justify-align') and values['text-justify-align'].value or None
-            force_odd_labels = values.has_key('text-force-odd-labels') and values['text-force-odd-labels'].value or None
             line_spacing = values.has_key('text-line-spacing') and values['text-line-spacing'].value or None
             character_spacing = values.has_key('text-character-spacing') and values['text-character-spacing'].value or None
             
@@ -1055,7 +1053,7 @@ def get_text_rule_groups(declarations):
                                               avoid_edges, minimum_distance, allow_overlap, label_placement, \
                                               line_spacing, character_spacing, text_transform, fontset,
                                               anchor_dx, anchor_dy,horizontal_alignment, \
-                                              vertical_alignment, justify_alignment, force_odd_labels)
+                                              vertical_alignment, justify_alignment)
             
                 rules.append(make_rule(filter, symbolizer))
         

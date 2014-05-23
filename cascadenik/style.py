@@ -181,7 +181,6 @@ properties = {
     'text-vertical-align': ('top','middle','bottom',),
     'text-justify-align': ('left','middle','right',),
     'text-transform': ('uppercase','lowercase',),
-    'text-force-odd-labels':boolean,
 
     # Font name
     'text-face-name': strings,
