@@ -2275,7 +2275,6 @@ layer_srs=%(other_srs)s
                 text-dy: 15;
                 text-face-name: 'Helvetica';
                 text-fill: #f00;
-                text-force-odd-labels: true;
                 text-halo-fill: #ff0;
                 text-halo-radius: 2;
                 text-label-position-tolerance: 25;
@@ -2315,7 +2314,6 @@ layer_srs=%(other_srs)s
         self.assertEqual('Helvetica', sym.format.face_name if (MAPNIK_VERSION >= 200100) else sym.face_name)
         self.assertEqual(mapnik.Color("#f00"), sym.format.fill if (MAPNIK_VERSION >= 200100) else sym.fill)
         
-        self.assertEqual(True, sym.properties.force_odd_labels if (MAPNIK_VERSION >= 200100) else sym.force_odd_labels)
         self.assertEqual(mapnik.justify_alignment.LEFT, sym.properties.justify_alignment if (MAPNIK_VERSION >= 200100) else sym.justify_alignment)
         self.assertEqual(mapnik.Color("#ff0"), sym.format.halo_fill if (MAPNIK_VERSION >= 200100) else sym.halo_fill)
         self.assertEqual(2, sym.format.halo_radius if (MAPNIK_VERSION >= 200100) else sym.halo_radius)

@@ -283,7 +283,7 @@ class TextSymbolizer:
         minimum_distance=None, allow_overlap=None, label_placement=None, \
         character_spacing=None, line_spacing=None, text_transform=None, fontset=None, \
         anchor_dx=None, anchor_dy=None,horizontal_alignment=None,vertical_alignment=None,
-        justify_alignment=None, force_odd_labels=None):
+        justify_alignment=None):
 
         assert isinstance(name, basestring)
         assert face_name is None or face_name.__class__ is style.strings
@@ -332,7 +332,6 @@ class TextSymbolizer:
         self.vertical_alignment = vertical_alignment
         self.justify_alignment = justify_alignment
         self.horizontal_alignment = horizontal_alignment
-        self.force_odd_labels = force_odd_labels
         self.anchor_dx = anchor_dx
         self.anchor_dy = anchor_dy
 
@@ -393,7 +392,6 @@ class TextSymbolizer:
             sym.format.line_spacing = self.line_spacing or sym.format.line_spacing
 
             sym.properties.avoid_edges = self.avoid_edges.value if self.avoid_edges else sym.properties.avoid_edges
-            sym.properties.force_odd_labels = self.force_odd_labels.value if self.force_odd_labels else sym.properties.force_odd_labels
             sym.properties.minimum_distance = self.minimum_distance or sym.properties.minimum_distance
             sym.properties.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.properties.allow_overlap
 
@@ -429,7 +427,6 @@ class TextSymbolizer:
             sym.line_spacing = self.line_spacing or sym.line_spacing
 
             sym.avoid_edges = self.avoid_edges.value if self.avoid_edges else sym.avoid_edges
-            sym.force_odd_labels = self.force_odd_labels.value if self.force_odd_labels else sym.force_odd_labels
             sym.minimum_distance = self.minimum_distance or sym.minimum_distance
             sym.allow_overlap = self.allow_overlap.value if self.allow_overlap else sym.allow_overlap
         
